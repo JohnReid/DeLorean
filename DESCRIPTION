@@ -1,0 +1,9 @@
+Package: DeLorean
+Title: Estimates pseudotimes for single cell expression data
+Version: 0.1
+Authors@R: "John Reid <john.reid@mrc-bsu.cam.ac.uk> [aut, cre]"
+Description: 
+Depends:
+    R (>= 3.0.2)
+License: MIT
+LazyData: true

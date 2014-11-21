@@ -1,0 +1,104 @@
+
+# Posterior
+
+
+## Priors vs. Posteriors
+
+The posteriors are compared to the priors. First the posterior for the cell-specific
+drop out effects $\alpha_c$:
+```{r posteriorAlpha}
+(qplot(geom="density", x=as.vector(la$alpha)) + geom_rug()
+    + stat_function(fun=function(x) dnorm(x,
+                                          mean=hyper$mu_alpha,
+                                          sd=hyper$sigma_alpha),
+                    colour="blue", alpha=.7, linetype="dashed")
+)
+```
+
+The posterior for the the gene-specific drop out effects $\beta_g$:
+```{r posteriorBeta}
+(qplot(geom="density", x=as.vector(la$beta)) + geom_rug()
+    + stat_function(fun=function(x) dnorm(x,
+                                          sd=hyper$sigma_beta),
+                    colour="blue", alpha=.7, linetype="dashed")
+)
+```
+
+The posterior for the cell size factors $S_c$:
+```{r posteriorS}
+(qplot(geom="density", x=as.vector(la$S)) + geom_rug()
+    + stat_function(fun=function(x) dnorm(x,
+                                          mean=hyper$mu_S,
+                                          sd=hyper$sigma_S),
+                    colour="blue", alpha=.7, linetype="dashed")
+)
+```
+
+The posterior for the $\phi$:
+```{r posteriorPhi}
+(qplot(geom="density", x=as.vector(la$phi)) + geom_rug()
+    + stat_function(fun=function(x) dnorm(x,
+                                          mean=hyper$mu_phi,
+                                          sd=hyper$sigma_phi),
+                    colour="blue", alpha=.7, linetype="dashed")
+)
+```
+
+The posterior for the $\psi$:
+```{r posteriorPsi}
+(qplot(geom="density", x=as.vector(la$psi)) + geom_rug()
+    + stat_function(fun=function(x) dlnorm(x,
+                                           mean=hyper$mu_psi,
+                                           sd=hyper$sigma_psi),
+                    colour="blue", alpha=.7, linetype="dashed")
+)
+```
+
+## Other posteriors
+
+The posterior for the pseudotimes $\tau_c$:
+```{r posteriorTau}
+qplot(geom="density", x=as.vector(la$tau)) + geom_rug()
+```
+
+The posterior for the log likelihoods of the held-out data:
+```{r posteriorLL}
+qplot(geom="density", x=as.vector(la$ll)) + geom_rug()
+```
+
+The posterior for the predicted means:
+```{r posteriorMean}
+qplot(geom="density", x=as.vector(la$predictedmean)) + geom_rug(alpha=.1)
+```
+
+The posterior for the model log probability:
+```{r posteriorLP}
+qplot(geom="density", x=as.vector(la$lp__)) + geom_rug()
+```
+
+The measurement noise compared to the temporal variation:
+```{r noiseScatter}
+(ggplot(noise.levels,
+        aes(x=psi, y=omega, color=gene %in% de.lorean$genes.high.psi)) + geom_point())
+```
+
+Measurement noise:
+```{r measurementNoise}
+(ggplot(noise.levels,
+        aes(x=gene, y=log(omega), fill=gene %in% de.lorean$genes.high.psi))
+    + geom_boxplot())
+```
+
+Temporal variation:
+```{r temporalVariation}
+(ggplot(noise.levels,
+        aes(x=gene, y=log(psi), fill=gene %in% de.lorean$genes.high.psi))
+    + geom_boxplot())
+```
+
+Measurement noise against temporal variation (summarised by gene):
+```{r measurementNoiseByGene}
+(ggplot(gene.noise.levels,
+        aes(x=psi, y=omega, color=gene %in% de.lorean$genes.high.psi))
+    + geom_point())
+```

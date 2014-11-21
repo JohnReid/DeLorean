@@ -1,0 +1,230 @@
+
+# Hyper-parameter estimation
+
+
+Our data for genes $1\le g \le G$ and cells $1 \le c \le C$ are
+$$
+\begin{aligned}
+    z_{g,c} \quad &=
+        \begin{cases}
+            0 & \text{if expression measurement for gene $g$ in cell $c$
+                      dropped out} \\\\
+            1 & \text{otherwise}
+        \end{cases}
+        \\\\
+    x_{g,c} \quad &\text{expression measurement for gene $g$ in cell $c$
+                         when $z_{g,c} = 1$}
+\end{aligned}
+$$
+we define per-cell and per-gene sets that did not drop out
+$$
+\begin{aligned}
+\mathcal{G}^+_c &= \{ g : z_{g,c} = 1 \} \\\\
+\mathcal{C}^+_g &= \{ c : z_{g,c} = 1 \}
+\end{aligned}
+$$
+
+
+## Dropout rates: $\theta$
+
+We estimate cell and gene-specific drop-out effects (using pseudo-counts)
+$$
+\begin{aligned}
+\hat{\alpha}_c &= \text{logit}(\frac{|\mathcal{G}^+_c|+1}{G+2}) \\\\
+\hat{\beta}_g  &= \text{logit}(\frac{|\mathcal{C}^+_g|+1}{C+2})
+\end{aligned}
+$$
+
+
+Cell-specific effect (the prior given by the hyper-parameter is shown as the blue-dotted line):
+```{r cellThetas}
+(ggplot(expr.cell, aes(x=alpha)) + geom_density() + geom_rug()
+    + stat_function(fun=function(x) dnorm(x,
+                                          mean=hyper$mu_alpha,
+                                          sd=hyper$sigma_alpha),
+                    colour="blue", alpha=.7, linetype="dashed")
+)
+
+```
+
+Gene-specific effect:
+```{r geneTheta}
+(ggplot(expr.gene, aes(x=beta)) + geom_density() + geom_rug()
+    + stat_function(fun=function(x) dnorm(x,
+                                          mean=hyper$mu_alpha,
+                                          sd=hyper$sigma_beta),
+                    colour="blue", alpha=.7, linetype="dashed")
+)
+
+```
+
+
+# Cell size factors: S
+
+First we calculate the mean expression for each gene, that is the average of
+all those expression values that did not drop out.
+$$
+\mu_g = \frac{\sum_{c \in \mathcal{C}^+_g} x_{g,c}}{|\mathcal{C}^+_g|}
+$$
+which has this density:
+```{r geneMean}
+(ggplot(gene.pos, aes(x=mean.expr)) + geom_density() + geom_rug())
+
+```
+
+Now we estimate the cell size factors
+$$
+\hat{S}_c = \text{median}_{g \in \mathcal{G}^+_c} (x_{g,c} - \mu_g)
+$$
+which have this density:
+```{r cellSizeFactors}
+(ggplot(cell.pos, aes(x=size.factor)) + geom_density() + geom_rug()
+    + stat_function(fun=function(x) dnorm(x,
+                                          mean=hyper$mu_S,
+                                          sd=hyper$sigma_S),
+                    colour="blue", alpha=.7, linetype="dashed")
+)
+
+```
+
+
+
+## Expression variation: $\phi$, $\psi$, $\omega$
+
+Given the estimated cell size factors, we can adjust our gene
+measurements, accounting for the different cell sizes
+$$
+\hat{x}_{g,c} = x_{g,c} - \hat{S}_c
+$$
+which have the following density:
+```{r geneAdj}
+(ggplot(expr.pos %>% sample_n(10000, replace=TRUE), aes(x=expr.adj)) + geom_density() + geom_rug(alpha=.1)
+    + stat_function(fun=function(x) dnorm(x,
+                                          mean=mean(expr.pos$expr.adj),
+                                          sd=sd(expr.pos$expr.adj)),
+                    colour="blue", alpha=.7, linetype="dashed")
+)
+
+```
+
+Plot the adjusted s.d. against the unadjusted.
+Hopefully the adjusted is lower in general.
+```{r adjVsUnadj}
+(ggplot(gene.pos,
+        aes(x=sd.pe, y=sd.pe.adj))
+    + geom_point()
+    + geom_abline(intercept=0, slope=1, alpha=.4)
+)
+
+```
+
+Is there a relationship between the adjusted s.d. and the mean?
+The correlation is `r with(gene.pos, {cor(mean.expr.adj, sd.pe.adj)})`
+```{r adjSDvsMean}
+(ggplot(gene.pos,
+        aes(x=mean.expr.adj, y=sd.pe.adj))
+    + geom_point()
+)
+
+```
+
+From these adjusted expression measurements, we can estimate the gene's means
+$$
+\hat{\mu}_g = \frac{\sum_{c \in \mathcal{C}^+_g} \hat{x}_{g,c}}{|\mathcal{C}^+_g|}
+$$
+which have this density:
+```{r geneAdjMean}
+(ggplot(gene.pos, aes(x=mean.expr.adj)) + geom_density() + geom_rug()
+    + stat_function(fun=function(x) dnorm(x,
+                                          mean=hyper$mu_phi,
+                                          sd=hyper$sigma_phi),
+                    colour="blue", alpha=.7, linetype="dashed")
+)
+
+```
+
+Having estimated the gene expression means, we can decompose the observed variance.
+We examine the variance both between and within time points. We expect some
+of the variance within a time point to be associated with noise in the temporal
+dimension, that is estimating the pseudotime correctly should reduce the within
+time variance.
+
+Let
+$$
+t_c \in \{\kappa_1, \dots, \kappa_T\}
+$$
+be the time point at which cell $c$ was captured. We partition the cells by their
+captured time points indexed by $1 \le t \le T$:
+$$
+\mathcal{K}_t = \{c: t_c = \kappa_t\}
+$$
+We group the expression measurements by gene and observed time to calculate means and
+variances:
+$$
+\begin{align}
+\mu_{g,t} &= \text{Mean}(\{\hat{x}_{g,c}:z_{g,c} = 1, c \in \mathcal{K}_t\}) \\\\
+\mathbb{V}_{g,t} &= \text{Var}(\{\hat{x}_{g,c}:z_{g,c} = 1, c \in \mathcal{K}_t\})
+\end{align}
+$$
+The variances have this distribution:
+```{r geneWithinVar}
+(ggplot(gene.time.pos, aes(x=var.expr)) + geom_density() + geom_rug())
+
+```
+
+Mean expression by time:
+```{r geneTimeMean}
+(ggplot(gene.time.pos,
+        aes(x=mean.expr, y=sqrt(var.expr), color=factor(obstime)))
+    + geom_point(alpha=.4)
+)
+
+```
+
+
+We estimate the gene variation between time as the variation of the within time mean:
+$$
+\bar{\psi}_g = \text{Var}_t(\mu_{g,t})
+$$
+and the gene variation within time as the average of the variation within the times:
+$$
+\bar{\omega}_g = \text{Mean}_t(\mathbb{V}_{g,t})
+$$
+
+Gene variation between and within time:
+```{r geneVarBetweenWithin}
+(ggplot(gene.var,
+        aes(x=within.time,
+            y=between.time))
+    + geom_point(alpha=.5)
+    + geom_rug(alpha=.05)
+)
+
+```
+
+We expect some of the variance within a time point to be associated with noise
+in the temporal dimension so we adjust the estimated between and within
+time variances using a scaling factor $\delta$:
+$$
+\begin{align}
+\hat{\psi}_g &= \bar{\psi}_g + \delta \bar{\psi}_g \\\\
+\hat{\omega}_g &= \bar{\omega}_g + \delta \bar{\psi}_g
+\end{align}
+$$
+giving these densities:
+
+```{r geneVarBetweenWithinAdj}
+(ggplot(gene.var, aes(x=between.time.adj)) + geom_density() + geom_rug()
+    + stat_function(fun=function(x) dlnorm(x,
+                                           mean=hyper$mu_psi,
+                                           sd=hyper$sigma_psi),
+                    colour="blue", alpha=.7, linetype="dashed")
+)
+(ggplot(gene.var, aes(x=within.time.adj)) + geom_density() + geom_rug()
+    + stat_function(fun=function(x) dlnorm(x,
+                                           mean=hyper$mu_omega,
+                                           sd=hyper$sigma_omega),
+                    colour="blue", alpha=.7, linetype="dashed")
+)
+
+```
