@@ -566,7 +566,7 @@ compile.model <- function(de.lorean) {
         # Define a function to initialise the chains
         init.chain <- function() {
             with(expr.f.stan, {
-                list(alpha=rnorm(c, mean=mu_alpha, sd=sigma_alpha),
+                list(alpha=rnorm(C, mean=mu_alpha, sd=sigma_alpha),
                      beta=rnorm(G, sd=sigma_beta),
                      S=cell.map$size.factor,
                      tau=rnorm(C, mean=time, sd=sigma_tau),
