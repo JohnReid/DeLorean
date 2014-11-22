@@ -38,7 +38,7 @@ $$
 
 Cell-specific effect (the prior given by the hyper-parameter is shown as the blue-dotted line):
 ```{r cellThetas}
-(ggplot(expr.cell, aes(x=alpha)) + geom_density() + geom_rug()
+(ggplot(expr.cell, aes(x=alpha.hat)) + geom_density() + geom_rug()
     + stat_function(fun=function(x) dnorm(x,
                                           mean=hyper$mu_alpha,
                                           sd=hyper$sigma_alpha),
@@ -49,7 +49,7 @@ Cell-specific effect (the prior given by the hyper-parameter is shown as the blu
 
 Gene-specific effect:
 ```{r geneTheta}
-(ggplot(expr.gene, aes(x=beta)) + geom_density() + geom_rug()
+(ggplot(expr.gene, aes(x=beta.hat)) + geom_density() + geom_rug()
     + stat_function(fun=function(x) dnorm(x,
                                           mean=hyper$mu_alpha,
                                           sd=hyper$sigma_beta),
@@ -68,7 +68,7 @@ $$
 $$
 which has this density:
 ```{r geneMean}
-(ggplot(gene.pos, aes(x=mean.expr)) + geom_density() + geom_rug())
+(ggplot(gene.pos, aes(x=x.mean)) + geom_density() + geom_rug())
 
 ```
 
@@ -78,7 +78,7 @@ $$
 $$
 which have this density:
 ```{r cellSizeFactors}
-(ggplot(cell.pos, aes(x=size.factor)) + geom_density() + geom_rug()
+(ggplot(cell.pos, aes(x=S.hat)) + geom_density() + geom_rug()
     + stat_function(fun=function(x) dnorm(x,
                                           mean=hyper$mu_S,
                                           sd=hyper$sigma_S),
@@ -98,10 +98,10 @@ $$
 $$
 which have the following density:
 ```{r geneAdj}
-(ggplot(expr.pos %>% sample_n(10000, replace=TRUE), aes(x=expr.adj)) + geom_density() + geom_rug(alpha=.1)
+(ggplot(expr.pos %>% sample_n(10000, replace=TRUE), aes(x=x.hat)) + geom_density() + geom_rug(alpha=.1)
     + stat_function(fun=function(x) dnorm(x,
-                                          mean=mean(expr.pos$expr.adj),
-                                          sd=sd(expr.pos$expr.adj)),
+                                          mean=mean(expr.pos$x.hat),
+                                          sd=sd(expr.pos$x.hat)),
                     colour="blue", alpha=.7, linetype="dashed")
 )
 
@@ -111,7 +111,7 @@ Plot the adjusted s.d. against the unadjusted.
 Hopefully the adjusted is lower in general.
 ```{r adjVsUnadj}
 (ggplot(gene.pos,
-        aes(x=sd.pe, y=sd.pe.adj))
+        aes(x=x.sd, y=x.hat.sd))
     + geom_point()
     + geom_abline(intercept=0, slope=1, alpha=.4)
 )
@@ -119,10 +119,10 @@ Hopefully the adjusted is lower in general.
 ```
 
 Is there a relationship between the adjusted s.d. and the mean?
-The correlation is `r with(gene.pos, {cor(mean.expr.adj, sd.pe.adj)})`
+The correlation is `r with(gene.pos, {cor(phi.hat, x.hat.sd)})`
 ```{r adjSDvsMean}
 (ggplot(gene.pos,
-        aes(x=mean.expr.adj, y=sd.pe.adj))
+        aes(x=phi.hat, y=x.hat.sd))
     + geom_point()
 )
 
@@ -134,7 +134,7 @@ $$
 $$
 which have this density:
 ```{r geneAdjMean}
-(ggplot(gene.pos, aes(x=mean.expr.adj)) + geom_density() + geom_rug()
+(ggplot(gene.pos, aes(x=phi.hat)) + geom_density() + geom_rug()
     + stat_function(fun=function(x) dnorm(x,
                                           mean=hyper$mu_phi,
                                           sd=hyper$sigma_phi),
@@ -168,14 +168,14 @@ $$
 $$
 The variances have this distribution:
 ```{r geneWithinVar}
-(ggplot(gene.time.pos, aes(x=var.expr)) + geom_density() + geom_rug())
+(ggplot(gene.time.pos, aes(x=x.var)) + geom_density() + geom_rug())
 
 ```
 
 Mean expression by time:
 ```{r geneTimeMean}
 (ggplot(gene.time.pos,
-        aes(x=mean.expr, y=sqrt(var.expr), color=factor(obstime)))
+        aes(x=x.mean, y=sqrt(x.var), color=factor(obstime)))
     + geom_point(alpha=.4)
 )
 
@@ -194,8 +194,8 @@ $$
 Gene variation between and within time:
 ```{r geneVarBetweenWithin}
 (ggplot(gene.var,
-        aes(x=within.time,
-            y=between.time))
+        aes(x=omega.bar,
+            y=psi.bar))
     + geom_point(alpha=.5)
     + geom_rug(alpha=.05)
 )
@@ -214,13 +214,13 @@ $$
 giving these densities:
 
 ```{r geneVarBetweenWithinAdj}
-(ggplot(gene.var, aes(x=between.time.adj)) + geom_density() + geom_rug()
+(ggplot(gene.var, aes(x=psi.hat)) + geom_density() + geom_rug()
     + stat_function(fun=function(x) dlnorm(x,
                                            mean=hyper$mu_psi,
                                            sd=hyper$sigma_psi),
                     colour="blue", alpha=.7, linetype="dashed")
 )
-(ggplot(gene.var, aes(x=within.time.adj)) + geom_density() + geom_rug()
+(ggplot(gene.var, aes(x=omega.hat)) + geom_density() + geom_rug()
     + stat_function(fun=function(x) dlnorm(x,
                                            mean=hyper$mu_omega,
                                            sd=hyper$sigma_omega),

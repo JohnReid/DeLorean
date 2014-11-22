@@ -2,7 +2,7 @@
 # Posterior
 
 
-## Priors vs. Posteriors
+## Priors vs. posteriors
 
 The posteriors are compared to the priors. First the posterior for the cell-specific
 drop out effects $\alpha_c$:
@@ -89,26 +89,30 @@ qplot(geom="density", x=as.vector(la$lp__)) + geom_rug()
 The measurement noise compared to the temporal variation:
 ```{r noiseScatter}
 (ggplot(noise.levels,
-        aes(x=psi, y=omega, color=gene %in% de.lorean$genes.high.psi)) + geom_point())
+        aes(x=psi, y=omega, color=gene %in% genes.high.psi),
+        environment=environment()) + geom_point())
 ```
 
 Measurement noise:
 ```{r measurementNoise}
 (ggplot(noise.levels,
-        aes(x=gene, y=log(omega), fill=gene %in% de.lorean$genes.high.psi))
+        aes(x=gene, y=log(omega), fill=gene %in% genes.high.psi),
+        environment=environment())
     + geom_boxplot())
 ```
 
 Temporal variation:
 ```{r temporalVariation}
 (ggplot(noise.levels,
-        aes(x=gene, y=log(psi), fill=gene %in% de.lorean$genes.high.psi))
+        aes(x=gene, y=log(psi), fill=gene %in% genes.high.psi),
+        environment=environment())
     + geom_boxplot())
 ```
 
 Measurement noise against temporal variation (summarised by gene):
 ```{r measurementNoiseByGene}
 (ggplot(gene.noise.levels,
-        aes(x=psi, y=omega, color=gene %in% de.lorean$genes.high.psi))
+        aes(x=psi, y=omega, color=gene %in% genes.high.psi),
+        environment=environment())
     + geom_point())
 ```

@@ -1,4 +1,10 @@
 
+#' Calculate a suitable value for a rug plot given the
+#' number of points
+alpha.for.rug <- function(n, scale=100) {
+    1 / (max(1, n / scale))
+}
+
 #' Print details of DeLorean object
 #'
 print.de.lorean <- function(de.lorean) {
@@ -17,22 +23,28 @@ estimate.hyper <- function(
     expr,
     gene.meta,
     cell.meta,
+    # Noise s.d. in temporal dimension
     sigma.tau = .5,
+    # Proportion of within time variance to relabel as between time
     delta = .5
 ) {
     result <- within(list(), {
         expr <- expr
+        gene.meta <- gene.meta
+        cell.meta <- cell.meta
         #
         # Set up temporal hyper-parameters
         #
-        sigma.tau <- sigma.tau
-        delta <- delta
+        opts <- list(
+            delta = delta,
+            sigma.tau = sigma.tau
+        )
         time.range <- range(cell.meta$obstime)
         time.width <- time.range[2] - time.range[1]
         #
         # First melt expression data into long format
         #
-        expr.l <- melt(expr, varnames=c("gene", "cell"), value.name="expr")
+        expr.l <- melt(expr, varnames=c("gene", "cell"), value.name="x")
         expr.l$gene <- factor(expr.l$gene, levels=levels(gene.meta$gene))
         expr.l$cell <- factor(expr.l$cell, levels=levels(cell.meta$cell))
         #
@@ -40,86 +52,83 @@ estimate.hyper <- function(
         #
         # Define a function to estimate theta with 1 pseudo-count for each
         # outcome (ON/OFF)
-        estimate.theta <- function(expr) {
-            (sum(! is.na(expr)) + 1) / (length(expr) + 2)
+        estimate.theta <- function(x) {
+            (sum(! is.na(x)) + 1) / (length(x) + 2)
         }
         # Cell-specific thetas
         expr.cell <- (expr.l
             %>% group_by(cell)
-            %>% summarise(theta=estimate.theta(expr))
-            %>% mutate(alpha=log(theta/(1-theta)))
+            %>% summarise(theta=estimate.theta(x))
+            %>% mutate(alpha.hat=log(theta/(1-theta)))
         ) %>% left_join(cell.meta)
         # Gene-specific thetas
         expr.gene <- (expr.l
             %>% group_by(gene)
-            %>% summarise(theta=estimate.theta(expr))
-            %>% mutate(beta=log(theta/(1-theta)))
+            %>% summarise(theta=estimate.theta(x))
+            %>% mutate(beta.hat=log(theta/(1-theta)))
         )
         #
         # Look at positive expression
         #
-        expr.pos <- expr.l %>% filter(! is.na(expr)) %>% left_join(cell.meta)
+        expr.pos <- expr.l %>% filter(! is.na(x)) %>% left_join(cell.meta)
         # Estimate a pseudo reference mean for each gene
         gene.pos <- (expr.pos
             %>% group_by(gene)
-            %>% summarise(mean.expr=mean(expr))
+            %>% summarise(x.mean=mean(x))
         )
         # Estimate the cell size by the median of the expression
         # adjust by the gene's mean
         cell.pos <- (expr.pos
             %>% left_join(gene.pos)
             %>% group_by(cell)
-            %>% summarise(size.factor=median(expr - mean.expr))
+            %>% summarise(S.hat=median(x - x.mean))
         )
         # Adjust the positive expression by the cell size estimates
         expr.pos <- (expr.pos
             %>% left_join(cell.pos)
-            %>% mutate(expr.adj=expr - size.factor)
+            %>% mutate(x.hat=x - S.hat)
         )
         # Resummarise the adjusted positive expression data
         gene.pos <- (expr.pos
             %>% group_by(gene)
-            %>% summarise(mean.expr=mean(expr),
-                          sd.pe=sd(expr),
-                          mean.expr.adj=mean(expr.adj),
-                          sd.pe.adj=sd(expr.adj))
+            %>% summarise(x.mean=mean(x),
+                          x.sd=sd(x),
+                          phi.hat=mean(x.hat),
+                          x.hat.sd=sd(x.hat))
         )
         # Examine the variation
         gene.time.pos <- (expr.pos
             %>% group_by(gene, obstime)
-            %>% summarise(mean.expr=mean(expr.adj),
-                          var.expr=var(expr.adj))
+            %>% summarise(x.mean=mean(x.hat),
+                          x.var=var(x.hat))
         )
         # Decomposition of variance within and between time.
         gene.var <- (gene.time.pos
             %>% group_by(gene)
-            %>% summarise(within.time=mean(var.expr),
-                          between.time=var(mean.expr),
-                          within.time.mislabelled=
-                            delta*within.time,
-                          within.time.adj=
-                            within.time-within.time.mislabelled,
-                          between.time.adj=
-                            between.time+within.time.mislabelled)
+            %>% summarise(omega.bar=mean(x.var),
+                          psi.bar=var(x.mean))
+            %>% mutate(within.time.mislabelled = opts$delta * omega.bar,
+                       omega.hat = omega.bar - within.time.mislabelled,
+                       psi.hat = psi.bar + within.time.mislabelled)
         )
+        print(gene.var)
         hyper <- list(
-            mu_S=mean(cell.pos$size.factor),
-            sigma_S=sd(cell.pos$size.factor),
-            mu_alpha=mean(expr.cell$alpha),
-            sigma_alpha=sd(expr.cell$alpha),
-            sigma_beta=sd(expr.gene$beta),
-            mu_phi=mean(gene.pos$mean.expr.adj),
-            sigma_phi=sd(gene.pos$mean.expr.adj),
-            mu_psi=mean(log(gene.var$between.time.adj), na.rm=TRUE),
-            sigma_psi=sd(log(gene.var$between.time.adj), na.rm=TRUE),
-            mu_omega=mean(log(gene.var$within.time.adj), na.rm=TRUE),
-            sigma_omega=sd(log(gene.var$within.time.adj), na.rm=TRUE),
-            sigma_tau=sigma.tau,
+            mu_S=mean(cell.pos$S.hat),
+            sigma_S=sd(cell.pos$S.hat),
+            mu_alpha=mean(expr.cell$alpha.hat),
+            sigma_alpha=sd(expr.cell$alpha.hat),
+            sigma_beta=sd(expr.gene$beta.hat),
+            mu_phi=mean(gene.pos$phi.hat),
+            sigma_phi=sd(gene.pos$phi.hat),
+            mu_psi=mean(log(gene.var$psi.hat), na.rm=TRUE),
+            sigma_psi=sd(log(gene.var$psi.hat), na.rm=TRUE),
+            mu_omega=mean(log(gene.var$omega.hat), na.rm=TRUE),
+            sigma_omega=sd(log(gene.var$omega.hat), na.rm=TRUE),
+            sigma_tau=opts$sigma.tau,
             l_pe=time.width
         )
     })
     class(result) <- c("de.lorean", class(result))
-    knit.report(result, "hyper-parameters")
     result
 }
 
@@ -143,47 +152,59 @@ knit.report <- function(de.lorean, report.name) {
 #'
 filter.genes <- function(de.lorean, gene.filter) {
     within(de.lorean, {
-        if( ! is.null(gene.filter) ) {
-            expr <- expr[gene.filter(rownames(expr)),]
+        opts$gene.filter <- gene.filter
+        if( ! is.null(opts$gene.filter) ) {
+            expr <- expr[opts$gene.filter(rownames(expr)),]
         }
     })
 }
 filter.cells <- function(de.lorean, cell.filter) {
     within(de.lorean, {
-        if( ! is.null(cell.filter) ) {
-            expr <- expr[,cell.filter(colnames(expr))]
+        opts$cell.filter <- cell.filter
+        if( ! is.null(opts$cell.filter) ) {
+            expr <- expr[,opts$cell.filter(colnames(expr))]
         }
     })
 }
 
 #' Sample genes and cells
 #'
-sample.genes.and.cells <- function(de.lorean, max.cells, max.genes) {
+sample.genes.and.cells <- function(
+    de.lorean,
+    max.cells = 0,
+    max.genes = 0)
+{
     within(de.lorean, {
-        if (ncol(expr) > max.cells) {
-            expr <- expr[,sample(ncol(expr), max.cells)]
+        opts$max.cells <- max.cells
+        opts$max.genes <- max.genes
+        if (opts$max.cells && ncol(expr) > opts$max.cells) {
+            expr <- expr[,sample(ncol(expr), opts$max.cells)]
             # Remove genes that are not expressed in at least two cells
             num.cells.expr <- rowSums(! is.na(expr))
             expr <- expr[num.cells.expr > 1,]
         }
-        if (nrow(expr) > max.genes) {
-            expr <- expr[sample(nrow(expr), max.genes),]
+        if (opts$max.genes && nrow(expr) > opts$max.genes) {
+            expr <- expr[sample(nrow(expr), opts$max.genes),]
         }
     })
 }
 
 #' Format for Stan
 #'
-format.for.stan <- function(de.lorean) {
+format.for.stan <- function(
+    de.lorean,
+    num.test = 101,  # Number of test points to consider
+    period = 0  # Period of expression patterns
+) {
     within(de.lorean, {
+        opts$num.test <- num.test
+        opts$period <- period
         min.expr <- min(expr, na.rm=TRUE)
         if( min.expr > 0 ) {
             stan.minexpr <- -2 * min.expr
         } else {
             stan.minexpr <-  2 * min.expr
         }
-        num.test <- 101
-        period <- 3
         stan.m <- expr
         .G <- nrow(stan.m)
         .C <- ncol(stan.m)
@@ -211,8 +232,9 @@ format.for.stan <- function(de.lorean) {
         # Replace NA with large negative number
         stan.m[is.na(stan.m)] <- 2 * stan.minexpr
         test.input <- (
-            time.range[1] - sigma.tau
-            + (time.width + 2 * sigma.tau) * (0:(num.test-1)) / (num.test-1))
+            time.range[1] - 2 * opts$sigma.tau
+            + (time.width + 2 * opts$sigma.tau)
+                * (0:(opts$num.test-1)) / (opts$num.test-1))
         expr.f.stan <- with(expr.l, {
             c(
                 # Hyper-parameters
@@ -227,9 +249,9 @@ format.for.stan <- function(de.lorean) {
                     minexpr=stan.minexpr,
                     heldout=missing.idx,
                     # Generated quantities
-                    numtest=num.test,
+                    numtest=opts$num.test,
                     testinput=test.input,
-                    period=period
+                    period=opts$period
                 )
             )
         })
@@ -568,7 +590,7 @@ compile.model <- function(de.lorean) {
             with(expr.f.stan, {
                 list(alpha=rnorm(C, mean=mu_alpha, sd=sigma_alpha),
                      beta=rnorm(G, sd=sigma_beta),
-                     S=cell.map$size.factor,
+                     S=cell.map$S.hat,
                      tau=rnorm(C, mean=time, sd=sigma_tau),
                      phi=rnorm(G, mean=mu_phi, sd=sigma_phi),
                      psi=rlnorm(G, meanlog=mu_psi, sdlog=sigma_psi),
@@ -593,13 +615,13 @@ find.best.tau <- function(de.lorean) {
         # Define a function that chooses tau
         init.chain.find.tau <- function() {
             with(expr.f.stan, {
-                list(alpha=cell.map$alpha,
+                list(alpha=cell.map$alpha.hat,
                      beta=rep(0, G),
-                     S=cell.map$size.factor,
+                     S=cell.map$S.hat,
                      tau=rnorm(C, time, sd=sigma_tau),
-                     phi=gene.map$mean.expr.adj,
-                     psi=gene.map$between.time.adj,
-                     omega=gene.map$within.time.adj
+                     phi=gene.map$phi.hat,
+                     psi=gene.map$psi.hat,
+                     omega=gene.map$omega.hat
                 )
             })
         }
@@ -632,7 +654,7 @@ fit.model <- function(
     num.cores = 7,
     chains = 1,
     iter = 1000,
-    thin = 10)
+    thin = 50)
 {
     within(de.lorean, {
         init.chain.good.tau <- function(chain_id) {
@@ -710,15 +732,16 @@ process.posterior <- function(de.lorean) {
         print(mean(as.vector(la$ll)))
         print(mean(la$ll[best.sample,]))
         samples.l$tau <- (samples.l$tau
-            %>% left_join(cell.map %>% select(-theta, -alpha))
+            %>% left_join(cell.map %>% select(-theta, -alpha.hat))
             %>% mutate(tau.offset=tau - obstime)
         )
         samples.all <- (
-            Reduce(left_join, samples.l[! str_detect(names(samples.l), "^predicted")])
+            Reduce(left_join, samples.l[! str_detect(names(samples.l),
+                                                     "^predicted")])
             %>% left_join(melt(unname(stan.m),
                             varnames=c("g", "c"),
                             value.name="expr"))
-            %>% left_join(gene.map %>% select(-theta, -beta))
+            %>% left_join(gene.map %>% select(-theta, -beta.hat))
         )
         # Just the sample with the best LL
         sample.best <- samples.all %>% filter(best.sample == iter)
@@ -779,9 +802,13 @@ make.predictions <- function(de.lorean) {
 #' Plot best sample predicted expression
 #'
 plot.best.predicted <- function(de.lorean) {
-    period <- de.lorean$period
     with(de.lorean, {
-        modulo.period <- function(t) { t - floor(t/period)*period }
+        if (opts$period) {
+            modulo.period <- function(t) ( t - floor(t / opts$period)
+                                                * opts$period )
+        } else {
+            modulo.period <- function(t) { t }
+        }
         gp <- (ggplot(best.mean %>% filter(gene %in% genes.high.psi),
                       aes(x=modulo.period(tau), y=predictedmean),
                       environment=environment())
