@@ -28,6 +28,16 @@ estimate.hyper <- function(
     # Proportion of within time variance to relabel as between time
     delta = .5
 ) {
+    stopifnot("gene" %in% names(gene.meta))
+    stopifnot(is.factor(gene.meta$gene))
+    stopifnot("cell" %in% names(cell.meta))
+    stopifnot("capture" %in% names(cell.meta))
+    stopifnot("obstime" %in% names(cell.meta))
+    stopifnot(is.factor(cell.meta$cell))
+    stopifnot(is.factor(cell.meta$capture))
+    stopifnot(is.numeric(cell.meta$obstime))
+    stopifnot(nrow(expr) == nrow(gene.meta))
+    stopifnot(ncol(expr) == nrow(cell.meta))
     result <- within(list(), {
         expr <- expr
         gene.meta <- gene.meta
@@ -83,35 +93,44 @@ estimate.hyper <- function(
             %>% group_by(cell)
             %>% summarise(S.hat=median(x - x.mean))
         )
+        stopifnot(! is.na(cell.pos))
         # Adjust the positive expression by the cell size estimates
         expr.pos <- (expr.pos
             %>% left_join(cell.pos)
             %>% mutate(x.hat=x - S.hat)
         )
+        stopifnot(! is.na(expr.pos))
         # Resummarise the adjusted positive expression data
         gene.pos <- (expr.pos
             %>% group_by(gene)
             %>% summarise(x.mean=mean(x),
                           x.sd=sd(x),
                           phi.hat=mean(x.hat),
-                          x.hat.sd=sd(x.hat))
+                          x.hat.sd=sd(x.hat),
+                          num.pos=length(x))
+            %>% filter(num.pos > 1)
         )
+        stopifnot(! is.na(gene.pos))
         # Examine the variation
         gene.time.pos <- (expr.pos
-            %>% group_by(gene, obstime)
+            %>% group_by(gene, capture)
             %>% summarise(x.mean=mean(x.hat),
-                          x.var=var(x.hat))
+                          x.var=var(x.hat),
+                          num.pos=length(x.hat))
+            %>% filter(num.pos > 1)
         )
         # Decomposition of variance within and between time.
         gene.var <- (gene.time.pos
             %>% group_by(gene)
-            %>% summarise(omega.bar=mean(x.var),
-                          psi.bar=var(x.mean))
+            %>% summarise(omega.bar=mean(x.var, na.rm=TRUE),
+                          psi.bar=var(x.mean, na.rm=TRUE),
+                          num.pos=length(x.var))
+            %>% filter(num.pos > 1)
             %>% mutate(within.time.mislabelled = opts$delta * omega.bar,
                        omega.hat = omega.bar - within.time.mislabelled,
                        psi.hat = psi.bar + within.time.mislabelled)
         )
-        print(gene.var)
+        stopifnot(! is.na(gene.var))
         hyper <- list(
             mu_S=mean(cell.pos$S.hat),
             sigma_S=sd(cell.pos$S.hat),
@@ -154,7 +173,10 @@ filter.genes <- function(de.lorean, gene.filter) {
     within(de.lorean, {
         opts$gene.filter <- gene.filter
         if( ! is.null(opts$gene.filter) ) {
+            # .genes.filtered <- rownames(expr)[opts$gene.filter(rownames(expr))]
             expr <- expr[opts$gene.filter(rownames(expr)),]
+            # rownames(expr) <- .genes.filtered
+            message("Have ", nrow(expr), " genes after filtering")
         }
     })
 }
@@ -163,6 +185,7 @@ filter.cells <- function(de.lorean, cell.filter) {
         opts$cell.filter <- cell.filter
         if( ! is.null(opts$cell.filter) ) {
             expr <- expr[,opts$cell.filter(colnames(expr))]
+            message("Have ", ncol(expr), " cells after filtering")
         }
     })
 }
@@ -199,6 +222,7 @@ format.for.stan <- function(
     within(de.lorean, {
         opts$num.test <- num.test
         opts$period <- period
+        opts$periodic <- opts$period > 0
         min.expr <- min(expr, na.rm=TRUE)
         if( min.expr > 0 ) {
             stan.minexpr <- -2 * min.expr
@@ -212,18 +236,22 @@ format.for.stan <- function(
         gene.map <- (data.frame(g=1:.G,
                                 gene=factor(rownames(stan.m),
                                             levels=levels(gene.meta$gene)))
-                    %>% left_join(gene.pos)
-                    %>% left_join(gene.var)
+                    %>% left_join(gene.pos %>% select(-num.pos))
+                    %>% left_join(gene.var %>% select(-num.pos))
                     %>% left_join(expr.gene))
+        stopifnot(! is.na(gene.map))
         cell.map <- (data.frame(c=1:.C,
                                 cell=factor(colnames(stan.m),
                                             levels=levels(cell.meta$cell)))
                     %>% left_join(cell.meta)
                     %>% left_join(cell.pos)
                     %>% left_join(expr.cell))
+        stopifnot(! is.na(cell.map))
         expr.l <- (expr.l
                 %>% left_join(gene.map)
                 %>% left_join(cell.map))
+        # print(expr.l)
+        # stopifnot(! is.na(expr.l))
         # Have one missing value per gene
         get.missing.for.gene <- function(g) {
             sample(which(! is.na(stan.m[g,])), 1)
@@ -251,6 +279,7 @@ format.for.stan <- function(
                     # Generated quantities
                     numtest=opts$num.test,
                     testinput=test.input,
+                    periodic=opts$periodic,
                     period=opts$period
                 )
             )
@@ -268,7 +297,7 @@ compile.model <- function(de.lorean) {
             # Periodic function
             #
             real
-            periodic(real r, real period) {
+            periodise(real r, real period) {
                 return period * sin(r * pi() / period) / 2;
             }
             #
@@ -300,22 +329,28 @@ compile.model <- function(de.lorean) {
             # Covariance function
             #
             real
-            cov_fn(real r, real period, real l) {
-                // return se_cov(periodic(r, period), l);
-                // return se_cov(r, l);
-                return matern32_cov(periodic(r, period), l);
-                // return matern52_cov(periodic(r, period), l);
-                // return matern52_cov(r, l);
+            cov_fn(real r, int periodic, real period, real l) {
+                real rprime;
+                if (periodic) {
+                    rprime <- periodise(r, period);
+                } else {
+                    rprime <- r;
+                }
+                return matern32_cov(rprime, l);
+                // return se_cov(rprime, l);
+                // return se_cov(rprime, l);
+                // return matern52_cov(rprime, l);
+                // return matern52_cov(rprime, l);
             }
             #
             # Calculate symmetric covariance matrix
             #
             matrix
-            cov_symmetric(row_vector tau, real period, real l) {
+            cov_symmetric(row_vector tau, int periodic, real period, real l) {
                 matrix[cols(tau),cols(tau)] result;
                 for (c1 in 1:cols(tau)) {
                     for (c2 in 1:c1) {
-                        result[c1,c2] <- cov_fn(tau[c2] - tau[c1], period, l);
+                        result[c1,c2] <- cov_fn(tau[c2] - tau[c1], periodic, period, l);
                         if(c1 != c2) {
                             result[c2,c1] <- result[c1,c2];
                         }
@@ -327,11 +362,16 @@ compile.model <- function(de.lorean) {
             # Calculate covariance matrix
             #
             matrix
-            cov(row_vector tau1, row_vector tau2, real period, real l) {
+            cov(row_vector tau1,
+                row_vector tau2,
+                int periodic,
+                real period,
+                real l
+            ) {
                 matrix[cols(tau1),cols(tau2)] result;
                 for (c1 in 1:cols(tau1)) {
                     for (c2 in 1:cols(tau2)) {
-                        result[c1,c2] <- cov_fn(tau2[c2] - tau1[c1], period, l);
+                        result[c1,c2] <- cov_fn(tau2[c2] - tau1[c1], periodic, period, l);
                     }
                 }
                 return result;
@@ -389,8 +429,9 @@ compile.model <- function(de.lorean) {
             # Data
             #
             # Time data
+            int periodic; // Are the expression patterns periodic?
             real period;  // Cyclic period
-            row_vector<lower=0, upper=period>[C] time;  // Time index for cell c
+            row_vector<lower=0>[C] time;  // Time index for cell c
             # Expression data
             vector[C] expr[G];
             real minexpr;
@@ -473,7 +514,7 @@ compile.model <- function(de.lorean) {
             matrix[C,C] Sigma_pe;  // PE covariance function
             //
             // Calculate covariances
-            Sigma_pe <- cov_symmetric(tau, period, l_pe);
+            Sigma_pe <- cov_symmetric(tau, periodic, period, l_pe);
         }
         model {
             //
@@ -571,6 +612,7 @@ compile.model <- function(de.lorean) {
                     // Calculate predicted mean on test inputs
                     kstartest <- psi[g] * cov(slice_vector(tau, whichslice),
                                             testinput,
+                                            periodic,
                                             period,
                                             l_pe);
                     predictedmean[g] <- a * kstartest;
@@ -745,35 +787,25 @@ process.posterior <- function(de.lorean) {
         )
         # Just the sample with the best LL
         sample.best <- samples.all %>% filter(best.sample == iter)
-        # A colour scale for the observed time
-        scale.obstime <- scale_colour_manual(name="Observed\ntime",
-                                            values=mrc.colors.3)
-        highest.ranked.genes <- (
-            gene.map
-            %>% left_join(gene.meta)
-            %>% arrange(cbRank)
-            %>% head(16))$gene
     })
 }
 
 
 #' Analyse noise levels
 #'
-analyse.noise.levels <- function(de.lorean) {
+analyse.noise.levels <- function(de.lorean, num.high.psi=16) {
     within(de.lorean, {
         noise.levels <- (
             with(samples.l, left_join(psi, omega))
             %>% left_join(gene.map))
-        names(noise.levels)
-        # Summarse by gene
+        # Summarise by gene
         gene.noise.levels <- (
             noise.levels
             %>% group_by(g)
             %>% summarise(omega=mean(omega), psi=mean(psi))
             %>% left_join(gene.map)
             %>% arrange(omega-psi))
-        genes.high.psi <- head(gene.noise.levels$gene, 16)
-        genes.high.psi
+        genes.high.psi <- head(gene.noise.levels$gene, num.high.psi)
     })
 }
 
@@ -791,6 +823,7 @@ make.predictions <- function(de.lorean) {
         predictions <- with(samples.l,
                             predictedmean
                             %>% left_join(predictedvar)
+                            %>% left_join(S)
                             %>% mutate(tau=test.input[t]))
         best.mean <- (predictions
                     %>% filter(best.sample == iter)
@@ -803,7 +836,7 @@ make.predictions <- function(de.lorean) {
 #'
 plot.best.predicted <- function(de.lorean) {
     with(de.lorean, {
-        if (opts$period) {
+        if (opts$periodic) {
             modulo.period <- function(t) ( t - floor(t / opts$period)
                                                 * opts$period )
         } else {
@@ -820,16 +853,15 @@ plot.best.predicted <- function(de.lorean) {
                         alpha=.1)
             + geom_point(aes(x=modulo.period(tau),
                              y=expr - phi - S,
-                             color=cycle),
+                             color=capture),
                         data=sample.best %>% filter(gene %in% genes.high.psi,
                                                     expr > stan.minexpr),
                         size=4,
                         alpha=.7)
             + facet_wrap(~ gene)
-            + scale.obstime
             + scale_x_continuous(name="Pseudotime",
-                                breaks=0:3)
-            + scale_y_continuous(name="Expression", breaks=NULL)
+                                 breaks=unique(cell.meta$obstime))
+            + scale_y_continuous(name="Expression")
         )
     })
 }

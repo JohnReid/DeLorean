@@ -175,7 +175,7 @@ The variances have this distribution:
 Mean expression by time:
 ```{r geneTimeMean}
 (ggplot(gene.time.pos,
-        aes(x=x.mean, y=sqrt(x.var), color=factor(obstime)))
+        aes(x=x.mean, y=sqrt(x.var), color=capture))
     + geom_point(alpha=.4)
 )
 
