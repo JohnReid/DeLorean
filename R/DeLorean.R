@@ -238,7 +238,8 @@ format.for.stan <- function(
                                             levels=levels(gene.meta$gene)))
                     %>% left_join(gene.pos %>% select(-num.pos))
                     %>% left_join(gene.var %>% select(-num.pos))
-                    %>% left_join(expr.gene))
+                    %>% left_join(expr.gene)
+                    %>% left_join(gene.meta))
         stopifnot(! is.na(gene.map))
         cell.map <- (data.frame(c=1:.C,
                                 cell=factor(colnames(stan.m),
@@ -250,8 +251,6 @@ format.for.stan <- function(
         expr.l <- (expr.l
                 %>% left_join(gene.map)
                 %>% left_join(cell.map))
-        # print(expr.l)
-        # stopifnot(! is.na(expr.l))
         # Have one missing value per gene
         get.missing.for.gene <- function(g) {
             sample(which(! is.na(stan.m[g,])), 1)
@@ -261,7 +260,7 @@ format.for.stan <- function(
         stan.m[is.na(stan.m)] <- 2 * stan.minexpr
         test.input <- (
             time.range[1] - 2 * opts$sigma.tau
-            + (time.width + 2 * opts$sigma.tau)
+            + (time.width + 4 * opts$sigma.tau)
                 * (0:(opts$num.test-1)) / (opts$num.test-1))
         expr.f.stan <- with(expr.l, {
             c(
@@ -687,17 +686,20 @@ find.best.tau <- function(de.lorean) {
 
 #' Fit the model
 #'
-#' @param num.cores Number of cores to run on
+#' @param num.cores Number of cores to run on. Defaults to max(detectCores()-1, 1)
 #' @param chain Number of chains to run on each core
 #' @param iter Number of iterations in each chain
 #' @param thin How many samples to generate before retaining one
 fit.model <- function(
     de.lorean,
-    num.cores = 7,
+    num.cores = NULL,
     chains = 1,
     iter = 1000,
     thin = 50)
 {
+    if (is.null(num.cores)) {
+        num.cores <- max(detectCores() - 1, 1)
+    }
     within(de.lorean, {
         init.chain.good.tau <- function(chain_id) {
             # print(chain_id)
@@ -804,15 +806,9 @@ analyse.noise.levels <- function(de.lorean, num.high.psi=16) {
             %>% group_by(g)
             %>% summarise(omega=mean(omega), psi=mean(psi))
             %>% left_join(gene.map)
-            %>% arrange(omega-psi))
+            %>% arrange(omega/psi))
         genes.high.psi <- head(gene.noise.levels$gene, num.high.psi)
     })
-}
-
-
-#' Make report
-#'
-knit.posterior.report <- function(de.lorean) {
 }
 
 
