@@ -1,33 +1,7 @@
 
-#' Calculate a suitable value for a rug plot given the
-#' number of points
-alpha.for.rug <- function(n, scale=100) {
-    1 / (max(1, n / scale))
-}
-
-#' Print details of DeLorean object
+#' Initialise DeLorean object
 #'
-print.de.lorean <- function(de.lorean) {
-    print(sapply(de.lorean, head))
-}
-
-#' Summarise DeLorean object
-#'
-summary.de.lorean <- function(de.lorean) {
-    print("DeLorean object")
-}
-
-#' Estimate hyperparameters for model using empirical Bayes
-#'
-estimate.hyper <- function(
-    expr,
-    gene.meta,
-    cell.meta,
-    # Noise s.d. in temporal dimension
-    sigma.tau = .5,
-    # Proportion of within time variance to relabel as between time
-    delta = .5
-) {
+de.lorean <- function(expr, gene.meta, cell.meta) {
     stopifnot("gene" %in% names(gene.meta))
     stopifnot(is.factor(gene.meta$gene))
     stopifnot("cell" %in% names(cell.meta))
@@ -38,10 +12,81 @@ estimate.hyper <- function(
     stopifnot(is.numeric(cell.meta$obstime))
     stopifnot(nrow(expr) == nrow(gene.meta))
     stopifnot(ncol(expr) == nrow(cell.meta))
-    result <- within(list(), {
-        expr <- expr
-        gene.meta <- gene.meta
-        cell.meta <- cell.meta
+    result <- list(
+        expr = expr,
+        gene.meta = gene.meta,
+        cell.meta = cell.meta)
+    class(result) <- c("de.lorean", class(result))
+    result
+}
+
+#' Is a DeLorean object?
+#'
+is.de.lorean <- function(dl) inherits(dl, "de.lorean")
+
+#' Print details of DeLorean object
+#'
+print.de.lorean <- function(dl) {
+    print(sapply(dl, head))
+}
+
+#' Dimensions of DeLorean object
+#'
+dim.de.lorean <- function(dl) {
+    dim(dl$expr)
+}
+
+#' Summarise DeLorean object
+#'
+summary.de.lorean <- function(dl) {
+    print(sapply(dl, summary))
+}
+
+#' Various DeLorean object plots
+#'
+plot.de.lorean <- function(dl, type="best.predictions") {
+    result <- switch(type,
+        best.predictions=plot.best.predictions(dl)
+    )
+    if (is.null(result)) {
+        error('Unknown plot type')
+    }
+}
+
+#' Knit a report, the file inst/Rmd/<report.name>.Rmd must exist in
+#' the package directory.
+#'
+knit.report <- function(dl, report.name) {
+    report.path <- system.file("inst", "Rmd", sprintf("%s.Rmd", report.name),
+                               package="DeLorean")
+    stylesheet.path <- system.file("inst", "Rmd", "foghorn.css",
+                                   package="DeLorean")
+    with(dl, {
+        knit2html(report.path,
+                  # envir=globalenv(),
+                  stylesheet=stylesheet.path)
+    })
+}
+
+#' Calculate a suitable value for a rug plot given the
+#' number of points
+alpha.for.rug <- function(n, scale=100) {
+    1 / (max(1, n / scale))
+}
+
+#' Estimate hyperparameters for model using empirical Bayes
+#'
+#' @param sigma.tau Noise s.d. in temporal dimension
+#' @param delta Proportion of within time variance to relabel as between time
+#' @param min.sd Minimum s.d. used for drop-out effects (to avoid s.d. of 0 when no drop outs)
+#'
+estimate.hyper <- function(
+    dl,
+    sigma.tau = .5,
+    delta = .5,
+    min.sd = 1e-10
+) {
+    result <- within(dl, {
         #
         # Set up temporal hyper-parameters
         #
@@ -135,8 +180,8 @@ estimate.hyper <- function(
             mu_S=mean(cell.pos$S.hat),
             sigma_S=sd(cell.pos$S.hat),
             mu_alpha=mean(expr.cell$alpha.hat),
-            sigma_alpha=sd(expr.cell$alpha.hat),
-            sigma_beta=sd(expr.gene$beta.hat),
+            sigma_alpha=max(sd(expr.cell$alpha.hat), min.sd),
+            sigma_beta=max(sd(expr.gene$beta.hat), min.sd),
             mu_phi=mean(gene.pos$phi.hat),
             sigma_phi=sd(gene.pos$phi.hat),
             mu_psi=mean(log(gene.var$psi.hat), na.rm=TRUE),
@@ -144,47 +189,28 @@ estimate.hyper <- function(
             mu_omega=mean(log(gene.var$omega.hat), na.rm=TRUE),
             sigma_omega=sd(log(gene.var$omega.hat), na.rm=TRUE),
             sigma_tau=opts$sigma.tau,
-            l_pe=time.width
+            l_pe=time.width / 2
         )
-    })
-    class(result) <- c("de.lorean", class(result))
-    result
-}
-
-
-#' Knit a report, the file inst/Rmd/<report.name>.Rmd must exist in
-#' the package directory.
-#'
-knit.report <- function(de.lorean, report.name) {
-    report.path <- system.file("inst", "Rmd", sprintf("%s.Rmd", report.name),
-                               package="DeLorean")
-    stylesheet.path <- system.file("inst", "Rmd", "foghorn.css",
-                                   package="DeLorean")
-    with(de.lorean, {
-        knit2html(report.path,
-                  stylesheet=stylesheet.path)
     })
 }
 
 
 #' Filter genes and cells
 #'
-filter.genes <- function(de.lorean, gene.filter) {
-    within(de.lorean, {
-        opts$gene.filter <- gene.filter
-        if( ! is.null(opts$gene.filter) ) {
+filter.genes <- function(dl, gene.filter) {
+    within(dl, {
+        if( ! is.null(gene.filter) ) {
             # .genes.filtered <- rownames(expr)[opts$gene.filter(rownames(expr))]
-            expr <- expr[opts$gene.filter(rownames(expr)),]
+            expr <- expr[gene.filter(rownames(expr)),]
             # rownames(expr) <- .genes.filtered
             message("Have ", nrow(expr), " genes after filtering")
         }
     })
 }
-filter.cells <- function(de.lorean, cell.filter) {
-    within(de.lorean, {
-        opts$cell.filter <- cell.filter
-        if( ! is.null(opts$cell.filter) ) {
-            expr <- expr[,opts$cell.filter(colnames(expr))]
+filter.cells <- function(dl, cell.filter) {
+    within(dl, {
+        if( ! is.null(cell.filter) ) {
+            expr <- expr[,cell.filter(colnames(expr))]
             message("Have ", ncol(expr), " cells after filtering")
         }
     })
@@ -193,11 +219,11 @@ filter.cells <- function(de.lorean, cell.filter) {
 #' Sample genes and cells
 #'
 sample.genes.and.cells <- function(
-    de.lorean,
+    dl,
     max.cells = 0,
     max.genes = 0)
 {
-    within(de.lorean, {
+    within(dl, {
         opts$max.cells <- max.cells
         opts$max.genes <- max.genes
         if (opts$max.cells && ncol(expr) > opts$max.cells) {
@@ -215,11 +241,11 @@ sample.genes.and.cells <- function(
 #' Format for Stan
 #'
 format.for.stan <- function(
-    de.lorean,
+    dl,
     num.test = 101,  # Number of test points to consider
     period = 0  # Period of expression patterns
 ) {
-    within(de.lorean, {
+    within(dl, {
         opts$num.test <- num.test
         opts$period <- period
         opts$periodic <- opts$period > 0
@@ -286,10 +312,254 @@ format.for.stan <- function(
     })
 }
 
+#' Define and compile a simple model without dropout
+#'
+compile.model.simple <- function(dl) {
+    within(dl, {
+        stan.code <- '
+        functions {
+            #
+            # Periodic function
+            #
+            real
+            periodise(real r, real period) {
+                return period * sin(r * pi() / period) / 2;
+            }
+            #
+            # Squared exponential covariance function
+            #
+            real
+            se_cov(real r, real l) {
+                return exp(- pow(r / l, 2) / 2);
+            }
+            #
+            # Matern nu=3/2 covariance function
+            #
+            real
+            matern32_cov(real r, real l) {
+                real x;
+                x <- sqrt(3) * fabs(r / l);
+                return (1 + x) * exp(- x);
+            }
+            #
+            # Matern nu=5/2 covariance function
+            #
+            real
+            matern52_cov(real r, real l) {
+                real x;
+                x <- sqrt(5) * fabs(r / l);
+                return (1 + x + pow(x, 2) / 3) * exp(- x);
+            }
+            #
+            # Covariance function
+            #
+            real
+            cov_fn(real r, int periodic, real period, real l) {
+                real rprime;
+                if (periodic) {
+                    rprime <- periodise(r, period);
+                } else {
+                    rprime <- r;
+                }
+                return matern32_cov(rprime, l);
+                // return se_cov(rprime, l);
+                // return se_cov(rprime, l);
+                // return matern52_cov(rprime, l);
+                // return matern52_cov(rprime, l);
+            }
+            #
+            # Calculate symmetric covariance matrix
+            #
+            matrix
+            cov_symmetric(row_vector tau, int periodic, real period, real l) {
+                matrix[cols(tau),cols(tau)] result;
+                for (c1 in 1:cols(tau)) {
+                    for (c2 in 1:c1) {
+                        result[c1,c2] <- cov_fn(tau[c2] - tau[c1], periodic, period, l);
+                        if(c1 != c2) {
+                            result[c2,c1] <- result[c1,c2];
+                        }
+                    }
+                }
+                return result;
+            }
+            #
+            # Calculate covariance matrix
+            #
+            matrix
+            cov(row_vector tau1,
+                row_vector tau2,
+                int periodic,
+                real period,
+                real l
+            ) {
+                matrix[cols(tau1),cols(tau2)] result;
+                for (c1 in 1:cols(tau1)) {
+                    for (c2 in 1:cols(tau2)) {
+                        result[c1,c2] <- cov_fn(tau2[c2] - tau1[c1], periodic, period, l);
+                    }
+                }
+                return result;
+            }
+            void
+            pretty_print_tri_lower(matrix x) {
+                if (rows(x) == 0) {
+                    print("empty matrix");
+                    return;
+                }
+                print("rows=", rows(x), " cols=", cols(x));
+                for (m in 1:rows(x))
+                    for (n in 1:m)
+                        print("[", m, ",", n, "]=", x[m,n]);
+            }
+        }
+        data {
+            #
+            # Dimensions
+            #
+            int<lower=2> C;  // Number of cells
+            int<lower=2> G;  // Number of genes
+            #
+            # Data
+            #
+            # Time data
+            int periodic; // Are the expression patterns periodic?
+            real period;  // Cyclic period
+            row_vector<lower=0>[C] time;  // Time index for cell c
+            # Expression data
+            vector[C] expr[G];
+            real minexpr;
+            #
+            # Hyperparameters
+            #
+            real mu_S;  // Mean of cell size factor, S
+            real<lower=0> sigma_S;  // S.d. of cell size factor, S
+            real mu_phi;  // Mean of gene mean, phi
+            real<lower=0> sigma_phi;  // S.d. of gene mean, phi
+            real mu_psi;  // Mean of log between time variation, psi
+            real<lower=0> sigma_psi;  // S.d. of log between time variation, psi
+            real mu_omega;  // Mean of log within time variation, omega
+            real<lower=0> sigma_omega;  // S.d. of log within time variation, omega
+            real l_pe;  // Length scale squared for phi
+            real<lower=0> sigma_tau;  // Standard deviation for pseudotime
+            #
+            # Generated quantities
+            #
+            # Test inputs for predicted mean
+            int numtest;
+            row_vector[numtest] testinput;
+        }
+        transformed data {
+            //
+            // Unit diagonal covariance matrix
+            cov_matrix[C] identity;
+            //
+            // Transformations of expression
+            //
+            // Unit diagonal covariance matrix
+            identity <- diag_matrix(rep_vector(1, C));
+        }
+        parameters {
+            row_vector[C] S;      // Cell-size factor for expression
+            row_vector[C] tau;    // Pseudotime
+            row_vector[G] phi;    // Mean positive expression for each gene
+            row_vector<lower=0>[G] psi;    // Between time PE variance
+            row_vector<lower=0>[G] omega;  // Within time PE variance
+        }
+        model {
+            //
+            // Sample cell-specific factors
+            S ~ normal(mu_S, sigma_S);  // Cell size factors
+            //
+            // Sample gene-specific factors
+            phi ~ normal(mu_phi, sigma_phi);
+            psi ~ lognormal(mu_psi, sigma_psi);
+            omega ~ lognormal(mu_omega, sigma_omega);
+            //
+            // Sample pseudotime
+            tau ~ normal(time, sigma_tau);  // Pseudotime
+            //
+            // For each gene
+            for (g in 1:G) {
+                expr[g] ~ multi_normal(
+                              S + phi[g],
+                              psi[g] * cov_symmetric(tau,
+                                                     periodic,
+                                                     period,
+                                                     l_pe)
+                                  + omega[g] * identity);
+            }
+        }
+        generated quantities {
+            row_vector[numtest] predictedmean[G];
+            vector[numtest] predictedvar[G];
+            #
+            # For each gene
+            for (g in 1:G) {
+                #
+                # Evaluate the log likelihood of the heldout data
+                matrix[C,C] L_g;
+                row_vector[C] a;
+                vector[C] v;
+                matrix[C,numtest] kstartest;
+                matrix[C,numtest] vtest;
+                //
+                // Cholesky decompose the covariance of the inputs
+                L_g <- cholesky_decompose(
+                            psi[g] * cov_symmetric(tau,
+                                                   periodic,
+                                                   period,
+                                                   l_pe)
+                            + omega[g] * identity);
+                a <- mdivide_right_tri_low(
+                        mdivide_left_tri_low(
+                            L_g,
+                            expr[g] - S\' - phi[g])\',
+                        L_g);
+                //
+                // Calculate predicted mean on test inputs
+                kstartest <- psi[g] * cov(tau,
+                                            testinput,
+                                            periodic,
+                                            period,
+                                            l_pe);
+                predictedmean[g] <- a * kstartest;
+                //
+                // Calculate predicted variance on test inputs
+                vtest <- mdivide_left_tri_low(L_g, kstartest);
+                predictedvar[g] <- (psi[g]
+                                    + omega[g]
+                                    - diagonal(vtest\' * vtest));
+            }
+        }
+        '
+        compiled <- stan(model_code=stan.code, chains=0)
+        # Define a function to initialise the chains
+        init.chain <- function() {
+            with(expr.f.stan, {
+                list(alpha=rnorm(C, mean=mu_alpha, sd=sigma_alpha),
+                     beta=rnorm(G, sd=sigma_beta),
+                     S=cell.map$S.hat,
+                     tau=rnorm(C, mean=time, sd=sigma_tau),
+                     phi=rnorm(G, mean=mu_phi, sd=sigma_phi),
+                     psi=rlnorm(G, meanlog=mu_psi, sdlog=sigma_psi),
+                     omega=rlnorm(G, meanlog=mu_omega, sdlog=sigma_omega)
+                )
+            })
+        }
+        # Try one iteration to check everything is OK
+        fit <- stan(fit=compiled,
+                    data=expr.f.stan,
+                    init=init.chain,
+                    iter=1,
+                    chains=1)
+    })
+}
+
 #' Define and compile the model
 #'
-compile.model <- function(de.lorean) {
-    within(de.lorean, {
+compile.model <- function(dl) {
+    within(dl, {
         stan.code <- '
         functions {
             #
@@ -651,8 +921,8 @@ compile.model <- function(de.lorean) {
 
 #' Find best tau
 #'
-find.best.tau <- function(de.lorean) {
-    within(de.lorean, {
+find.best.tau <- function(dl, num.tau.candidates = 6000) {
+    within(dl, {
         # Define a function that chooses tau
         init.chain.find.tau <- function() {
             with(expr.f.stan, {
@@ -674,8 +944,8 @@ find.best.tau <- function(de.lorean) {
                 tau=pars$tau)
         }
         # Choose tau several times and calculate log probability
-        tau.inits <- lapply(1:6000, try.tau.init)
-        qplot(sapply(tau.inits, function(init) init$lp))
+        tau.inits <- lapply(1:num.tau.candidates, try.tau.init)
+        # qplot(sapply(tau.inits, function(init) init$lp))
         # Which tau gave highest log probability?
         tau.inits.order <- order(sapply(tau.inits, function(init) -init$lp))
         sapply(tau.inits[tau.inits.order], function(init) init$lp)[1:10]
@@ -691,7 +961,7 @@ find.best.tau <- function(de.lorean) {
 #' @param iter Number of iterations in each chain
 #' @param thin How many samples to generate before retaining one
 fit.model <- function(
-    de.lorean,
+    dl,
     num.cores = NULL,
     chains = 1,
     iter = 1000,
@@ -700,7 +970,7 @@ fit.model <- function(
     if (is.null(num.cores)) {
         num.cores <- max(detectCores() - 1, 1)
     }
-    within(de.lorean, {
+    within(dl, {
         init.chain.good.tau <- function(chain_id) {
             # print(chain_id)
             #
@@ -730,12 +1000,13 @@ fit.model <- function(
 
 #' Examine convergence
 #'
-examine.convergence <- function(de.lorean) {
-    within(de.lorean, {
-        # rhat.summary <- summary(fit)$summary[,"Rhat"]
-        summ <- monitor(fit, print=FALSE)
+examine.convergence <- function(dl) {
+    within(dl, {
+        summ <- monitor(fit,
+                        print=FALSE,
+                        pars=c("tau", "psi", "S", "phi", "omega"))
         ignore.names <- str_detect(rownames(summ),
-                                   "^(predictedvar|predictedmean|Sigma_pe)")
+                                   "^(predictedvar|predictedmean")
         rhat.sorted <- sort(summ[! ignore.names, "Rhat"])
     })
 }
@@ -743,8 +1014,8 @@ examine.convergence <- function(de.lorean) {
 
 #' Process the posterior
 #'
-process.posterior <- function(de.lorean) {
-    within(de.lorean, {
+process.posterior <- function(dl) {
+    within(dl, {
         # Define a function to melt samples into a long format
         melt.samples <- function(sample.list, sample.dims) {
             melt.var <- function(var.name) {
@@ -757,24 +1028,24 @@ process.posterior <- function(de.lorean) {
         # The dimensions of each set of samples
         sample.dims <- list(
             lp__=c(),
-            alpha=c("c"),
+            # alpha=c("c"),
             S=c("c"),
             tau=c("c"),
-            beta=c("g"),
+            # beta=c("g"),
             phi=c("g"),
             psi=c("g"),
             omega=c("g"),
-            ll=c("g"),
-            heldoutmu=c("g"),
-            heldoutvar=c("g"),
+            # ll=c("g"),
+            # heldoutmu=c("g"),
+            # heldoutvar=c("g"),
             predictedmean=c("g", "t"),
             predictedvar=c("g", "t")
         )
         samples.l <- melt.samples(la, sample.dims)
         best.sample <- which.max(samples.l$lp__$lp__)
         best.sample
-        print(mean(as.vector(la$ll)))
-        print(mean(la$ll[best.sample,]))
+        # print(mean(as.vector(la$ll)))
+        # print(mean(la$ll[best.sample,]))
         samples.l$tau <- (samples.l$tau
             %>% left_join(cell.map %>% select(-theta, -alpha.hat))
             %>% mutate(tau.offset=tau - obstime)
@@ -787,7 +1058,7 @@ process.posterior <- function(de.lorean) {
                             value.name="expr"))
             %>% left_join(gene.map %>% select(-theta, -beta.hat))
         )
-        # Just the sample with the best LL
+        # Just the sample with the best log probability
         sample.best <- samples.all %>% filter(best.sample == iter)
     })
 }
@@ -795,8 +1066,8 @@ process.posterior <- function(de.lorean) {
 
 #' Analyse noise levels
 #'
-analyse.noise.levels <- function(de.lorean, num.high.psi=16) {
-    within(de.lorean, {
+analyse.noise.levels <- function(dl, num.high.psi=16) {
+    within(dl, {
         noise.levels <- (
             with(samples.l, left_join(psi, omega))
             %>% left_join(gene.map))
@@ -814,8 +1085,8 @@ analyse.noise.levels <- function(de.lorean, num.high.psi=16) {
 
 #' Make predictions
 #'
-make.predictions <- function(de.lorean) {
-    within(de.lorean, {
+make.predictions <- function(dl) {
+    within(dl, {
         predictions <- with(samples.l,
                             predictedmean
                             %>% left_join(predictedvar)
@@ -827,11 +1098,10 @@ make.predictions <- function(de.lorean) {
     })
 }
 
-
 #' Plot best sample predicted expression
 #'
-plot.best.predicted <- function(de.lorean) {
-    with(de.lorean, {
+plot.best.predictions <- function(dl) {
+    with(dl, {
         if (opts$periodic) {
             modulo.period <- function(t) ( t - floor(t / opts$period)
                                                 * opts$period )
@@ -850,8 +1120,9 @@ plot.best.predicted <- function(de.lorean) {
             + geom_point(aes(x=modulo.period(tau),
                              y=expr - phi - S,
                              color=capture),
-                        data=sample.best %>% filter(gene %in% genes.high.psi,
-                                                    expr > stan.minexpr),
+                        data=sample.best %>% filter(gene %in% genes.high.psi),
+                        #data=sample.best %>% filter(gene %in% genes.high.psi,
+                        #                            expr > stan.minexpr),
                         size=4,
                         alpha=.7)
             + facet_wrap(~ gene)
@@ -861,6 +1132,4 @@ plot.best.predicted <- function(de.lorean) {
         )
     })
 }
-
-
 
