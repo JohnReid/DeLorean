@@ -84,7 +84,8 @@ estimate.hyper <- function(
     dl,
     sigma.tau = .5,
     delta = .5,
-    min.sd = 1e-10
+    min.sd = 1e-10,
+    length.scale = NULL
 ) {
     result <- within(dl, {
         #
@@ -176,6 +177,9 @@ estimate.hyper <- function(
                        psi.hat = psi.bar + within.time.mislabelled)
         )
         stopifnot(! is.na(gene.var))
+        if (is.null(length.scale)) {
+            length.scale <- time.width / 2
+        }
         hyper <- list(
             mu_S=mean(cell.pos$S.hat),
             sigma_S=sd(cell.pos$S.hat),
@@ -189,7 +193,7 @@ estimate.hyper <- function(
             mu_omega=mean(log(gene.var$omega.hat), na.rm=TRUE),
             sigma_omega=sd(log(gene.var$omega.hat), na.rm=TRUE),
             sigma_tau=opts$sigma.tau,
-            l_pe=time.width / 2
+            l_pe=length.scale
         )
     })
 }
