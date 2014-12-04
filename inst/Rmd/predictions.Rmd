@@ -3,7 +3,6 @@
 
 
 ```{r predictions}
-de.lorean$plot.predictions <- plot.best.predictions(de.lorean)
-# print(de.lorean$plot.predictions + facet_wrap(~ name + gene))
+print(plot.best.predictions(dl) + facet_wrap(~ gene))
 
 ```

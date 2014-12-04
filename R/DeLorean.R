@@ -61,9 +61,12 @@ knit.report <- function(dl, report.name) {
                                package="DeLorean")
     stylesheet.path <- system.file("inst", "Rmd", "foghorn.css",
                                    package="DeLorean")
-    with(dl, {
+    within(dl, {
         knit2html(report.path,
-                  # envir=globalenv(),
+                  # output=paste(output.dir,
+                  #              sprintf('%s.html', report.name),
+                  #              sep='/'),
+                  envir=environment(),
                   stylesheet=stylesheet.path)
     })
 }
@@ -1010,7 +1013,7 @@ examine.convergence <- function(dl) {
                         print=FALSE,
                         pars=c("tau", "psi", "S", "phi", "omega"))
         ignore.names <- str_detect(rownames(summ),
-                                   "^(predictedvar|predictedmean")
+                                   "^(predictedvar|predictedmean)")
         rhat.sorted <- sort(summ[! ignore.names, "Rhat"])
     })
 }
@@ -1095,6 +1098,7 @@ make.predictions <- function(dl) {
                             predictedmean
                             %>% left_join(predictedvar)
                             %>% left_join(S)
+                            %>% left_join(phi)
                             %>% mutate(tau=test.input[t]))
         best.mean <- (predictions
                     %>% filter(best.sample == iter)
@@ -1113,16 +1117,16 @@ plot.best.predictions <- function(dl) {
             modulo.period <- function(t) { t }
         }
         gp <- (ggplot(best.mean %>% filter(gene %in% genes.high.psi),
-                      aes(x=modulo.period(tau), y=predictedmean),
+                      aes(x=modulo.period(tau), y=predictedmean + phi),
                       environment=environment())
             + geom_line(alpha=.3)
             + geom_ribbon(aes(x=modulo.period(tau),
-                              y=predictedmean,
-                              ymin=predictedmean-2*sqrt(predictedvar),
-                              ymax=predictedmean+2*sqrt(predictedvar)),
+                              y=predictedmean + phi,
+                              ymin=predictedmean+phi-2*sqrt(predictedvar),
+                              ymax=predictedmean+phi+2*sqrt(predictedvar)),
                         alpha=.1)
             + geom_point(aes(x=modulo.period(tau),
-                             y=expr - phi - S,
+                             y=expr - S,
                              color=capture),
                         data=sample.best %>% filter(gene %in% genes.high.psi),
                         #data=sample.best %>% filter(gene %in% genes.high.psi,
@@ -1132,7 +1136,7 @@ plot.best.predictions <- function(dl) {
             + facet_wrap(~ gene)
             + scale_x_continuous(name="Pseudotime",
                                  breaks=unique(cell.meta$obstime))
-            + scale_y_continuous(name="Expression")
+            + scale_y_continuous(name="Expression (log10)")
         )
     })
 }
