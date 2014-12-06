@@ -1,6 +1,8 @@
 
 #' Initialise DeLorean object
 #'
+#' @export
+#'
 de.lorean <- function(expr, gene.meta, cell.meta) {
     stopifnot("gene" %in% names(gene.meta))
     stopifnot(is.factor(gene.meta$gene))
@@ -22,9 +24,13 @@ de.lorean <- function(expr, gene.meta, cell.meta) {
 
 #' Is a DeLorean object?
 #'
+#' @export
+#'
 is.de.lorean <- function(dl) inherits(dl, "de.lorean")
 
 #' Print details of DeLorean object
+#'
+#' @export
 #'
 print.de.lorean <- function(dl) {
     print(sapply(dl, head))
@@ -32,17 +38,27 @@ print.de.lorean <- function(dl) {
 
 #' Dimensions of DeLorean object
 #'
+#' @export
+#'
 dim.de.lorean <- function(dl) {
     dim(dl$expr)
 }
 
 #' Summarise DeLorean object
 #'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
 summary.de.lorean <- function(dl) {
     print(sapply(dl, summary))
 }
 
 #' Various DeLorean object plots
+#'
+#' @param dl de.lorean object
+#'
+#' @export
 #'
 plot.de.lorean <- function(dl, type="best.predictions") {
     result <- switch(type,
@@ -55,6 +71,10 @@ plot.de.lorean <- function(dl, type="best.predictions") {
 
 #' Knit a report, the file inst/Rmd/<report.name>.Rmd must exist in
 #' the package directory.
+#'
+#' @param dl de.lorean object
+#'
+#' @export
 #'
 knit.report <- function(dl, report.name) {
     report.path <- system.file("inst", "Rmd", sprintf("%s.Rmd", report.name),
@@ -73,6 +93,10 @@ knit.report <- function(dl, report.name) {
 
 #' Calculate a suitable value for a rug plot given the
 #' number of points
+#' @param dl de.lorean object
+#'
+#' @export
+#'
 alpha.for.rug <- function(n, scale=100) {
     1 / (max(1, n / scale))
 }
@@ -82,6 +106,10 @@ alpha.for.rug <- function(n, scale=100) {
 #' @param sigma.tau Noise s.d. in temporal dimension
 #' @param delta Proportion of within time variance to relabel as between time
 #' @param min.sd Minimum s.d. used for drop-out effects (to avoid s.d. of 0 when no drop outs)
+#'
+#' @param dl de.lorean object
+#'
+#' @export
 #'
 estimate.hyper <- function(
     dl,
@@ -204,6 +232,10 @@ estimate.hyper <- function(
 
 #' Filter genes and cells
 #'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
 filter.genes <- function(dl, gene.filter) {
     within(dl, {
         if( ! is.null(gene.filter) ) {
@@ -224,6 +256,10 @@ filter.cells <- function(dl, cell.filter) {
 }
 
 #' Sample genes and cells
+#'
+#' @param dl de.lorean object
+#'
+#' @export
 #'
 sample.genes.and.cells <- function(
     dl,
@@ -320,6 +356,10 @@ format.for.stan <- function(
 }
 
 #' Define and compile a simple model without dropout
+#'
+#' @param dl de.lorean object
+#'
+#' @export
 #'
 compile.model.simple <- function(dl) {
     within(dl, {
@@ -564,6 +604,10 @@ compile.model.simple <- function(dl) {
 }
 
 #' Define and compile the model
+#'
+#' @param dl de.lorean object
+#'
+#' @export
 #'
 compile.model <- function(dl) {
     within(dl, {
@@ -928,6 +972,10 @@ compile.model <- function(dl) {
 
 #' Find best tau
 #'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
 find.best.tau <- function(dl, num.tau.candidates = 6000) {
     within(dl, {
         # Define a function that chooses tau
@@ -967,6 +1015,10 @@ find.best.tau <- function(dl, num.tau.candidates = 6000) {
 #' @param chain Number of chains to run on each core
 #' @param iter Number of iterations in each chain
 #' @param thin How many samples to generate before retaining one
+#' @param dl de.lorean object
+#'
+#' @export
+#'
 fit.model <- function(
     dl,
     num.cores = NULL,
@@ -1007,6 +1059,10 @@ fit.model <- function(
 
 #' Examine convergence
 #'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
 examine.convergence <- function(dl) {
     within(dl, {
         summ <- monitor(fit,
@@ -1020,6 +1076,10 @@ examine.convergence <- function(dl) {
 
 
 #' Process the posterior
+#'
+#' @param dl de.lorean object
+#'
+#' @export
 #'
 process.posterior <- function(dl) {
     within(dl, {
@@ -1073,6 +1133,10 @@ process.posterior <- function(dl) {
 
 #' Analyse noise levels
 #'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
 analyse.noise.levels <- function(dl, num.high.psi=16) {
     within(dl, {
         noise.levels <- (
@@ -1092,6 +1156,10 @@ analyse.noise.levels <- function(dl, num.high.psi=16) {
 
 #' Make predictions
 #'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
 make.predictions <- function(dl) {
     within(dl, {
         predictions <- with(samples.l,
@@ -1107,6 +1175,10 @@ make.predictions <- function(dl) {
 }
 
 #' Plot best sample predicted expression
+#'
+#' @param dl de.lorean object
+#'
+#' @export
 #'
 plot.best.predictions <- function(dl) {
     with(dl, {
@@ -1141,3 +1213,34 @@ plot.best.predictions <- function(dl) {
     })
 }
 
+#' Single cell expression data and meta data from McDavid et al. (2014).
+#' They investigated differential expression in actively
+#' cycling cells: "expression of 333 genes was interrogated in 930
+#' cells, across three cell lines: H9 (HTB-176), MDA-MB-231 (HTB-26),
+#' and PC3 (CRL-1435)".
+#'
+#' @docType data
+#' @keywords datasets
+#'
+#' @name mcdavid.expr
+#' @aliases mcdavid.cell.meta
+#' @aliases mcdavid.gene.meta
+#'
+#' @usage data(McDavidDeLorean)
+#'
+#' @format There are three objects in this data:
+#' \itemize{
+#'   \item mcdavid.expr A matrix of log expression values with
+#'     no missing data. Rows are named by genes and columns are
+#'     named by cells/samples.
+#'   \item mcdavid.gene.meta A data frame containing meta-data
+#'     about the genes.
+#'   \item mcdavid.cell.meta A data frame containing meta-data
+#'     about the genes.
+#' }
+#'
+#' @source \url\{http://www.ploscompbiol.org/article/info%3Adoi%2F10.1371%2Fjournal.pcbi.1003696\}
+#'
+#' @export mcdavid.expr mcdavid.cell.meta mcdavid.gene.meta
+#'
+NULL

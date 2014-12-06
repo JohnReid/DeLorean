@@ -1,0 +1,352 @@
+%\VignetteIndexEntry{DeLorean-intro}
+%\VignetteEngine{knitr::knitr}
+\documentclass{article}
+\usepackage{url, graphicx, amsmath}
+\usepackage{tabularx}
+\usepackage{tabulary}
+\usepackage{color}
+\usepackage[cm]{fullpage}
+\usepackage[usenames,dvipsnames]{xcolor}
+%\usepackage[authoryear]{natbib}
+%\makeatletter
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% User specified LaTeX commands.
+% \VignetteIndexEntry{An Introduction to DeLorean}
+%\makeatother
+\newcommand{\todo}[1]{TODO: {\color{red} #1}}
+\newcommand{\dl}{\texttt{DeLorean}}
+\begin{document}
+\title{An Introduction to DeLorean}
+\author{John Reid}
+\maketitle
+
+<<build, echo=FALSE, eval=FALSE>>=
+library(knitr)
+knit2pdf('DeLorean-intro.Rnw')
+
+@
+
+<<config, echo=FALSE, message=FALSE>>=
+opts_chunk$set(
+    fig.path='figures/intro-',
+    fig.width=6.25,
+    fig.height=4)
+
+@
+
+<<loadLibs, echo=FALSE, message=FALSE>>=
+library(gptk)
+library(MASS)
+library(ggplot2)
+library(dplyr)
+library(reshape2)
+library(grDevices)
+library(extrafont)
+suppressMessages(loadfonts())
+
+@
+
+<<themes, eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE>>=
+mrc.colors <- c(
+    rgb(138, 121, 103, maxColorValue=255),
+    rgb(217, 165, 41 , maxColorValue=255),
+    rgb(153, 152, 40 , maxColorValue=255),
+    rgb(117, 139, 121, maxColorValue=255),
+    rgb(33 , 103, 126, maxColorValue=255),
+    rgb(208, 114, 50 , maxColorValue=255),
+    rgb(106, 59 , 119, maxColorValue=255),
+    rgb(130, 47 , 90 , maxColorValue=255)
+)
+font.family <- "Verdana"
+font.theme <- theme_update(text=element_text(family=font.family))
+theme_set(font.theme)
+
+@
+
+
+<<installFonts, eval=FALSE, echo=FALSE, message=FALSE, warning=FALSE>>=
+#
+# Check/install fonts
+#
+embed_fonts('fonttest.pdf', outfile='fonttest-embed.pdf')
+font_import()
+fonts()
+fonttable()
+
+@
+
+
+<<sampleGP, echo=FALSE, message=FALSE, warning=FALSE>>=
+tmin <- 0
+tmax <- 3
+twidth <- tmax - tmin
+tlims <- c(tmin, tmax)
+num.inputs <- 100
+inputs <- (0:num.inputs) * twidth / num.inputs + tmin
+sigma.gp <- 2
+sigma.noise <- .3
+kern <- kernCreate(1, 'rbf')
+K <- (
+    sigma.gp ** 2 * kernCompute(kern, inputs, inputs)
+    + diag(sigma.noise ** 2, num.inputs + 1, num.inputs + 1))
+output <- mvrnorm(n=1, mu=rep(2, num.inputs+1), Sigma=K)
+# qplot(x=inputs, y=output)
+
+@
+
+
+
+\section{Philosophy}
+
+\dl\ is an R package for estimating pseudotimes from data nominally captured at
+distinct time points. It accounts for noise in the capture times by estimating
+a pseudotime for each sample. \dl\ fits a model which has a smoothness inducing
+prior on the expression profiles for the genes.
+
+As an example, consider the following synthetic data. We have one gene whose
+expression levels have been captured at five distinct time points between 0
+hours and 80 hours. At each time point we have several samples. These samples
+are cross-sectional in nature, that is we do not track the same object at
+different time points, rather we sample from a population at each time
+point without replacement.
+
+<<exampleData, echo=FALSE, message=FALSE, warning=FALSE>>=
+set.seed(2)
+times <- c("0h", "20h", "40h", "60h", "80h")
+times <- factor(times, levels=times, ordered=TRUE)
+N <- 40
+.data <- data.frame(obstime=sample(times, N, replace=TRUE), c=1:N)
+.data <- .data %>% mutate(tau=rnorm(n=N, mean=as.integer(obstime), sd=.5))
+K <- (
+    sigma.gp ** 2 * kernCompute(kern, .data$tau, .data$tau)
+    + diag(sigma.noise ** 2, N, N))
+mu <- 3
+.data$expr <- mvrnorm(n=1, mu=rep(0, N), Sigma=K)
+to.hours <- function(.t) (.t - 1) * 20
+# range(to.hours(.data$tau))
+xmin <- -15
+xmax <-  95
+scale.x <- scale_x_continuous(breaks=to.hours(as.integer(times)),
+                              limits=c(xmin, xmax))
+scale.obs.time <- scale_colour_manual(name="Observed\ntime",
+                                      values=mrc.colors)
+from.hours <- function(.h) .h / 20 + 1
+.data.m <- melt(.data %>% mutate(Observed=to.hours(as.integer(obstime)),
+                                 Pseudotime=to.hours(tau)),
+                id.vars="c",
+                measure.vars=c("Observed", "Pseudotime"),
+                value.name="time") %>% left_join(.data)
+# names(.data.m)
+# sample_n(.data.m, 6)
+obstimes.plot <- (ggplot(.data, aes(x=to.hours(as.integer(obstime)), y=mu+expr, color=obstime))
+    + geom_point(alpha=.6, size=5)
+    + xlab("Sample capture time")
+    + ylab("Expression")
+    + scale.obs.time
+    + scale.x
+    + guides(color=FALSE)
+)
+print(obstimes.plot)
+
+@
+<<exampleDataAndTau, fig.show='hide', echo=FALSE, message=FALSE, warning=FALSE>>=
+plot.example <- (ggplot(.data.m, aes(x=time, y=mu+expr, color=obstime))
+    + geom_point(alpha=.6, size=5)
+    + xlab("Time")
+    + ylab("Expression")
+    + scale.obs.time
+    + scale.x
+    + facet_grid(variable ~ .)
+    + guides(color=FALSE)
+)
+print(plot.example)
+@
+
+\dl\ is based on two assumptions. First that there is some underlying smooth
+expression profile for the gene that varies across time. Second that each
+sample may have progressed through our system of interest at a different rate.
+To account for this second effect we estimate a pseudotime for each sample.
+Our model estimates the pseudotimes so that the expression profile is smooth.
+
+<<exampleTau, echo=FALSE, message=FALSE, warning=FALSE>>=
+tau.plot <- (ggplot(.data, aes(x=to.hours(tau), y=mu+expr, color=obstime))
+    + geom_point(alpha=.6, size=5)
+    + xlab("Pseudotime")
+    + ylab("Expression")
+    + scale.obs.time
+    + scale.x
+    + guides(color=FALSE)
+)
+print(tau.plot)
+
+@
+
+Clearly with just one gene, it is trivial to find pseudotime estimates that
+make the expression profile smooth. As the number of genes increases it becomes
+harder to find pseudotimes that induce smooth expression profiles over all the
+genes. This difficulty introduces a tension between the smoothness of the
+expression profiles and the expression noise levels in the model.
+
+<<predictionSetup, include=FALSE, echo=FALSE>>=
+rbfCreate <- function(sigma.gp, length.scale) {
+    function(tau1, tau2) {
+        d <- outer(tau1, tau2, "-")
+        sigma.gp**2 * exp(-(d/length.scale)**2/2)
+    }
+}
+make.predictions <- function(sigma.gp, sigma.noise, length.scale=1) {
+    kern <- rbfCreate(sigma.gp, length.scale)
+    K <- kern(.data$tau, .data$tau) + diag(sigma.noise ** 2, N, N)
+    L <- chol(K)
+    max(abs(t(L) %*% L - K))
+    alpha <- solve(L, solve(t(L), .data$expr))
+    class(alpha)
+    max(abs(K %*% alpha - .data$expr))
+    # max(L * t(L) - K)
+    predictions <- data.frame(input=((10*xmin):(10*xmax))/10)
+    xstar <- from.hours(predictions$input)
+    Kstar <- kern(.data$tau, xstar)
+    predictions$fstar <- mu + as.vector(t(Kstar) %*% alpha)
+    v <- solve(t(L), Kstar)
+    dim(v)
+    Kstarstar <- as.vector(diag(kern(xstar, xstar)) + sigma.noise ** 2)
+    dim(Kstarstar)
+    predictions$V <- Kstarstar - diag(t(v) %*% v)
+    stopifnot(all(predictions$var >= 0))
+    predictions
+}
+scale.y <- scale_y_continuous(limits=c(-2, 10))
+plot.predictions <- function(predictions) {
+    (ggplot(.data, aes(x=to.hours(tau), y=mu+expr))
+        + geom_ribbon(data=predictions,
+                      aes(x=input,
+                          y=fstar,
+                          ymin=fstar-2*sqrt(V),
+                          ymax=fstar+2*sqrt(V)),
+                      alpha=.1)
+        + geom_line(data=predictions, aes(x=input, y=fstar))
+        + geom_point(aes(color=obstime), alpha=.6, size=5)
+        + xlab("Pseudotime")
+        + ylab("Expression")
+        + scale.obs.time
+        + scale.x
+        + scale.y
+        + guides(color=FALSE)
+    )
+}
+
+@
+
+For instance, we could explain the variation in the data as noise in the
+expression measurements. In this case the expression profile is very smooth but
+does not explain the data. Almost all the variation is explained by the noise.
+
+<<exampleNoise, echo=FALSE, message=FALSE, warning=FALSE>>=
+print(plot.predictions(make.predictions(sigma.gp=.3,
+                                        sigma.noise=2,
+                                        length.scale=1)))
+
+@
+
+Alternatively if our expression profile is not smooth, we can easily fit the
+data. The expression profile can pass close to each data.
+
+<<exampleNotSmooth, echo=FALSE, message=FALSE, warning=FALSE>>=
+print(plot.predictions(make.predictions(sigma.gp=2 ,
+                                        sigma.noise=.3,
+                                        length.scale=.1)))
+
+@
+
+However we are interested in balancing the noise in the expression levels
+against the smoothness of the expression profiles. We would like all our
+genes to have low noise levels and smooth profiles.
+
+<<exampleBalanced, echo=FALSE, message=FALSE, warning=FALSE>>=
+print(plot.predictions(make.predictions(sigma.gp=2,
+                                        sigma.noise=.3,
+                                        length.scale=1)))
+
+@
+
+
+\section{The model}
+
+\dl\ uses a generative probability model to describe the expression data.
+Expression profiles are modelled using Gaussian processes which allow for
+priors both on the smoothness of the profiles and the noise levels. We describe
+the model in this section and relate it to other models.
+
+
+\subsection{The data}
+
+The data consists of expression measurements for $G$ genes and $C$ cells
+(samples), $x_{g,c}$. The expression measurements for each cell are associated
+with a capture time, $t_c \in P$, which is one of $T$ distinct times, $P = \{
+\rho_1, \dots, \rho_T \}$.
+
+
+\subsection{Generative model}
+
+We describe the model in a generative fashion.
+
+\vspace{10pt}
+
+\begin{tabulary}{\textwidth}{r@{\ $\sim$\ }lL}
+    $\tau_c$ & $\mathcal{N}(t_c, \sigma_\tau)$
+    & The pseudotime for each cell is drawn from a normal distribution
+      centred on the cell's capture time. \\
+
+    $S_c$ & $\mathcal{N}(\mu_S, \sigma_S)$
+    & The size factor for each cell. \\
+
+    $\phi_g$ & $\mathcal{N}(\mu_\phi, \sigma_\phi)$
+    & The mean expression for each gene. \\
+
+    $\log \psi_g$ & $\mathcal{N}(\mu_\psi, \sigma_\psi)$
+    & Between-time variance for each gene. \\
+
+    $\log \omega_g$ & $\mathcal{N}(\mu_\omega, \sigma_\omega)$
+    & Within-time variance for each gene. Also known as expression measurement
+      noise. \\
+
+    $x_{g,.}$ & $\mathcal{N}(S_. + \phi_g, \Sigma(\tau_., \psi_g, \omega_g))$
+    & Gaussian process draw for expression measurements for gene $g$.
+      $\Sigma_g$ is the covariance function defined by the pseudotimes and the
+      gene-specific variances between- and within-time points. \\
+
+\end{tabulary}
+
+\vspace{10pt}
+
+The covariance function for the Gaussian processes defines a $C$-by-$C$
+covariance matrix whose elements are:
+\[
+\Sigma_{c_1,c_2}(\tau_., \psi_g, \omega_g)
+= \psi_g \textrm{cov}(\frac{|\tau_{c_1} - \tau_{c_2}|}{l})
+  + \omega_g \delta_{c_1,c_2}
+\]
+where $l$ is a length-scale that determines how quickly the function varies,
+$\delta_{c_1,c_2}$ is the Kronecker delta and $\text{cov}(r)$ is any
+suitable stationary covariance function. \dl\ includes support for commonly used
+covariance functions such as the squared exponential,
+\[
+\textrm{cov}_\textrm{SE}(r) = \exp(\frac{-r^2}{2})
+\]
+the Matern with parameter $\nu = \frac{3}{2}$,
+\[
+\textrm{cov}_{\textrm{Matern}}^{\nu=\frac{3}{2}}(r)
+= (1 + \sqrt{3} r)\exp(-\sqrt{3}r)
+\]
+and the Matern with parameter $\nu = \frac{5}{2}$,
+\[
+\textrm{cov}_{\textrm{Matern}}^{\nu=\frac{5}{2}}(r)
+= (1 + \sqrt{5} r + \frac{5}{3}r^2)\exp(-\sqrt{5}r)
+\]
+Much more information on these and other covariance functions can be found in
+\cite{rasmussen_gaussian_2006}.
+
+\nocite{*}
+\bibliographystyle{plain}
+\bibliography{DeLorean}
+
+\end{document}
