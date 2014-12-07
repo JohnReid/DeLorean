@@ -95,7 +95,7 @@ output <- mvrnorm(n=1, mu=rep(2, num.inputs+1), Sigma=K)
 
 
 
-\section{Philosophy}
+\section*{Philosophy}
 
 \dl\ is an R package for estimating pseudotimes from data nominally captured at
 distinct time points. It accounts for noise in the capture times by estimating
@@ -269,7 +269,7 @@ print(plot.predictions(make.predictions(sigma.gp=2,
 @
 
 
-\section{The model}
+\section*{The model}
 
 \dl\ uses a generative probability model to describe the expression data.
 Expression profiles are modelled using Gaussian processes which allow for
@@ -277,7 +277,7 @@ priors both on the smoothness of the profiles and the noise levels. We describe
 the model in this section and relate it to other models.
 
 
-\subsection{The data}
+\subsection*{The data}
 
 The data consists of expression measurements for $G$ genes and $C$ cells
 (samples), $x_{g,c}$. The expression measurements for each cell are associated
@@ -285,7 +285,7 @@ with a capture time, $t_c \in P$, which is one of $T$ distinct times, $P = \{
 \rho_1, \dots, \rho_T \}$.
 
 
-\subsection{Generative model}
+\subsection*{Generative model}
 
 We describe the model in a generative fashion.
 
@@ -310,7 +310,7 @@ We describe the model in a generative fashion.
       noise. \\
 
     $x_{g,.}$ & $\mathcal{N}(S_. + \phi_g, \Sigma(\tau_., \psi_g, \omega_g))$
-    & Gaussian process draw for expression measurements for gene $g$.
+    & Gaussian process draw for the expression profile of gene $g$.
       $\Sigma_g$ is the covariance function defined by the pseudotimes and the
       gene-specific variances between- and within-time points. \\
 
