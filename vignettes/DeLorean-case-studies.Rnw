@@ -131,7 +131,7 @@ Define and compile the model, find the best initialisation, and fit the model.
 dl <- format.for.stan(dl, period=3)
 dl <- compile.model.simple(dl)
 dl <- find.best.tau(dl)
-dl <- fit.model(dl, num.cores=3)
+dl <- fit.model(dl)
 
 @
 
