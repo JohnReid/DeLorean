@@ -12,6 +12,7 @@ opts_chunk$set(
     fig.width=12.5,
     fig.height=8)
 
+```
 
 ```{r compile, echo=FALSE, eval=FALSE}
 library(devtools)
@@ -57,7 +58,8 @@ Select cells at random if we have too many.
 ```{r chooseCells}
 
 set.seed(1)
-cells.sampled <- sample(trapnell.cell.meta$cell, 17)
+max.cells <- 47
+cells.sampled <- sample(trapnell.cell.meta$cell, max.cells)
 cell.filter <- function(cells) cells %in% cells.sampled
 dl <- filter.cells(dl, cell.filter)
 
@@ -67,9 +69,10 @@ dl <- filter.cells(dl, cell.filter)
 Select genes by variance.
 ```{r chooseGenes}
 
+max.genes <- 51
 genes.high.var <- (trapnell.gene.meta
                    %>% arrange(-lpe.sd)
-                   %>% head(21))$gene
+                   %>% head(max.genes))$gene
 gene.filter <- function(genes) genes %in% genes.high.var
 dl <- filter.genes(dl, gene.filter)
 
@@ -81,7 +84,7 @@ Define and compile the model, find the best initialisation, and fit the model.
 dl <- format.for.stan(dl)
 dl <- compile.model.simple(dl)
 dl <- find.best.tau(dl)
-dl <- fit.model(dl, num.cores=2)
+dl <- fit.model(dl)
 sort(sapply(dl, object.size))
 
 ```
