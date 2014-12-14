@@ -47,7 +47,7 @@ dl <- de.lorean(
     trapnell.cell.meta)
 dl <- estimate.hyper(
     dl,
-    sigma.tau=8,
+    sigma.tau=6,
     delta=.5)
 # knit.report(dl, "hyper-parameters")
 
