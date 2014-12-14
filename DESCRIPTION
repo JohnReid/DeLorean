@@ -2,8 +2,15 @@ Package: DeLorean
 Title: Estimates pseudotimes for single cell expression data
 Version: 0.1
 Authors@R: "John Reid <john.reid@mrc-bsu.cam.ac.uk> [aut, cre]"
-Description: 
+Description: Estimates pseudotimes for single cell expression data
 Depends:
-    R (>= 3.0.2)
+    R (>= 3.0.2),
+    parallel,
+    rstan (>= 2.4.0),
+    stringr (>= 0.6.2),
+    dplyr (>= 0.2),
+    reshape2 (>= 1.4),
+    ggplot2 (>= 1.0.0)
 License: MIT
 LazyData: true
+VignetteBuilder: knitr

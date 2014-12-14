@@ -1,0 +1,129 @@
+
+```{r compile, eval=FALSE, include=FALSE}
+library(knitr)
+module <- 'Trapnell-2014'
+system.time(knit2html(sprintf('%s.Rmd', module), stylesheet='foghorn.css'))
+
+```
+
+```{r loadLibraries, include=FALSE}
+# install.packages("VGAM")
+# source('http://mc-stan.org/rstan/install.R', echo=T, max.deparse.length=2000)
+# install_rstan()
+library(rstan)
+library(parallel)
+library(VGAM)
+library(splines)
+source("shared.R")
+
+```
+
+
+# Investigate Trapnell et al. (2014) single-cell RNA-seq data
+
+Load data.
+```{r loadData, eval=FALSE}
+
+data.dir <- '../data/Trapnell-2014'
+truseq <- 'GSE52529_truseq_fpkm_matrix.txt.gz'
+trapnell <- read.csv(paste(data.dir, 'GSE52529_fpkm_matrix.txt.gz', sep='/'), sep="\t")
+trapnell$gene <- factor(rownames(trapnell), levels=rownames(trapnell))
+trapnell.l <- (
+    melt(trapnell, variable.name="cell", value.name="fpkm")
+    %>% mutate(fpkm.log10=log10(fpkm)))
+cell.meta <- (
+    data.frame(cell=factor(levels(trapnell.l$cell)))
+    %>% mutate(capture=str_match(levels(cell),
+                                 "^T([0-9]+)")[,2],
+               obstime=as.integer(capture),
+               capture=factor(capture)))
+min.expr <- 0.1  # Minimum expression value for Tobit model
+expr.threshold <- 1  # The value above which genes are considered expressed
+(ggplot(trapnell.l
+        %>% filter(fpkm > min.expr)
+        %>% sample_n(10000)
+        %>% left_join(cell.meta),
+        aes(x=fpkm, color=factor(obstime)))
+    + geom_density()
+    + geom_rug(alpha=.01)
+    + scale_x_log10()
+)
+
+```
+
+
+Filter genes as in Trapnell et al.
+```{r filterGenes}
+
+gene.meta <- (
+    trapnell.l
+    %>% group_by(gene)
+    %>% summarise(num.expr=sum(fpkm > expr.threshold),
+                  lpe.sd=sd(fpkm.log10[fpkm > min.expr]))
+    %>% filter(num.expr >= 50, lpe.sd > .7))
+
+qplot(gene.meta$num.expr, binwidth=5)
+qplot(gene.meta$lpe.sd)
+trapnell.f <- (
+    trapnell.l
+    %>% filter(gene %in% genes.meta$gene)
+    %>% left_join(cell.meta)
+)
+length(unique(trapnell.f$gene))
+
+# Use Tobit model to filter genes on a differential expression test
+fit.model <- function(form) {
+    vgam(form, family=tobit(Lower=log10(min.expr), Upper=Inf))
+}
+Tobit.Diff.Expr.LRT <- function(fpkm.log10, obstime) {
+    FM.fit <- fit.model(fpkm.log10 ~ bs(obstime, df=3))
+    # summary(FM.fit)
+    RM.fit <- fit.model(fpkm.log10 ~ 1)
+    # summary(RM.fit)
+    if (is.null(FM.fit) == FALSE && is.null(RM.fit) == FALSE) {
+        lrt <- lrtest(FM.fit, RM.fit)
+        return(lrt@Body["Pr(>Chisq)"][2,])
+    } else { return(1) }
+}
+genes.high.sd <- filter(gene.meta, num.expr >= 50, lpe.sd > 1)$gene
+gene.diff.expr <- (trapnell.f
+    %>% filter(gene %in% genes.high.sd)
+    %>% group_by(gene)
+    %>% summarise(p.val=Tobit.Diff.Expr.LRT(fpkm.log10, obstime))
+    %>% arrange(p.val)
+)
+gene.diff.expr
+qplot(gene.diff.expr$p.val, binwidth=1) + scale_x_log10()
+genes.diff.expr <- filter(gene.diff.expr, p.val < 1e-2)$gene
+length(genes.diff.expr)
+
+```
+
+
+Reshape data into general format for model.
+```{r reshapeData, eval=FALSE}
+
+fpkm <- trapnell.f %>% dcast(gene ~ cell, value.var="fpkm")
+fpkm.m <- as.matrix(fpkm %>% select(-gene))
+rownames(fpkm.m) <- fpkm$gene
+expr <- log10(fpkm.m + 1)
+
+```
+
+Save data.
+```{r saveData}
+rda.path <- paste(data.dir, "TrapnellDeLorean.rda", sep="/")
+message('Saving expression data and meta-data to: ', rda.path)
+rename.and.save(
+    trapnell.expr=expr,
+    trapnell.gene.meta=gene.meta,
+    trapnell.cell.meta=cell.meta,
+    file=rda.path)
+
+```
+
+R version and packages used:
+```{r sessionInfo}
+sessionInfo()
+
+```

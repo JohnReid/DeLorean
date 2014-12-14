@@ -1,0 +1,122 @@
+<!--
+%\VignetteEngine{knitr::knitr}
+%\VignetteIndexEntry{Case study of Trapnell et al. myoblast data}
+-->
+
+
+```{r config, echo=FALSE, message=FALSE}
+library(knitr)
+opts_chunk$set(
+    fig.path='figures/Trapnell-',
+    # error=FALSE,
+    fig.width=12.5,
+    fig.height=8)
+
+
+```{r compile, echo=FALSE, eval=FALSE}
+library(devtools)
+load_all('..')
+data(TrapnellDeLorean)
+knit2html('DeLorean-Trapnell.Rmd')
+
+```
+
+
+# Investigate Trapnell et al. (2014) single-cell RNA-seq data
+
+Load data.
+```{r loadData, eval=FALSE}
+
+library(DeLorean)
+data(TrapnellDeLorean)
+
+```
+
+Summarise the meta-data.
+```{r summariseMeta}
+summary(trapnell.gene.meta)
+summary(trapnell.cell.meta)
+
+```
+
+Examine data for empirical Bayes estimation of hyperparameters.
+```{r empBayes}
+dl <- de.lorean(
+    trapnell.expr,
+    trapnell.gene.meta,
+    trapnell.cell.meta)
+dl <- estimate.hyper(
+    dl,
+    sigma.tau=8,
+    delta=.5)
+# knit.report(dl, "hyper-parameters")
+
+```
+
+Select cells at random if we have too many.
+```{r chooseCells}
+
+set.seed(1)
+cells.sampled <- sample(trapnell.cell.meta$cell, 17)
+cell.filter <- function(cells) cells %in% cells.sampled
+dl <- filter.cells(dl, cell.filter)
+
+```
+
+
+Select genes by variance.
+```{r chooseGenes}
+
+genes.high.var <- (trapnell.gene.meta
+                   %>% arrange(-lpe.sd)
+                   %>% head(21))$gene
+gene.filter <- function(genes) genes %in% genes.high.var
+dl <- filter.genes(dl, gene.filter)
+
+```
+
+
+Define and compile the model, find the best initialisation, and fit the model.
+```{r model}
+dl <- format.for.stan(dl)
+dl <- compile.model.simple(dl)
+dl <- find.best.tau(dl)
+dl <- fit.model(dl, num.cores=2)
+sort(sapply(dl, object.size))
+
+```
+
+Examine convergence.
+```{r examConv}
+dl <- examine.convergence(dl)
+dl$rhat.sorted
+
+```
+
+
+Examine posterior.
+```{r posterior}
+dl <- process.posterior(dl)
+
+#
+# Analyse gene noise levels
+#
+dl <- analyse.noise.levels(dl)
+# knit.report(dl, "posterior")
+
+#
+# Plot predictions from best sample
+#
+dl <- make.predictions(dl)
+gp <- plot(dl, type="best.predictions")
+print(gp)
+
+```
+
+
+R version and packages used:
+```{r sessionInfo}
+sessionInfo()
+
+```
+
