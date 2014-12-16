@@ -197,16 +197,18 @@ gp <- plot(dl, type="best.predictions")
 print(gp)
 
 # Plot cbPeaktime against best sample max predicted mean time
-with(dl, {
+dl <- within(dl, {
     peak.vs.max <- (best.mean
         %>% group_by(g)
         %>% summarise(predicted.peak=tau[which.max(predictedmean)])
         %>% left_join(gene.map))
-    print(ggplot(peak.vs.max, aes(x=cbPeaktime, y=predicted.peak))
-        + geom_point()
-    )
-    with(peak.vs.max, { cor(cbPeaktime, predicted.peak, use="complete.obs") })
+    peak.max.cor <- with(peak.vs.max, { cor(cbPeaktime, predicted.peak, use="complete.obs") })
 })
+dl$peak.vs.max %>% select(g, gene, cbPeaktime, predicted.peak)
+
+(ggplot(dl$peak.vs.max, aes(x=cbPeaktime, y=predicted.peak))
+    + geom_point()
+)
 
 #
 # Investigate mixing over tau
@@ -237,6 +239,8 @@ cell.tau <- (samples.all
 )
 
 # Plot cbPeaktime against mean sample max predicted mean time
+print(plot.S.posteriors(dl))
+
 with(dl, {
     print(ggplot(predicted.mean
             %>% group_by(gene)

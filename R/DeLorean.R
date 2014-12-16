@@ -63,7 +63,8 @@ summary.de.lorean <- function(dl) {
 #'
 plot.de.lorean <- function(dl, type="best.predictions") {
     result <- switch(type,
-        best.predictions=plot.best.predictions(dl)
+        best.predictions=plot.best.predictions(dl),
+        S.posteriors=plot.S.posteriors(dl)
     )
     if (is.null(result)) {
         error('Unknown plot type')
@@ -764,6 +765,25 @@ make.predictions <- function(dl) {
                             %>% left_join(phi)
                             %>% mutate(tau=test.input[t]))
         best.mean <- filter(predictions, best.sample == iter)
+    })
+}
+
+#' Plot posterior for cell sizes
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+plot.S.posteriors <- function(dl) {
+    with(dl, {
+        gp <- (ggplot(samples.all,
+                      aes(x=factor(cell,
+                                   levels=arrange(cell.map, capture)$cell),
+                          y=S,
+                          color=capture),
+                      environment=environment())
+            + geom_boxplot()
+        )
     })
 }
 
