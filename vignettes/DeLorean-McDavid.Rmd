@@ -1,48 +1,65 @@
-%\VignetteIndexEntry{DeLorean-intro}
-%\VignetteEngine{knitr::knitr}
-\documentclass{article}
-\usepackage{url, graphicx, amsmath}
-\usepackage{tabularx}
-\usepackage{tabulary}
-\usepackage{color}
-\usepackage[cm]{fullpage}
-\usepackage[usenames,dvipsnames]{xcolor}
-%\usepackage[authoryear]{natbib}
-%\makeatletter
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% User specified LaTeX commands.
-% \VignetteIndexEntry{DeLorean case studies}
-%\makeatother
-\newcommand{\todo}[1]{TODO: {\color{red} #1}}
-\newcommand{\dl}{\texttt{DeLorean}}
-\begin{document}
-\title{DeLorean case studies}
-\author{John Reid}
-\maketitle
+---
+title: DeLorean analysis of McDavid et al. cell cycle data
+author: John Reid
+bibliography: DeLorean.bib
+output: html_document
+---
 
-<<config, echo=FALSE, message=FALSE>>=
+<!--
+%\VignetteEngine{knitr::rmarkdown}
+%\VignetteIndexEntry{DeLorean analysis of McDavid et al. cell cycle data}
+-->
+
+
+```{r config, echo=FALSE, message=FALSE}
 library(knitr)
+library(knitcitations)
+library(rmarkdown)
+#
+# knitr options
+#
 opts_chunk$set(
-    fig.path='figures/McDavid-',
+    fig.path = 'figures/McDavid-',
     stop_on_error = TRUE,
-    fig.width=12.5,
-    fig.height=8)
+    fig.width = 12.5,
+    fig.height = 8)
+#
+# Citations
+#
+cleanbib()
+cite_options(
+    # hyperlink = 'to.doc',
+    hyperlink = TRUE,
+    # style = 'html',
+    # citation_format = 'text',
+    citation_format = "pandoc",
+    cite.style = "numeric",
+    check.entries = TRUE)
+    # hyperlink = TRUE)
+bib <- read.bibtex("DeLorean.bib")
 
-@
+```
 
-<<build, echo=FALSE, eval=FALSE>>=
+```{r build, echo=FALSE, eval=FALSE}
 library(devtools)
 load_all('..')
-knit2pdf('DeLorean-case-studies.Rnw')
+render('DeLorean-McDavid.Rmd')
 
-@
+```
 
-<<loadLibs, echo=FALSE, message=FALSE>>=
+```{r loadLibs, echo=FALSE, message=FALSE}
 # suppressMessages(loadfonts())
 library(DeLorean)
+#
+# Stylesheet
+#
+options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
+                                               package="DeLorean"))
 
-@
+```
 
-<<themes, eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE>>=
+
+```{r themes, eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE}
 mrc.colors <- c(
     rgb(138, 121, 103, maxColorValue=255),
     rgb(217, 165, 41 , maxColorValue=255),
@@ -57,39 +74,39 @@ font.family <- "Verdana"
 font.theme <- theme_update(text=element_text(family=font.family))
 theme_set(font.theme)
 
-@
+```
 
 
 
-\section*{McDavid et al. cell cycle experiments}
-
-McDavid et al.~\cite{mcdavid_modeling_2014} assayed actively cycling single
+`r citet(bib[["mcdavid_modeling_2014"]])` assayed actively cycling single
 cells in order to examine the confounding effect of the cell cycle on
 single cell expression analyses. They measured the expression of 333 genes
 in 930 cells across three cell cycle phases and three cell lines.
 
 
-\subsection*{Data}
+# Data
 
-McDavid et al.'s data is available in the \dl\ R package.
-<<loadLib>>=
+McDavid et al.'s data is available in the `DeLorean` R package.
+```{r loadLib}
 library(DeLorean)
 data(McDavidDeLorean)
-@
+```
 This will load a 253 by 930 matrix containing the expression measurements. Not
 all 333 genes are represented as several are rarely expressed.
-<<exprDim>>=
+```{r exprDim}
 dim(mcdavid.expr)
-@
+```
 and two data frames of meta data for the genes and cells.
-<<meta>>=
+```{r meta}
 summary(mcdavid.gene.meta)
 summary(mcdavid.cell.meta)
-@
+```
 
+
+# Estimate hyperparameters
 
 Examine data for empirical Bayes estimation of hyperparameters.
-<<empiricalBayes>>=
+```{r empiricalBayes}
 dl <- de.lorean(
     mcdavid.expr,
     mcdavid.gene.meta,
@@ -100,52 +117,62 @@ dl <- estimate.hyper(
     delta=.5)
 # knit.report(dl, "hyper-parameters")
 
-@
+```
 
+
+# Choose genes and cells
 
 Choose a few cells from the PC3 cell line.
-<<filterCells>>=
+```{r filterCells}
 set.seed(1)
-cells.PC3 <- sample(filter(mcdavid.cell.meta, "PC3" == cellline)$cell, 37)
+max.cells <- 37
+cells.PC3 <- sample(filter(mcdavid.cell.meta, "PC3" == cellline)$cell,
+                    max.cells)
 cell.filter <- function(cells) cells %in% cells.PC3
 dl <- filter.cells(dl, cell.filter)
 
-@
+```
 
 
 Choose a handful of genes with low $p$-values from the McDavid et al.
 differential expression test.
-<<filterGenes>>=
+```{r filterGenes}
+max.genes <- 73
 genes.for.stan <- sample((filter(mcdavid.gene.meta,
                                  pvalue > 5)
                           %>% arrange(cbRank))$gene,
-                          73)
+                          max.genes)
 gene.filter <- function(genes) genes %in% genes.for.stan
 dl <- filter.genes(dl, gene.filter)
 
-@
+```
 
+
+# Compile and fit model
 
 Define and compile the model, find the best initialisation, and fit the model.
-<<model>>=
+```{r model}
 dl <- format.for.stan(dl, period=3)
 dl <- compile.model.simple(dl)
 dl <- find.best.tau(dl)
 dl <- fit.model(dl)
 
-@
+```
 
 
 Examine convergence.
-<<examConv>>=
+```{r examConv}
 dl <- examine.convergence(dl)
 dl$rhat.sorted
 
-@
+```
 
+
+
+# Analyse posterior
 
 Examine posterior.
-<<posterior>>=
+```{r posterior}
 dl <- process.posterior(dl)
 # A colour scale for the observed time
 scale.obstime <- scale_colour_manual(name="Observed\ntime",
@@ -182,10 +209,10 @@ with(dl, {
     )
 })
 
-@
+```
 
 
-<<oldCode, eval=FALSE, include=FALSE>>=
+```{r oldCode, eval=FALSE, include=FALSE}
 # Plot cell size-factor against tau
 cell.tau <- (samples.all
     %>% group_by(cell)
@@ -337,17 +364,14 @@ predicted.mean <- (samples.l$predictedmean
     + facet_wrap(~ gene)
 )
 
-@
+```
 
+
+```{r citations, echo=FALSE, message=FALSE}
+write.bibtex(file="DeLorean.bib")
+```
 
 R version and packages used:
-<<Rversion>>=
+```{r Rversion}
 sessionInfo()
-@
-
-
-% \nocite{*}
-\bibliographystyle{plain}
-\bibliography{DeLorean}
-
-\end{document}
+```

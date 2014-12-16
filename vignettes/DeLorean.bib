@@ -1,140 +1,18 @@
-
-@article{aijo_learning_2009,
-	title = {Learning gene regulatory networks from gene expression measurements using non-parametric molecular kinetics},
-	volume = {25},
-	issn = {1367-4803, 1460-2059},
-	url = {http://bioinformatics.oxfordjournals.org/content/25/22/2937},
-	doi = {10.1093/bioinformatics/btp511},
-	abstract = {Motivation: Regulation of gene expression is fundamental to the operation of a cell. Revealing the structure and dynamics of a gene regulatory network ({GRN}) is of great interest and represents a considerably challenging computational problem. The {GRN} estimation problem is complicated by the fact that the number of gene expression measurements is typically extremely small when compared with the dimension of the biological system. Further, because the gene regulation process is intrinsically complex, commonly used parametric models can provide too simple description of the underlying phenomena and, thus, can be unreliable. In this article, we propose a novel methodology for the inference of {GRNs} from time-series and steady-state gene expression measurements. The presented framework is based on the use of Bayesian analysis with ordinary differential equations ({ODEs}) and non-parametric Gaussian process modeling for the transcriptional-level regulation.
-Results: The performance of the proposed structure inference method is evaluated using a recently published in vivo dataset. By comparing the obtained results with those of existing {ODE}- and Bayesian-based inference methods we demonstrate that the proposed method provides more accurate network structure learning. The predictive capabilities of the method are examined by splitting the dataset into a training set and a test set and by predicting the test set based on the training set.
-Availability: A {MATLAB} implementation of the method will be available from http://www.cs.tut.fi/{\textasciitilde}aijo2/gp upon publication
-Contact: harri.lahdesmaki@tut.fi
-Supplementary information: Supplementary data are available at Bioinformatics online.},
-	pages = {2937--2944},
-	number = {22},
-	journaltitle = {Bioinformatics},
-	shortjournal = {Bioinformatics},
-	author = {Äijö, Tarmo and Lähdesmäki, Harri},
-	urldate = {2014-11-11},
-	date = {2009-11-15},
-	langid = {english},
-	pmid = {19706742},
-	file = {Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/VSSDAT2S/Äijö and Lähdesmäki - 2009 - Learning gene regulatory networks from gene expres.pdf:application/pdf;pdf file:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/ZZFNZEJR/Äijö and Lähdesmäki - 2009 - Learning gene regulatory networks from gene expres.pdf:application/pdf;Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/IABR9S7K/2937.html:text/html}
-}
-
-@book{rasmussen_gaussian_2006,
-	location = {Cambridge, Mass.},
-	title = {Gaussian processes for machine learning},
-	isbn = {026218253X 9780262182539},
-	abstract = {"Gaussian processes ({GPs}) provide a principled, practical, probabilistic approach to learning in kernel machines. {GPs} have received increased attention in the machine-learning community over the past decade, and this book provides a long-needed systematic and unified treatment of theoretical and practical aspects of {GPs} in machine learning. The treatment is comprehensive and self-contained, targeted at researchers and students in machine learning and applied statistics."--Jacket.},
-	publisher = {{MIT} Press},
-	author = {Rasmussen, Carl Edward and Williams, Christopher K. I},
-	date = {2006},
-	file = {Rasmussen-GPs-for-ML.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/TV8N3JJ3/Rasmussen-GPs-for-ML.pdf:application/pdf}
-}
-
-@article{mcdavid_data_2013,
-	title = {Data exploration, quality control and testing in single-cell {qPCR}-based gene expression experiments},
-	volume = {29},
-	issn = {1367-4803, 1460-2059},
-	url = {http://bioinformatics.oxfordjournals.org/content/29/4/461},
-	doi = {10.1093/bioinformatics/bts714},
-	abstract = {Motivation: Cell populations are never truly homogeneous; individual cells exist in biochemical states that define functional differences between them. New technology based on microfluidic arrays combined with multiplexed quantitative polymerase chain reactions now enables high-throughput single-cell gene expression measurement, allowing assessment of cellular heterogeneity. However, few analytic tools have been developed specifically for the statistical and analytical challenges of single-cell quantitative polymerase chain reactions data.
-Results: We present a statistical framework for the exploration, quality control and analysis of single-cell gene expression data from microfluidic arrays. We assess accuracy and within-sample heterogeneity of single-cell expression and develop quality control criteria to filter unreliable cell measurements. We propose a statistical model accounting for the fact that genes at the single-cell level can be on (and a continuous expression measure is recorded) or dichotomously off (and the recorded expression is zero). Based on this model, we derive a combined likelihood ratio test for differential expression that incorporates both the discrete and continuous components. Using an experiment that examines treatment-specific changes in expression, we show that this combined test is more powerful than either the continuous or dichotomous component in isolation, or a t-test on the zero-inflated data. Although developed for measurements from a specific platform (Fluidigm), these tools are generalizable to other multi-parametric measures over large numbers of events.
-Availability: All results presented here were obtained using the {SingleCellAssay} R package available on {GitHub} (http://github.com/{RGLab}/{SingleCellAssay}).
-Contact: rgottard@fhcrc.org
-Supplementary information: Supplementary data are available at Bioinformatics online.},
-	pages = {461--467},
-	number = {4},
-	journaltitle = {Bioinformatics},
-	shortjournal = {Bioinformatics},
-	author = {{McDavid}, Andrew and Finak, Greg and Chattopadyay, Pratip K. and Dominguez, Maria and Lamoreaux, Laurie and Ma, Steven S. and Roederer, Mario and Gottardo, Raphael},
-	urldate = {2014-08-20},
-	date = {2013-02-15},
-	langid = {english},
-	pmid = {23267174},
-	file = {Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/ZXD3X8VS/McDavid et al. - 2013 - Data exploration, quality control and testing in s.pdf:application/pdf;pdf file:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/HG2XQ7MI/McDavid et al. - 2013 - Data exploration, quality control and testing in s.pdf:application/pdf;Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/P87FD5WM/461.html:text/html}
-}
-
-@article{trapnell_dynamics_2014,
-	title = {The dynamics and regulators of cell fate decisions are revealed by pseudotemporal ordering of single cells},
-	volume = {32},
-	rights = {© 2014 Nature Publishing Group, a division of Macmillan Publishers Limited. All Rights Reserved.},
-	issn = {1087-0156},
-	url = {http://www.nature.com/nbt/journal/v32/n4/full/nbt.2859.html},
-	doi = {10.1038/nbt.2859},
-	abstract = {Defining the transcriptional dynamics of a temporal process such as cell differentiation is challenging owing to the high variability in gene expression between individual cells. Time-series gene expression analyses of bulk cells have difficulty distinguishing early and late phases of a transcriptional cascade or identifying rare subpopulations of cells, and single-cell proteomic methods rely on a priori knowledge of key distinguishing markers. Here we describe Monocle, an unsupervised algorithm that increases the temporal resolution of transcriptome dynamics using single-cell {RNA}-Seq data collected at multiple time points. Applied to the differentiation of primary human myoblasts, Monocle revealed switch-like changes in expression of key regulatory factors, sequential waves of gene regulation, and expression of regulators that were not known to act in differentiation. We validated some of these predicted regulators in a loss-of function screen. Monocle can in principle be used to recover single-cell gene expression kinetics from a wide array of cellular processes, including differentiation, proliferation and oncogenic transformation.},
-	pages = {381--386},
-	number = {4},
-	journaltitle = {Nature Biotechnology},
-	shortjournal = {Nat Biotech},
-	author = {Trapnell, Cole and Cacchiarelli, Davide and Grimsby, Jonna and Pokharel, Prapti and Li, Shuqiang and Morse, Michael and Lennon, Niall J. and Livak, Kenneth J. and Mikkelsen, Tarjei S. and Rinn, John L.},
-	urldate = {2014-09-04},
-	date = {2014-04},
-	langid = {english},
-	file = {Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/669GRJGT/Trapnell et al. - 2014 - The dynamics and regulators of cell fate decisions.pdf:application/pdf;Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/CWIS7WXG/nbt.2859.html:text/html;Supplementary Text and Figures. Supplementary Figures 1–13 and Supplementary Tables 1 and 2:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/2JDRRU4M/Trapnell et al. - 2014 - The dynamics and regulators of cell fate decisions.pdf:application/pdf}
-}
-
-@article{mcdavid_modeling_2014,
-	title = {Modeling Bi-modality Improves Characterization of Cell Cycle on Gene Expression in Single Cells},
-	volume = {10},
-	issn = {1553-734X},
-	url = {http://www.ncbi.nlm.nih.gov/pmc/articles/PMC4102402/},
-	doi = {10.1371/journal.pcbi.1003696},
-	abstract = {Advances in high-throughput, single cell gene expression are allowing interrogation of cell heterogeneity. However, there is concern that the cell cycle phase of a cell might bias characterizations of gene expression at the single-cell level. We assess the effect of cell cycle phase on gene expression in single cells by measuring 333 genes in 930 cells across three phases and three cell lines. We determine each cell's phase non-invasively without chemical arrest and use it as a covariate in tests of differential expression. We observe bi-modal gene expression, a previously-described phenomenon, wherein the expression of otherwise abundant genes is either strongly positive, or undetectable within individual cells. This bi-modality is likely both biologically and technically driven. Irrespective of its source, we show that it should be modeled to draw accurate inferences from single cell expression experiments. To this end, we propose a semi-continuous modeling framework based on the generalized linear model, and use it to characterize genes with consistent cell cycle effects across three cell lines. Our new computational framework improves the detection of previously characterized cell-cycle genes compared to approaches that do not account for the bi-modality of single-cell data. We use our semi-continuous modelling framework to estimate single cell gene co-expression networks. These networks suggest that in addition to having phase-dependent shifts in expression (when averaged over many cells), some, but not all, canonical cell cycle genes tend to be co-expressed in groups in single cells. We estimate the amount of single cell expression variability attributable to the cell cycle. We find that the cell cycle explains only 5\%–17\% of expression variability, suggesting that the cell cycle will not tend to be a large nuisance factor in analysis of the single cell transcriptome., Recent technological advances have enabled the measurement of gene expression in individual cells, revealing that there is substantial variability in expression, even within a homogeneous cell population. In this paper, we develop new analytical methods that account for the intrinsic, stochastic nature of single cell expression in order to characterize the effect of cell cycle on gene expression at the single-cell level. Applying these methods to populations of asynchronously cycling cells, we are able to identify large numbers of genes with cell cycle-associated expression patterns. By measuring and adjusting for cellular-level factors, we are able to derive estimates of co-expressing gene networks that more closely reflect cellular-level processes as opposed to sample-level processes. We find that cell cycle phase only accounts for a modest amount of the overall variability of gene expression within an individual cell. The analytical methods demonstrated in this paper are universally applicable to single cell expression data and represent a promising tool to the scientific community.},
-	number = {7},
-	journaltitle = {{PLoS} Computational Biology},
-	shortjournal = {{PLoS} Comput Biol},
-	author = {{McDavid}, Andrew and Dennis, Lucas and Danaher, Patrick and Finak, Greg and Krouse, Michael and Wang, Alice and Webster, Philippa and Beechem, Joseph and Gottardo, Raphael},
-	urldate = {2014-09-29},
-	date = {2014-07-17},
-	pmid = {25032992},
-	pmcid = {PMC4102402},
-	file = {journal.pcbi.1003696.s008.csv:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/XG4EFUIA/journal.pcbi.1003696.s008.csv:text/csv;journal.pcbi.1003696.s009.zip:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/CFMTK6EK/journal.pcbi.1003696.s009.zip:application/zip;PubMed Central Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/6J92TJVJ/McDavid et al. - 2014 - Modeling Bi-modality Improves Characterization of .pdf:application/pdf}
-}
-
-@article{buettner_novel_2012,
-	title = {A novel approach for resolving differences in single-cell gene expression patterns from zygote to blastocyst},
-	volume = {28},
-	issn = {1367-4803, 1460-2059},
-	url = {http://bioinformatics.oxfordjournals.org/content/28/18/i626},
-	doi = {10.1093/bioinformatics/bts385},
-	abstract = {Motivation: Single-cell experiments of cells from the early mouse embryo yield gene expression data for different developmental stages from zygote to blastocyst. To better understand cell fate decisions during differentiation, it is desirable to analyse the high-dimensional gene expression data and assess differences in gene expression patterns between different developmental stages as well as within developmental stages. Conventional methods include univariate analyses of distributions of genes at different stages or multivariate linear methods such as principal component analysis ({PCA}). However, these approaches often fail to resolve important differences as each lineage has a unique gene expression pattern which changes gradually over time yielding different gene expressions both between different developmental stages as well as heterogeneous distributions at a specific stage. Furthermore, to date, no approach taking the temporal structure of the data into account has been presented.
-Results: We present a novel framework based on Gaussian process latent variable models ({GPLVMs}) to analyse single-cell {qPCR} expression data of 48 genes from mouse zygote to blastocyst as presented by (Guo et al., 2010). We extend {GPLVMs} by introducing gene relevance maps and gradient plots to provide interpretability as in the linear case. Furthermore, we take the temporal group structure of the data into account and introduce a new factor in the {GPLVM} likelihood which ensures that small distances are preserved for cells from the same developmental stage. Using our novel framework, it is possible to resolve differences in gene expressions for all developmental stages. Furthermore, a new subpopulation of cells within the 16-cell stage is identified which is significantly more trophectoderm-like than the rest of the population. The trophectoderm-like subpopulation was characterized by considerable differences in the expression of Id2, Gata4 and, to a smaller extent, Klf4 and Hand1. The relevance of Id2 as early markers for {TE} cells is consistent with previously published results.
-Availability: The mappings were implemented based on Prof. Neil Lawrence's {FGPLVM} toolbox1; extensions for relevance analysis and including the structure of the data can be obtained from one of the authors' homepage.2
-Contact: f.buettner@helmholtz-muenchen.de},
-	pages = {i626--i632},
-	number = {18},
-	journaltitle = {Bioinformatics},
-	shortjournal = {Bioinformatics},
-	author = {Buettner, Florian and Theis, Fabian J.},
-	urldate = {2014-10-02},
-	date = {2012-09-15},
-	langid = {english},
-	pmid = {22962491},
-	file = {Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/TTZ24DDA/Buettner and Theis - 2012 - A novel approach for resolving differences in sing.pdf:application/pdf;Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/ZNKJFGD9/i626.html:text/html}
-}
-
-@article{buettner_probabilistic_2014,
-	title = {Probabilistic {PCA} of censored data: accounting for uncertainties in the visualization of high-throughput single-cell {qPCR} data},
-	volume = {30},
-	issn = {1367-4803, 1460-2059},
-	url = {http://bioinformatics.oxfordjournals.org/content/30/13/1867},
-	doi = {10.1093/bioinformatics/btu134},
-	shorttitle = {Probabilistic {PCA} of censored data},
-	abstract = {Motivation: High-throughput single-cell quantitative real-time polymerase chain reaction ({qPCR}) is a promising technique allowing for new insights in complex cellular processes. However, the {PCR} reaction can be detected only up to a certain detection limit, whereas failed reactions could be due to low or absent expression, and the true expression level is unknown. Because this censoring can occur for high proportions of the data, it is one of the main challenges when dealing with single-cell {qPCR} data. Principal component analysis ({PCA}) is an important tool for visualizing the structure of high-dimensional data as well as for identifying subpopulations of cells. However, to date it is not clear how to perform a {PCA} of censored data. We present a probabilistic approach that accounts for the censoring and evaluate it for two typical datasets containing single-cell {qPCR} data.
-Results: We use the Gaussian process latent variable model framework to account for censoring by introducing an appropriate noise model and allowing a different kernel for each dimension. We evaluate this new approach for two typical {qPCR} datasets (of mouse embryonic stem cells and blood stem/progenitor cells, respectively) by performing linear and non-linear probabilistic {PCA}. Taking the censoring into account results in a 2D representation of the data, which better reflects its known structure: in both datasets, our new approach results in a better separation of known cell types and is able to reveal subpopulations in one dataset that could not be resolved using standard {PCA}.
-Availability and implementation: The implementation was based on the existing Gaussian process latent variable model toolbox (https://github.com/{SheffieldML}/{GPmat}); extensions for noise models and kernels accounting for censoring are available at http://icb.helmholtz-muenchen.de/censgplvm.
-Contact: fbuettner.phys@gmail.com
-Supplementary information: Supplementary data are available at Bioinformatics online.},
-	pages = {1867--1875},
-	number = {13},
-	journaltitle = {Bioinformatics},
-	shortjournal = {Bioinformatics},
-	author = {Buettner, Florian and Moignard, Victoria and Göttgens, Berthold and Theis, Fabian J.},
-	urldate = {2014-10-02},
-	date = {2014-01-07},
-	langid = {english},
-	pmid = {24618470},
-	file = {Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/ZSBKNUUK/Buettner et al. - 2014 - Probabilistic PCA of censored data accounting for.pdf:application/pdf;pdf file:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/JF4XIWAA/Buettner et al. - 2014 - Probabilistic PCA of censored data accounting for.pdf:application/pdf;Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/Q84SG3XC/1867.html:text/html}
+@Article{mcdavid_modeling_2014,
+  title = {Modeling Bi-modality Improves Characterization of Cell Cycle on Gene Expression in Single Cells},
+  volume = {10},
+  issn = {1553-734X},
+  url = {http://www.ncbi.nlm.nih.gov/pmc/articles/PMC4102402/},
+  doi = {10.1371/journal.pcbi.1003696},
+  abstract = {Advances in high-throughput, single cell gene expression are allowing interrogation of cell heterogeneity. However, there is concern that the cell cycle phase of a cell might bias characterizations of gene expression at the single-cell level. We assess the effect of cell cycle phase on gene expression in single cells by measuring 333 genes in 930 cells across three phases and three cell lines. We determine each cell's phase non-invasively without chemical arrest and use it as a covariate in tests of differential expression. We observe bi-modal gene expression, a previously-described phenomenon, wherein the expression of otherwise abundant genes is either strongly positive, or undetectable within individual cells. This bi-modality is likely both biologically and technically driven. Irrespective of its source, we show that it should be modeled to draw accurate inferences from single cell expression experiments. To this end, we propose a semi-continuous modeling framework based on the generalized linear model, and use it to characterize genes with consistent cell cycle effects across three cell lines. Our new computational framework improves the detection of previously characterized cell-cycle genes compared to approaches that do not account for the bi-modality of single-cell data. We use our semi-continuous modelling framework to estimate single cell gene co-expression networks. These networks suggest that in addition to having phase-dependent shifts in expression (when averaged over many cells), some, but not all, canonical cell cycle genes tend to be co-expressed in groups in single cells. We estimate the amount of single cell expression variability attributable to the cell cycle. We find that the cell cycle explains only 5\%–17\% of expression variability, suggesting that the cell cycle will not tend to be a large nuisance factor in analysis of the single cell transcriptome., Recent technological advances have enabled the measurement of gene expression in individual cells, revealing that there is substantial variability in expression, even within a homogeneous cell population. In this paper, we develop new analytical methods that account for the intrinsic, stochastic nature of single cell expression in order to characterize the effect of cell cycle on gene expression at the single-cell level. Applying these methods to populations of asynchronously cycling cells, we are able to identify large numbers of genes with cell cycle-associated expression patterns. By measuring and adjusting for cellular-level factors, we are able to derive estimates of co-expressing gene networks that more closely reflect cellular-level processes as opposed to sample-level processes. We find that cell cycle phase only accounts for a modest amount of the overall variability of gene expression within an individual cell. The analytical methods demonstrated in this paper are universally applicable to single cell expression data and represent a promising tool to the scientific community.},
+  number = {7},
+  journaltitle = {{PLoS} Computational Biology},
+  shortjournal = {{PLoS} Comput Biol},
+  author = {Andrew McDavid and Lucas Dennis and Patrick Danaher and Greg Finak and Michael Krouse and Alice Wang and Philippa Webster and Joseph Beechem and Raphael Gottardo},
+  urldate = {2014-09-29},
+  date = {2014-07-17},
+  pmid = {25032992},
+  pmcid = {PMC4102402},
+  file = {journal.pcbi.1003696.s008.csv:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/XG4EFUIA/journal.pcbi.1003696.s008.csv:text/csv;journal.pcbi.1003696.s009.zip:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/CFMTK6EK/journal.pcbi.1003696.s009.zip:application/zip;PubMed Central Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/6J92TJVJ/McDavid et al. - 2014 - Modeling Bi-modality Improves Characterization of .pdf:application/pdf},
+  year = {2014},
 }
