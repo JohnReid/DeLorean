@@ -760,12 +760,10 @@ make.predictions <- function(dl) {
         predictions <- with(samples.l,
                             predictedmean
                             %>% left_join(predictedvar)
-                            %>% left_join(S)
+                            # %>% left_join(S)
                             %>% left_join(phi)
                             %>% mutate(tau=test.input[t]))
-        best.mean <- (predictions
-                    %>% filter(best.sample == iter)
-                    %>% left_join(gene.map))
+        best.mean <- filter(predictions, best.sample == iter)
     })
 }
 

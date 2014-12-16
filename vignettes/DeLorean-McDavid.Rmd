@@ -125,7 +125,7 @@ dl <- estimate.hyper(
 Choose a few cells from the PC3 cell line.
 ```{r filterCells}
 set.seed(1)
-max.cells <- 37
+max.cells <- 17
 cells.PC3 <- sample(filter(mcdavid.cell.meta, "PC3" == cellline)$cell,
                     max.cells)
 cell.filter <- function(cells) cells %in% cells.PC3
@@ -137,7 +137,7 @@ dl <- filter.cells(dl, cell.filter)
 Choose a handful of genes with low $p$-values from the McDavid et al.
 differential expression test.
 ```{r filterGenes}
-max.genes <- 73
+max.genes <- 23
 genes.for.stan <- sample((filter(mcdavid.gene.meta,
                                  pvalue > 5)
                           %>% arrange(cbRank))$gene,
@@ -196,6 +196,18 @@ dl <- make.predictions(dl)
 gp <- plot(dl, type="best.predictions")
 print(gp)
 
+# Plot cbPeaktime against best sample max predicted mean time
+with(dl, {
+    peak.vs.max <- (best.mean
+        %>% group_by(g)
+        %>% summarise(predicted.peak=tau[which.max(predictedmean)])
+        %>% left_join(gene.map))
+    print(ggplot(peak.vs.max, aes(x=cbPeaktime, y=predicted.peak))
+        + geom_point()
+    )
+    with(peak.vs.max, { cor(cbPeaktime, predicted.peak, use="complete.obs") })
+})
+
 #
 # Investigate mixing over tau
 #
@@ -224,24 +236,16 @@ cell.tau <- (samples.all
     + geom_boxplot()
 )
 
-# Plot cbPeaktime against best sample max predicted mean time
-peak.vs.max <- (best.mean
-        %>% group_by(gene)
-        %>% summarise(predicted.peak=tau[which.max(predictedmean)],
-                      cbPeaktime=cbPeaktime[1]))
-(ggplot(peak.vs.max, aes(x=cbPeaktime, y=predicted.peak))
-    + geom_point()
-)
-with(peak.vs.max, { cor(cbPeaktime, predicted.peak, use="complete.obs") })
-
 # Plot cbPeaktime against mean sample max predicted mean time
-(ggplot(predicted.mean
-        %>% group_by(gene)
-        %>% summarise(predicted.peak=tau[which.max(predictedmean)],
-                      cbPeaktime=cbPeaktime[1]),
-        aes(x=cbPeaktime, y=predicted.peak))
-    + geom_point()
-)
+with(dl, {
+    print(ggplot(predicted.mean
+            %>% group_by(gene)
+            %>% summarise(predicted.peak=tau[which.max(predictedmean)],
+                        cbPeaktime=cbPeaktime[1]),
+            aes(x=cbPeaktime, y=predicted.peak))
+        + geom_point()
+    )
+})
 
 (ggplot(samples.l$tau,
         aes(x=iter, y=tau.offset, color=factor(c)))
