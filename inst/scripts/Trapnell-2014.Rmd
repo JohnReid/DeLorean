@@ -10,11 +10,8 @@ system.time(knit2html(sprintf('%s.Rmd', module), stylesheet='foghorn.css'))
 # install.packages("VGAM")
 # source('http://mc-stan.org/rstan/install.R', echo=T, max.deparse.length=2000)
 # install_rstan()
-library(rstan)
-library(parallel)
 library(VGAM)
 library(splines)
-source("shared.R")
 
 ```
 
@@ -24,7 +21,7 @@ source("shared.R")
 Load data.
 ```{r loadData, eval=FALSE}
 
-data.dir <- '../data/Trapnell-2014'
+data.dir <- '.'
 truseq <- 'GSE52529_truseq_fpkm_matrix.txt.gz'
 trapnell <- read.csv(paste(data.dir, 'GSE52529_fpkm_matrix.txt.gz', sep='/'), sep="\t")
 trapnell$gene <- factor(rownames(trapnell), levels=rownames(trapnell))
@@ -51,6 +48,20 @@ expr.threshold <- 1  # The value above which genes are considered expressed
 
 ```
 
+Get gene names
+```{r}
+library("biomaRt")
+ensembl <- useMart("ensembl", dataset="hsapiens_gene_ensembl")
+filters <- listFilters(ensembl)
+attributes = listAttributes(ensembl)
+gene.meta$ensembl_gene_id <- str_match(gene.meta$gene, '(ENSG[0-9]+)')[,1]
+gene.names <- getBM(attributes=c('ensembl_gene_id',
+                                 'hgnc_symbol'),
+                    mart = ensembl)
+gene.meta <- gene.meta %>% left_join(gene.names) %>% select(-ensembl_gene_id)
+
+```
+
 
 Filter genes as in Trapnell et al.
 ```{r filterGenes}
@@ -61,12 +72,11 @@ gene.meta <- (
     %>% summarise(num.expr=sum(fpkm > expr.threshold),
                   lpe.sd=sd(fpkm.log10[fpkm > min.expr]))
     %>% filter(num.expr >= 50, lpe.sd > .7))
-
 qplot(gene.meta$num.expr, binwidth=5)
 qplot(gene.meta$lpe.sd)
 trapnell.f <- (
     trapnell.l
-    %>% filter(gene %in% genes.meta$gene)
+    %>% filter(gene %in% gene.meta$gene)
     %>% left_join(cell.meta)
 )
 length(unique(trapnell.f$gene))
@@ -114,6 +124,10 @@ Save data.
 ```{r saveData}
 rda.path <- paste(data.dir, "TrapnellDeLorean.rda", sep="/")
 message('Saving expression data and meta-data to: ', rda.path)
+rename.and.save <- function(..., file) {
+    x <- list(...)
+    save(list=names(x), file=file, envir=list2env(x))
+}
 rename.and.save(
     trapnell.expr=expr,
     trapnell.gene.meta=gene.meta,
