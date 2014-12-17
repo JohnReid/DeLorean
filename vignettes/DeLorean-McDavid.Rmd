@@ -113,9 +113,9 @@ dl <- de.lorean(
     mcdavid.cell.meta)
 dl <- estimate.hyper(
     dl,
-    sigma.tau=.5,
+    sigma.tau=1.5,
     delta=.5)
-# knit.report(dl, "hyper-parameters")
+knit.report(dl, "hyper-parameters")
 
 ```
 
@@ -138,10 +138,15 @@ Choose a handful of genes with low $p$-values from the McDavid et al.
 differential expression test.
 ```{r filterGenes}
 max.genes <- 23
+max.rank <- 140
 genes.for.stan <- sample((filter(mcdavid.gene.meta,
                                  pvalue > 5)
                           %>% arrange(cbRank))$gene,
                           max.genes)
+genes.for.stan <- (filter(mcdavid.gene.meta,
+                                 ! is.na(cbRank),
+                                 cbRank < max.rank + 1)
+                   %>% arrange(cbRank))$gene
 gene.filter <- function(genes) genes %in% genes.for.stan
 dl <- filter.genes(dl, gene.filter)
 
@@ -197,6 +202,8 @@ gp <- plot(dl, type="best.predictions")
 print(gp)
 
 # Plot cbPeaktime against best sample max predicted mean time
+print(plot.best.predictions(dl, genes="CDCA8"))
+print(plot.S.posteriors(dl))
 dl <- within(dl, {
     peak.vs.max <- (best.mean
         %>% group_by(g)
@@ -204,9 +211,39 @@ dl <- within(dl, {
         %>% left_join(gene.map))
     peak.max.cor <- with(peak.vs.max, { cor(cbPeaktime, predicted.peak, use="complete.obs") })
 })
-dl$peak.vs.max %>% select(g, gene, cbPeaktime, predicted.peak)
+dl$peak.max.cor
 
 (ggplot(dl$peak.vs.max, aes(x=cbPeaktime, y=predicted.peak))
+    + geom_point()
+)
+
+#
+# Investigate difference in noise levels between genes
+#
+(ggplot(dl$samples.l$omega %>% left_join(dl$gene.map),
+        aes(x=factor(cbRank), y=omega))
+    + geom_boxplot()
+)
+
+```
+
+
+```{r oldCode, eval=FALSE, include=FALSE}
+
+#
+# Try to match maximal expression to peak time
+#
+find.maximum <- function(g) {
+    with(dl, {
+        maximum <- which.max(stan.data$expr[g,])
+        tau <- (dl$samples.l$tau
+                %>% filter(iter == best.sample,
+                           c == maximum))$tau
+        return(tau)
+    })
+}
+maxima.unadj <- (dl$gene.map %>% mutate(max.loc=Vectorize(find.maximum)(g)))
+(ggplot(maxima.unadj, aes(x=cbPeaktime, y=max.loc))
     + geom_point()
 )
 
@@ -223,24 +260,7 @@ with(dl, {
     )
 })
 
-```
-
-
-```{r oldCode, eval=FALSE, include=FALSE}
-# Plot cell size-factor against tau
-cell.tau <- (samples.all
-    %>% group_by(cell)
-    %>% summarise(mean.tau=mean(modulo.period(tau)))
-    %>% arrange(mean.tau)
-)
-(ggplot(samples.all,
-        aes(x=factor(cell, levels=cell.tau$cell), y=S))
-    + geom_boxplot()
-)
-
 # Plot cbPeaktime against mean sample max predicted mean time
-print(plot.S.posteriors(dl))
-
 with(dl, {
     print(ggplot(predicted.mean
             %>% group_by(gene)
@@ -260,45 +280,6 @@ with(dl, {
         aes(x=iter, y=tau, color=factor(c)))
     + geom_line(alpha=.3)
 )
-
-# Line-plot positive expression for best sample over tau
-(ggplot(sample.best %>% filter(et > 0, g == 23),
-        aes(x=tau-floor(tau/3)*3,
-            y=log(et) - S - phi,
-            group=factor(g),
-            color=is.na(cbRank)))
-    + geom_point(alpha=.7)
-    + geom_smooth(method="loess", se=FALSE, span=.7, alpha=.1)
-)
-
-# Line-plot positive expression for best sample over time
-(ggplot(et.l %>% filter(iter == best.sample, et > 0),
-        aes(x=obstime, y=log(et), color=factor(g)))
-    + geom_point()
-    + geom_smooth(method="loess", se=FALSE, span=1.5)
-)
-
-# Line-plot positive expression for average over samples
-(ggplot(samples.all
-        %>% filter(et > 0)
-        %>% group_by(g, c)
-        %>% summarise(expr=mean(expr),
-                      tau=mean(tau),
-                      cbRank=cbRank[1]),
-        aes(x=tau, y=expr, group=factor(g), color=is.na(cbRank)))
-    + geom_point(alpha=.1)
-    + geom_smooth(method="loess", se=FALSE, span=1.5)
-)
-
-g.by.ll <- (samples.l$ll
-            %>% group_by(g)
-            %>% summarise(ll.median=median(ll))
-            %>% arrange(ll.median))
-(ggplot(samples.l$ll,
-        aes(x=factor(g, levels=g.by.ll$g), y=ll))
-    + geom_boxplot(alpha=.1)
-)
-mean(samples.l$ll$ll)
 
 (ggplot(samples.l$tau,
         # aes(x=factor(c, levels=order(expr.f.stan$time)),

@@ -76,6 +76,8 @@ plot.de.lorean <- function(dl, type="best.predictions") {
 #' the package directory.
 #'
 #' @param dl de.lorean object
+#' @param report.name The name of the report. Used to locate the R
+#'  markdown report file in the package.
 #'
 #' @export
 #'
@@ -313,10 +315,10 @@ format.for.stan <- function(
                 # Data
                 time=cell.map$obstime,
                 expr=stan.m,
-                heldout=missing.idx,
                 # Generated quantities
                 numtest=opts$num.test,
                 testinput=test.input,
+                # Periodic?
                 periodic=opts$periodic,
                 period=opts$period
             )
@@ -511,8 +513,6 @@ compile.model.simple <- function(dl) {
             #
             # For each gene
             for (g in 1:G) {
-                #
-                # Evaluate the log likelihood of the heldout data
                 matrix[C,C] L_g;
                 row_vector[C] a;
                 vector[C] v;
@@ -534,10 +534,10 @@ compile.model.simple <- function(dl) {
                 //
                 // Calculate predicted mean on test inputs
                 kstartest <- psi[g] * cov(tau,
-                                            testinput,
-                                            periodic,
-                                            period,
-                                            l_pe);
+                                          testinput,
+                                          periodic,
+                                          period,
+                                          l_pe);
                 predictedmean[g] <- a * kstartest;
                 //
                 // Calculate predicted variance on test inputs
@@ -790,10 +790,14 @@ plot.S.posteriors <- function(dl) {
 #' Plot best sample predicted expression
 #'
 #' @param dl de.lorean object
+#' @param genes Genes to plot (defaults to genes.high.psi)
 #'
 #' @export
 #'
-plot.best.predictions <- function(dl) {
+plot.best.predictions <- function(dl, genes=NULL) {
+    if (is.null(genes)) {
+        genes <- dl$genes.high.psi
+    }
     with(dl, {
         if (opts$periodic) {
             modulo.period <- function(t) ( t - floor(t / opts$period)
@@ -801,7 +805,9 @@ plot.best.predictions <- function(dl) {
         } else {
             modulo.period <- function(t) { t }
         }
-        gp <- (ggplot(best.mean %>% filter(gene %in% genes.high.psi),
+        gp <- (ggplot(best.mean
+                          %>% left_join(gene.map)
+                          %>% filter(gene %in% genes),
                       aes(x=modulo.period(tau), y=predictedmean + phi),
                       environment=environment())
             + geom_line(alpha=.3)
@@ -813,7 +819,7 @@ plot.best.predictions <- function(dl) {
             + geom_point(aes(x=modulo.period(tau),
                              y=expr - S,
                              color=capture),
-                        data=sample.best %>% filter(gene %in% genes.high.psi),
+                        data=sample.best %>% filter(gene %in% genes),
                         size=4,
                         alpha=.7)
             + facet_wrap(~ gene)
