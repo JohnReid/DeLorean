@@ -158,7 +158,6 @@ partition <- partition.de.lorean(dl, pieces=3)
 
 # Investigate robustness
 ```{r robustness}
-load_all('..')
 robustness.test <- test.robustness.de.lorean(dl)
 
 ```
