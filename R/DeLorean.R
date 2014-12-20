@@ -744,7 +744,7 @@ analyse.noise.levels <- function(dl, num.high.psi=25) {
             %>% group_by(g)
             %>% summarise(omega=mean(omega), psi=mean(psi))
             %>% left_join(gene.map)
-            %>% arrange(omega/psi))
+            %>% arrange(1/psi))
         genes.high.psi <- head(gene.noise.levels$gene, num.high.psi)
     })
 }
