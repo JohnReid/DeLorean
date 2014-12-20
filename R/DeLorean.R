@@ -106,13 +106,92 @@ alpha.for.rug <- function(n, scale=100) {
     1 / (max(1, n / scale))
 }
 
+#' Partition de.lorean object by cells
+#'
+#' @param dl de.lorean object
+#' @param pieces How many pieces to partition into
+#'
+partition.de.lorean <- function(
+    dl,
+    pieces = 2
+) {
+    partition <- (1:(dim(dl)[2]) %% pieces) + 1
+    cells <- sample(colnames(dl$expr))
+    get.piece <- function(p) {
+        partition.cells <- cells[partition == p]
+        cell.filter <- function(cells) cells %in% partition.cells
+        filter.cells(dl, cell.filter)
+    }
+    lapply(1:pieces, get.piece)
+}
+
+#' Test robustness of pseudotime estimation on subsets of de.lorean
+#' object
+#'
+#' @param dl de.lorean object
+#' @param pieces How many pieces to partition into
+#'
+test.robustness.de.lorean <- function(
+    dl,
+    pieces = 2
+) {
+    # Partition de.lorean object into several pieces
+    partition <- partition.de.lorean(dl, pieces)
+    # Define function to fit each piece
+    run.model <- function(piece) {
+        piece <- format.for.stan(piece)
+        piece <- compile.model.simple(piece)
+        piece <- find.best.tau(piece)
+        piece <- fit.model(piece)
+        process.posterior(piece)
+    }
+    # Fit full de.lorean object
+    full.model <- run.model(dl)
+    # Get tau posterior
+    full.tau <- (full.model$samples.l$tau
+                    %>% select(-c)
+                    %>% mutate(fit="part"))
+    # Fit each piece
+    piece.models <- lapply(partition, run.model)
+    # Get tau posterior from each piece and adjust mean to match full fit
+    # mean
+    get.tau.posterior <- function(piece.model) {
+        posterior <- (piece.model$samples.l$tau
+            %>% select(-c)
+            %>% mutate(fit="full"))
+        cells <- unique(posterior$cell)
+        full.mean <- mean((full.tau %>% filter(cell %in% cells))$tau)
+        piece.mean <- mean(posterior$tau)
+        posterior$tau <- posterior$tau - piece.mean + full.mean
+        posterior
+    }
+    # Gather tau posteriors from each piece
+    pieces.tau <- do.call(rbind,
+                          lapply(piece.models, get.tau.posterior))
+    # Combine fit pieces with fit full model
+    tau.posterior <- rbind(full.tau, pieces.tau)
+    # Sort by median tau
+    cells <- (tau.posterior
+        %>% group_by(cell)
+        %>% summarise(median.tau=median(tau))
+        %>% arrange(median.tau)
+    )
+    # Create result list with plot
+    list(tau.posterior = tau.posterior,
+         gp = (ggplot(tau.posterior
+                      %>% mutate(cell=factor(cell, levels=cells$cell)),
+                      aes(x=cell, y=tau, fill=fit))
+                  + geom_boxplot()
+              ))
+}
+
 #' Estimate hyperparameters for model using empirical Bayes
 #'
+#' @param dl de.lorean object
 #' @param sigma.tau Noise s.d. in temporal dimension
 #' @param delta Proportion of within time variance to relabel as between time
 #' @param min.sd Minimum s.d. used for drop-out effects (to avoid s.d. of 0 when no drop outs)
-#'
-#' @param dl de.lorean object
+#' @param length.scale Length scale for stationary GP covariance function
 #'
 #' @export
 #'
@@ -274,47 +353,57 @@ format.for.stan <- function(
         opts$num.test <- num.test
         opts$period <- period
         opts$periodic <- opts$period > 0
-        stan.m <- expr
-        .G <- nrow(stan.m)
-        .C <- ncol(stan.m)
-        dimnames(stan.m)
-        gene.map <- (data.frame(g=1:.G,
+        stopifnot(hold.out < nrow(expr))
+        .G <- nrow(expr) - hold.out
+        .C <- ncol(expr)
+        #
+        # Permute genes to make held out genes random
+        stan.m <- expr[sample(.G+hold.out),]
+        #
+        # Calculate the map from gene indices to genes and their meta data
+        gene.map <- (data.frame(g=1:(.G+hold.out),
                                 gene=factor(rownames(stan.m),
                                             levels=levels(gene.meta$gene)))
+                    %>% mutate(is.held.out=g>.G)
                     %>% left_join(gene.expr)
                     %>% left_join(gene.var)
                     %>% left_join(gene.meta))
-        print(names(gene.map))
         stopifnot(! is.na(gene.map[
             c("g", "gene", "x.mean", "x.sd",
             "phi.hat", "x.hat.sd", "omega.bar", "psi.bar",
             "within.time.mislabelled", "omega.hat", "psi.hat")
         ]))
+        #
+        # Calculate the map from cell indices to genes and their meta data
         cell.map <- (data.frame(c=1:.C,
                                 cell=factor(colnames(stan.m),
                                             levels=levels(cell.meta$cell)))
                     %>% left_join(cell.meta)
                     %>% left_join(cell.expr))
         stopifnot(! is.na(cell.map))
-        # Have one missing value per gene
-        get.missing.for.gene <- function(g) {
-            sample(which(! is.na(stan.m[g,])), 1)
-        }
-        missing.idx <- sapply(1:.G, get.missing.for.gene)
+        #
+        # Calculate the time points at which to make predictions
         test.input <- (
             time.range[1] - 2 * opts$sigma.tau
             + (time.width + 4 * opts$sigma.tau)
                 * (0:(opts$num.test-1)) / (opts$num.test-1))
+        #
+        # Gather all the data into one list
         stan.data <- c(
             # Hyper-parameters
             hyper,
             list(
                 # Dimensions
-                C=ncol(stan.m),
-                G=nrow(stan.m),
+                C=.C,
+                G=.G,
+                H=hold.out,
                 # Data
                 time=cell.map$obstime,
                 expr=stan.m,
+                # Held out parameters
+                heldout_phi=filter(gene.map, g > .G)$phi.hat,
+                heldout_psi=filter(gene.map, g > .G)$psi.hat,
+                heldout_omega=filter(gene.map, g > .G)$omega.hat,
                 # Generated quantities
                 numtest=opts$num.test,
                 testinput=test.input,
@@ -380,10 +469,10 @@ compile.model.simple <- function(dl) {
                     rprime <- r;
                 }
                 return matern32_cov(rprime, l);
-                // return se_cov(rprime, l);
-                // return se_cov(rprime, l);
-                // return matern52_cov(rprime, l);
-                // return matern52_cov(rprime, l);
+                # return se_cov(rprime, l);
+                # return se_cov(rprime, l);
+                # return matern52_cov(rprime, l);
+                # return matern52_cov(rprime, l);
             }
             #
             # Calculate symmetric covariance matrix
@@ -435,68 +524,74 @@ compile.model.simple <- function(dl) {
             #
             # Dimensions
             #
-            int<lower=2> C;  // Number of cells
-            int<lower=2> G;  // Number of genes
+            int<lower=2> C;  # Number of cells
+            int<lower=2> G;  # Number of genes
+            int<lower=0> H;  # Number of held out genes
             #
             # Data
             #
             # Time data
-            int periodic; // Are the expression patterns periodic?
-            real period;  // Cyclic period
-            row_vector<lower=0>[C] time;  // Time index for cell c
+            int periodic; # Are the expression patterns periodic?
+            real period;  # Cyclic period
+            row_vector<lower=0>[C] time;  # Time index for cell c
             # Expression data
-            vector[C] expr[G];
+            vector[C] expr[G+H];
             #
             # Hyperparameters
             #
-            real mu_S;  // Mean of cell size factor, S
-            real<lower=0> sigma_S;  // S.d. of cell size factor, S
-            real mu_phi;  // Mean of gene mean, phi
-            real<lower=0> sigma_phi;  // S.d. of gene mean, phi
-            real mu_psi;  // Mean of log between time variation, psi
-            real<lower=0> sigma_psi;  // S.d. of log between time variation, psi
-            real mu_omega;  // Mean of log within time variation, omega
-            real<lower=0> sigma_omega;  // S.d. of log within time variation, omega
-            real l_pe;  // Length scale squared for phi
-            real<lower=0> sigma_tau;  // Standard deviation for pseudotime
+            real mu_S;  # Mean of cell size factor, S
+            real<lower=0> sigma_S;  # S.d. of cell size factor, S
+            real mu_phi;  # Mean of gene mean, phi
+            real<lower=0> sigma_phi;  # S.d. of gene mean, phi
+            real mu_psi;  # Mean of log between time variation, psi
+            real<lower=0> sigma_psi;  # S.d. of log between time variation, psi
+            real mu_omega;  # Mean of log within time variation, omega
+            real<lower=0> sigma_omega;  # S.d. of log within time variation, omega
+            real l_pe;  # Length scale squared for phi
+            real<lower=0> sigma_tau;  # Standard deviation for pseudotime
+            #
+            # Held out parameters
+            #
+            row_vector[H] heldout_phi;    # Mean expression
+            row_vector<lower=0>[H] heldout_psi;    # Between time variance
+            row_vector<lower=0>[H] heldout_omega;  # Within time variance
             #
             # Generated quantities
             #
-            # Test inputs for predicted mean
-            int numtest;
-            row_vector[numtest] testinput;
+            int numtest; # Number of test inputs for predictions
+            row_vector[numtest] testinput; # Test inputs for predictions
         }
         transformed data {
-            //
-            // Unit diagonal covariance matrix
+            #
+            # Unit diagonal covariance matrix
             cov_matrix[C] identity;
-            //
-            // Transformations of expression
-            //
-            // Unit diagonal covariance matrix
+            #
+            # Transformations of expression
+            #
+            # Unit diagonal covariance matrix
             identity <- diag_matrix(rep_vector(1, C));
         }
         parameters {
-            row_vector[C] S;      // Cell-size factor for expression
-            row_vector[C] tau;    // Pseudotime
-            row_vector[G] phi;    // Mean positive expression for each gene
-            row_vector<lower=0>[G] psi;    // Between time PE variance
-            row_vector<lower=0>[G] omega;  // Within time PE variance
+            row_vector[C] S;      # Cell-size factor for expression
+            row_vector[C] tau;    # Pseudotime
+            row_vector[G] phi;    # Mean expression for each gene
+            row_vector<lower=0>[G] psi;    # Between time variance
+            row_vector<lower=0>[G] omega;  # Within time variance
         }
         model {
-            //
-            // Sample cell-specific factors
-            S ~ normal(mu_S, sigma_S);  // Cell size factors
-            //
-            // Sample gene-specific factors
+            #
+            # Sample cell-specific factors
+            S ~ normal(mu_S, sigma_S);  # Cell size factors
+            #
+            # Sample gene-specific factors
             phi ~ normal(mu_phi, sigma_phi);
             psi ~ lognormal(mu_psi, sigma_psi);
             omega ~ lognormal(mu_omega, sigma_omega);
-            //
-            // Sample pseudotime
-            tau ~ normal(time, sigma_tau);  // Pseudotime
-            //
-            // For each gene
+            #
+            # Sample pseudotime
+            tau ~ normal(time, sigma_tau);  # Pseudotime
+            #
+            # For each gene
             for (g in 1:G) {
                 expr[g] ~ multi_normal(
                               S + phi[g],
@@ -508,43 +603,66 @@ compile.model.simple <- function(dl) {
             }
         }
         generated quantities {
-            row_vector[numtest] predictedmean[G];
-            vector[numtest] predictedvar[G];
+            row_vector[numtest] predictedmean[G+H];
+            vector[numtest] predictedvar[G+H];
+            real logmarglike[G+H];
             #
-            # For each gene
-            for (g in 1:G) {
+            # For each gene (including held out genes)
+            for (g in 1:(G+H)) {
                 matrix[C,C] L_g;
                 row_vector[C] a;
                 vector[C] v;
                 matrix[C,numtest] kstartest;
                 matrix[C,numtest] vtest;
-                //
-                // Cholesky decompose the covariance of the inputs
+                real phi_g;
+                real psi_g;
+                real omega_g;
+                if (g <= G) {
+                    #
+                    # Sampled parameters
+                    phi_g <- phi[g];
+                    psi_g <- psi[g];
+                    omega_g <- omega[g];
+                } else {
+                    #
+                    # Parameters for held out genes
+                    phi_g <- heldout_phi[g-G];
+                    psi_g <- heldout_psi[g-G];
+                    omega_g <- heldout_omega[g-G];
+                }
+                #
+                # Cholesky decompose the covariance of the inputs
                 L_g <- cholesky_decompose(
-                            psi[g] * cov_symmetric(tau,
+                            psi_g * cov_symmetric(tau,
                                                    periodic,
                                                    period,
                                                    l_pe)
-                            + omega[g] * identity);
+                            + omega_g * identity);
                 a <- mdivide_right_tri_low(
                         mdivide_left_tri_low(
                             L_g,
-                            expr[g] - S\' - phi[g])\',
+                            expr[g] - S\' - phi_g)\',
                         L_g);
-                //
-                // Calculate predicted mean on test inputs
-                kstartest <- psi[g] * cov(tau,
+                #
+                # Calculate predicted mean on test inputs
+                kstartest <- psi_g * cov(tau,
                                           testinput,
                                           periodic,
                                           period,
                                           l_pe);
                 predictedmean[g] <- a * kstartest;
-                //
-                // Calculate predicted variance on test inputs
+                #
+                # Calculate predicted variance on test inputs
                 vtest <- mdivide_left_tri_low(L_g, kstartest);
-                predictedvar[g] <- (psi[g]
-                                    + omega[g]
+                predictedvar[g] <- (psi_g
+                                    + omega_g
                                     - diagonal(vtest\' * vtest));
+                #
+                # Calculate log marginal likelihood
+                logmarglike[g] <- (
+                    - a * expr[g] / 2
+                    - sum(log(diagonal(L_g)))
+                    - C * log(2*pi()) / 2);
             }
         }
         '
@@ -585,9 +703,9 @@ find.best.tau <- function(dl, num.tau.candidates = 6000) {
                      beta=rep(0, G),
                      S=cell.map$S.hat,
                      tau=rnorm(C, time, sd=sigma_tau),
-                     phi=gene.map$phi.hat,
-                     psi=gene.map$psi.hat,
-                     omega=gene.map$omega.hat
+                     phi=gene.map$phi.hat[1:G],
+                     psi=gene.map$psi.hat[1:G],
+                     omega=gene.map$omega.hat[1:G]
                 )
             })
         }
@@ -700,14 +818,20 @@ process.posterior <- function(dl) {
             phi=c("g"),
             psi=c("g"),
             omega=c("g"),
-            # ll=c("g"),
             predictedmean=c("g", "t"),
-            predictedvar=c("g", "t")
+            predictedvar=c("g", "t"),
+            logmarglike=c("g")
         )
         samples.l <- melt.samples(la, sample.dims)
         best.sample <- which.max(samples.l$lp__$lp__)
-        # print(mean(as.vector(la$ll)))
-        # print(mean(la$ll[best.sample,]))
+        if (TRUE %in% samples.l$logmarglike$is.held.out) {
+            mean.held.out.marg.ll <- mean(
+                (samples.l$logmarglike
+                %>% left_join(gene.map)
+                %>% filter(is.held.out))$logmarglike)
+            message('Mean held out marginal log likelihood per cell: ',
+                    mean.held.out.marg.ll / stan.data$C)
+        }
         samples.l$tau <- (samples.l$tau
             %>% left_join(cell.map)
             %>% mutate(tau.offset=tau - obstime)
@@ -765,6 +889,24 @@ make.predictions <- function(dl) {
                             %>% left_join(phi)
                             %>% mutate(tau=test.input[t]))
         best.mean <- filter(predictions, best.sample == iter)
+    })
+}
+
+#' Plot posterior for marginal log likelihoods of expression profiles
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+plot.marg.like <- function(dl) {
+    with(dl, {
+        gp <- (ggplot(samples.l$logmarglike %>% left_join(gene.map),
+                      aes(x=gene,
+                          y=logmarglike,
+                          colour=is.held.out),
+                      environment=environment())
+            + geom_boxplot()
+        )
     })
 }
 
