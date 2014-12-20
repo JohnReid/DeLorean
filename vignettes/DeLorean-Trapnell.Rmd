@@ -43,7 +43,7 @@ bib <- read.bibtex("DeLorean.bib")
 ```{r build, echo=FALSE, eval=FALSE}
 library(devtools)
 load_all('..')
-render('DeLorean-McDavid.Rmd')
+render('DeLorean-Trapnell.Rmd')
 
 ```
 
@@ -117,7 +117,7 @@ Define and compile the model, find the best initialisation, and fit the model.
 dl <- format.for.stan(dl)
 dl <- compile.model.simple(dl)
 dl <- find.best.tau(dl)
-dl <- fit.model(dl)
+dl <- fit.model(dl, num.cores = 24)
 sort(sapply(dl, object.size))
 
 ```
