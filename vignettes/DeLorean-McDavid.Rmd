@@ -36,6 +36,7 @@ cite_options(
     cite.style = "numeric",
     check.entries = TRUE)
     # hyperlink = TRUE)
+print(getwd())
 bib <- read.bibtex("DeLorean.bib")
 
 ```
@@ -90,6 +91,7 @@ McDavid et al.'s data is available in the `DeLorean` R package.
 ```{r loadLib}
 library(DeLorean)
 data(McDavidDeLorean)
+
 ```
 This will load a 253 by 930 matrix containing the expression measurements. Not
 all 333 genes are represented as several are rarely expressed.
@@ -115,7 +117,7 @@ dl <- estimate.hyper(
     dl,
     sigma.tau=1.5,
     delta=.5)
-knit.report(dl, "hyper-parameters")
+# knit.report(dl, "hyper-parameters")
 
 ```
 
@@ -139,25 +141,33 @@ differential expression test.
 ```{r filterGenes}
 max.genes <- 23
 max.rank <- 140
-genes.for.stan <- sample((filter(mcdavid.gene.meta,
-                                 pvalue > 5)
-                          %>% arrange(cbRank))$gene,
-                          max.genes)
 genes.for.stan <- (filter(mcdavid.gene.meta,
                                  ! is.na(cbRank),
                                  cbRank < max.rank + 1)
                    %>% arrange(cbRank))$gene
+genes.for.stan <- sample((filter(mcdavid.gene.meta,
+                                 pvalue > 5)
+                          %>% arrange(cbRank))$gene,
+                          max.genes)
 gene.filter <- function(genes) genes %in% genes.for.stan
 dl <- filter.genes(dl, gene.filter)
 
+partition <- partition.de.lorean(dl, pieces=3)
 ```
 
+
+# Investigate robustness
+```{r robustness}
+load_all('..')
+robustness.test <- test.robustness.de.lorean(dl)
+
+```
 
 # Compile and fit model
 
 Define and compile the model, find the best initialisation, and fit the model.
 ```{r model}
-dl <- format.for.stan(dl, period=3)
+dl <- format.for.stan(dl, period=3, hold.out=3)
 dl <- compile.model.simple(dl)
 dl <- find.best.tau(dl)
 dl <- fit.model(dl)
