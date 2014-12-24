@@ -127,7 +127,7 @@ dl <- estimate.hyper(
 Choose a few cells from the PC3 cell line.
 ```{r filterCells}
 set.seed(1)
-max.cells <- 17
+max.cells <- 47
 cells.PC3 <- sample(filter(mcdavid.cell.meta, "PC3" == cellline)$cell,
                     max.cells)
 cell.filter <- function(cells) cells %in% cells.PC3
@@ -141,14 +141,14 @@ differential expression test.
 ```{r filterGenes}
 max.genes <- 23
 max.rank <- 140
-genes.for.stan <- (filter(mcdavid.gene.meta,
-                                 ! is.na(cbRank),
-                                 cbRank < max.rank + 1)
-                   %>% arrange(cbRank))$gene
 genes.for.stan <- sample((filter(mcdavid.gene.meta,
                                  pvalue > 5)
                           %>% arrange(cbRank))$gene,
                           max.genes)
+genes.for.stan <- (filter(mcdavid.gene.meta,
+                                 ! is.na(cbRank),
+                                 cbRank < max.rank + 1)
+                   %>% arrange(cbRank))$gene
 gene.filter <- function(genes) genes %in% genes.for.stan
 dl <- filter.genes(dl, gene.filter)
 
@@ -159,6 +159,7 @@ partition <- partition.de.lorean(dl, pieces=3)
 # Investigate robustness
 ```{r robustness}
 robustness.test <- test.robustness.de.lorean(dl)
+print(robustness.test$gp)
 
 ```
 
