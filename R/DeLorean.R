@@ -591,15 +591,15 @@ compile.model.simple <- function(dl) {
             # Sample pseudotime
             tau ~ normal(time, sigma_tau);  # Pseudotime
             #
-            # For each gene
+            # Expression values for each gene
             for (g in 1:G) {
                 expr[g] ~ multi_normal(
-                              S + phi[g],
-                              psi[g] * cov_symmetric(tau,
-                                                     periodic,
-                                                     period,
-                                                     l_pe)
-                                  + omega[g] * identity);
+                            S + phi[g],
+                            psi[g] * cov_symmetric(tau,
+                                                    periodic,
+                                                    period,
+                                                    l_pe)
+                                + omega[g] * identity);
             }
         }
         generated quantities {

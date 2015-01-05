@@ -127,7 +127,7 @@ dl <- estimate.hyper(
 Choose a few cells from the PC3 cell line.
 ```{r filterCells}
 set.seed(1)
-max.cells <- 47
+max.cells <- 17
 cells.PC3 <- sample(filter(mcdavid.cell.meta, "PC3" == cellline)$cell,
                     max.cells)
 cell.filter <- function(cells) cells %in% cells.PC3
@@ -141,14 +141,14 @@ differential expression test.
 ```{r filterGenes}
 max.genes <- 23
 max.rank <- 140
-genes.for.stan <- sample((filter(mcdavid.gene.meta,
-                                 pvalue > 5)
-                          %>% arrange(cbRank))$gene,
-                          max.genes)
 genes.for.stan <- (filter(mcdavid.gene.meta,
                                  ! is.na(cbRank),
                                  cbRank < max.rank + 1)
                    %>% arrange(cbRank))$gene
+genes.for.stan <- sample((filter(mcdavid.gene.meta,
+                                 pvalue > 5)
+                          %>% arrange(cbRank))$gene,
+                          max.genes)
 gene.filter <- function(genes) genes %in% genes.for.stan
 dl <- filter.genes(dl, gene.filter)
 
@@ -157,7 +157,7 @@ partition <- partition.de.lorean(dl, pieces=3)
 
 
 # Investigate robustness
-```{r robustness}
+```{r robustness, eval=FALSE}
 robustness.test <- test.robustness.de.lorean(dl)
 print(robustness.test$gp)
 
@@ -167,10 +167,11 @@ print(robustness.test$gp)
 
 Define and compile the model, find the best initialisation, and fit the model.
 ```{r model}
+load_all('..')
 dl <- format.for.stan(dl, period=3, hold.out=3)
 dl <- compile.model.simple(dl)
 dl <- find.best.tau(dl)
-dl <- fit.model(dl)
+system.time(dl <- fit.model(dl))
 
 ```
 
