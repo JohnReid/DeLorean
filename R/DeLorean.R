@@ -14,6 +14,10 @@ de.lorean <- function(expr, gene.meta, cell.meta) {
     stopifnot(is.numeric(cell.meta$obstime))
     stopifnot(nrow(expr) == nrow(gene.meta))
     stopifnot(ncol(expr) == nrow(cell.meta))
+    stopifnot(! is.null(rownames(expr)))
+    stopifnot(! is.null(colnames(expr)))
+    stopifnot(all(rownames(expr) == gene.meta$gene))
+    stopifnot(all(colnames(expr) == cell.meta$cell))
     result <- list(
         expr = expr,
         gene.meta = gene.meta,
@@ -784,5 +788,32 @@ NULL
 #' }
 #'
 #' @source \url{http://www.ploscompbiol.org/article/info\%3Adoi\%2F10.1371\%2Fjournal.pcbi.1003696}
+#'
+NULL
+
+#' Single cell expression data and meta data from Guo et al. (2012).
+#' They investigated the expression of 48 genes in 500 mouse embryonic cells.
+#'
+#' @docType data
+#' @keywords datasets
+#'
+#' @name guo.expr
+#' @aliases guo.cell.meta
+#' @aliases guo.gene.meta
+#'
+#' @usage data(GuoDeLorean)
+#'
+#' @format There are three objects in this data:
+#' \itemize{
+#'   \item guo.expr A matrix of log expression values with
+#'     no missing data. Rows are named by genes and columns are
+#'     named by cells/samples.
+#'   \item guo.gene.meta A data frame containing meta-data
+#'     about the genes.
+#'   \item guo.cell.meta A data frame containing meta-data
+#'     about the cells
+#' }
+#'
+#' @source \url{http://www.sciencedirect.com/science/article/pii/S1534580710001103}
 #'
 NULL

@@ -1,0 +1,187 @@
+---
+title: DeLorean analysis of Guo et al. mouse embryo single cell data
+author: John Reid
+bibliography: DeLorean.bib
+output: html_document
+---
+
+<!--
+%\VignetteEngine{knitr::rmarkdown}
+%\VignetteIndexEntry{DeLorean analysis of Guo et al. mouse embryo data}
+-->
+
+
+```{r config, echo=FALSE, message=FALSE}
+library(knitr)
+library(knitcitations)
+library(rmarkdown)
+#
+# knitr options
+#
+opts_chunk$set(
+    fig.path = 'figures/Guo-',
+    stop_on_error = TRUE,
+    fig.width = 12.5,
+    fig.height = 8)
+#
+# Citations
+#
+cleanbib()
+cite_options(
+    # hyperlink = 'to.doc',
+    hyperlink = TRUE,
+    # style = 'html',
+    # citation_format = 'text',
+    citation_format = "pandoc",
+    cite.style = "numeric",
+    check.entries = TRUE)
+    # hyperlink = TRUE)
+bib <- read.bibtex("DeLorean.bib")
+
+```
+
+```{r build, echo=FALSE, eval=FALSE}
+library(devtools)
+library(rmarkdown)
+load_all('..')
+render('DeLorean-Guo.Rmd')
+
+```
+
+```{r loadLibs, echo=FALSE, message=FALSE}
+# suppressMessages(loadfonts())
+library(DeLorean)
+#
+# Stylesheet
+#
+options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
+                                               package="DeLorean"))
+
+```
+
+
+```{r themes, eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE}
+mrc.colors <- c(
+    rgb(138, 121, 103, maxColorValue=255),
+    rgb(217, 165, 41 , maxColorValue=255),
+    rgb(153, 152, 40 , maxColorValue=255),
+    rgb(117, 139, 121, maxColorValue=255),
+    rgb(33 , 103, 126, maxColorValue=255),
+    rgb(208, 114, 50 , maxColorValue=255),
+    rgb(106, 59 , 119, maxColorValue=255),
+    rgb(130, 47 , 90 , maxColorValue=255)
+)
+font.family <- "Verdana"
+font.theme <- theme_update(text=element_text(family=font.family))
+theme_set(font.theme)
+
+```
+
+
+
+`r citet(bib[["guo_resolution_2010"]])` performed qPCR on mouse embryonic
+cells at various stages.
+
+
+# Data
+
+Guo et al.'s data is available in the `DeLorean` R package.
+```{r loadLib}
+library(DeLorean)
+data(GuoDeLorean)
+
+```
+This will load a 48 by 442 matrix containing the expression measurements.
+```{r exprDim}
+dim(guo.expr)
+```
+and two data frames of meta data for the genes and cells.
+```{r meta}
+summary(guo.gene.meta)
+summary(guo.cell.meta)
+```
+
+
+# Estimate hyperparameters
+
+Examine data for empirical Bayes estimation of hyperparameters.
+```{r empiricalBayes}
+dl <- de.lorean(
+    guo.expr,
+    guo.gene.meta,
+    guo.cell.meta)
+dl <- estimate.hyper(
+    dl,
+    sigma.tau=0.5,
+    delta=.5)
+# knit.report(dl, "hyper-parameters")
+
+```
+
+
+# Choose genes and cells
+
+Choose a few cells from each stage.
+```{r filterCells}
+set.seed(1)
+num.at.each.stage <- 5
+cells.for.stage <- function(stage) {
+    dl$cell.meta %>% filter(capture == stage) %>% sample_n(num.at.each.stage)
+}
+cells.sampled <- Reduce(rbind,
+                        sapply(levels(dl$cell.meta$capture),
+                               cells.for.stage, simplify=FALSE))$cell
+cells.sampled
+cell.filter <- function(cells) cells %in% cells.sampled
+dl <- filter.cells(dl, cell.filter)
+
+```
+
+
+# Compile and fit model
+
+Define and compile the model, find the best initialisation, and fit the model.
+```{r model}
+dl <- format.for.stan(dl)
+dl <- compile.model.simple(dl)
+dl <- find.best.tau(dl)
+system.time(dl <- fit.model(dl))
+
+```
+
+
+Examine convergence.
+```{r examConv}
+dl <- examine.convergence(dl)
+dl$rhat.sorted
+
+```
+
+
+
+# Analyse posterior
+
+Examine posterior.
+```{r posterior}
+dl <- process.posterior(dl)
+
+#
+# Analyse gene noise levels
+#
+dl <- analyse.noise.levels(dl)
+# knit.report(dl, "posterior")
+
+#
+# Plot predictions from best sample
+#
+dl <- make.predictions(dl)
+gp <- plot(dl, type="best.predictions")
+print(gp)
+
+```
+
+
+R version and packages used:
+```{r Rversion}
+sessionInfo()
+```
