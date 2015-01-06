@@ -726,7 +726,7 @@ plot.best.predictions <- function(dl, genes=NULL) {
             + facet_wrap(~ gene)
             + scale_x_continuous(name="Pseudotime",
                                  breaks=unique(cell.meta$obstime))
-            + scale_y_continuous(name="Expression (log10)")
+            + scale_y_continuous(name="Expression")
         )
     })
 }
