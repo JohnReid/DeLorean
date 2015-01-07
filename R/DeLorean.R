@@ -384,7 +384,7 @@ format.for.stan <- function(
                                             levels=levels(cell.meta$cell)))
                     %>% left_join(cell.meta)
                     %>% left_join(cell.expr))
-        stopifnot(! is.na(cell.map))
+        stopifnot(! is.na(cell.map %>% select(cell, capture, obstime)))
         #
         # Calculate the time points at which to make predictions
         test.input <- (

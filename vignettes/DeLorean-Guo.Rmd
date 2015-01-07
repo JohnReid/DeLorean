@@ -134,9 +134,9 @@ sampled.cells <- (
     %>% group_by(capture)
     %>% do(sample_n(., num.at.each.stage))
 )
-sampled.cells
+# sampled.cells
 cells.sampled <- sampled.cells$cell
-cells.sampled
+# cells.sampled
 cell.filter <- function(cells) cells %in% cells.sampled
 dl <- filter.cells(dl, cell.filter)
 
