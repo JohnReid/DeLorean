@@ -91,7 +91,10 @@ library(DeLorean)
 data(GuoDeLorean)
 
 ```
-This will load a 48 by 442 matrix containing the expression measurements.
+
+
+This will load a 48 (genes) by 442 (cells) matrix containing the expression
+measurements.
 ```{r exprDim}
 dim(guo.expr)
 ```
@@ -125,12 +128,14 @@ Choose a few cells from each stage.
 ```{r filterCells}
 set.seed(1)
 num.at.each.stage <- 5
-cells.for.stage <- function(stage) {
-    dl$cell.meta %>% filter(capture == stage) %>% sample_n(num.at.each.stage)
-}
-cells.sampled <- Reduce(rbind,
-                        sapply(levels(dl$cell.meta$capture),
-                               cells.for.stage, simplify=FALSE))$cell
+sampled.cells <- (
+    dl$cell.meta
+    %>% filter(capture < "32C" | "TE" == cell.type)
+    %>% group_by(capture)
+    %>% do(sample_n(., num.at.each.stage))
+)
+sampled.cells
+cells.sampled <- sampled.cells$cell
 cells.sampled
 cell.filter <- function(cells) cells %in% cells.sampled
 dl <- filter.cells(dl, cell.filter)
