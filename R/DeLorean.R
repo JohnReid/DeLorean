@@ -90,7 +90,7 @@ knit.report <- function(dl, report.name) {
                                package="DeLorean")
     stylesheet.path <- system.file("inst", "Rmd", "foghorn.css",
                                    package="DeLorean")
-    within(dl, {
+    with(dl, {
         knit2html(report.path,
                   # output=paste(output.dir,
                   #              sprintf('%s.html', report.name),
