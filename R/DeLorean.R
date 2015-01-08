@@ -65,10 +65,10 @@ summary.de.lorean <- function(dl) {
 #'
 #' @export
 #'
-plot.de.lorean <- function(dl, type="best.predictions") {
+plot.de.lorean <- function(dl, type="best.predictions", ...) {
     result <- switch(type,
-        best.predictions=plot.best.predictions(dl),
-        S.posteriors=plot.S.posteriors(dl)
+        best.predictions=plot.best.predictions(dl, ...),
+        S.posteriors=plot.S.posteriors(dl, ...)
     )
     if (is.null(result)) {
         error('Unknown plot type')
@@ -699,7 +699,10 @@ plot.S.posteriors <- function(dl) {
 #'
 #' @export
 #'
-plot.best.predictions <- function(dl, genes=NULL, add.data=T) {
+plot.best.predictions <- function(dl,
+                                  genes=NULL,
+                                  profile.color='black',
+                                  add.data=T) {
     if (is.null(genes)) {
         genes <- dl$genes.high.psi
     }
@@ -715,7 +718,7 @@ plot.best.predictions <- function(dl, genes=NULL, add.data=T) {
                           %>% filter(gene %in% genes),
                       environment=environment()))
         gp <- (
-            plot.add.profiles(gp, color='green', genes)
+            plot.add.profiles(gp, color=profile.color, genes=genes)
             + facet_wrap(~ gene)
             + scale_x_continuous(name="Pseudotime",
                                  breaks=unique(cell.meta$obstime))
@@ -724,26 +727,42 @@ plot.best.predictions <- function(dl, genes=NULL, add.data=T) {
         if (add.data) {
             gp <- plot.add.expr(gp, dl, genes)
         }
+        gp
     })
 }
 
 #' Add expression profiles to a plot
 #'
 #' @param gp Plot object
+#' @param dl de.lorean object
 #' @param genes Genes to plot
 #' @param color Color to use
 #'
 #' @export
 #'
-plot.add.profiles <- function(gp, color='black', genes=NULL) {
+plot.add.profiles <- function(gp, dl=NULL, color='black', genes=NULL) {
+    if (is.null(genes)) {
+        genes <- dl$genes.high.psi
+    }
+    if (is.null(dl)) {
+        .data <- NULL
+    } else {
+        .data <- (
+            dl$best.mean
+                %>% left_join(dl$gene.map)
+                %>% filter(gene %in% genes)
+        )
+    }
     (gp
         + geom_line(alpha=.3,
                     color=color,
+                    data=.data,
                     aes(x=modulo.period(tau), y=predictedmean + phi))
         + geom_ribbon(aes(x=modulo.period(tau),
                           y=predictedmean + phi,
                           ymin=predictedmean+phi-2*sqrt(predictedvar),
                           ymax=predictedmean+phi+2*sqrt(predictedvar)),
+                      data=.data,
                       fill=color,
                       alpha=.1))
 }
