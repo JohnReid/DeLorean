@@ -4,25 +4,7 @@
 
 ## Priors vs. posteriors
 
-The posteriors are compared to the priors. First the posterior for the cell-specific
-drop out effects $\alpha_c$:
-```{r posteriorAlpha}
-(qplot(geom="density", x=as.vector(la$alpha)) + geom_rug()
-    + stat_function(fun=function(x) dnorm(x,
-                                          mean=hyper$mu_alpha,
-                                          sd=hyper$sigma_alpha),
-                    colour="blue", alpha=.7, linetype="dashed")
-)
-```
-
-The posterior for the the gene-specific drop out effects $\beta_g$:
-```{r posteriorBeta}
-(qplot(geom="density", x=as.vector(la$beta)) + geom_rug()
-    + stat_function(fun=function(x) dnorm(x,
-                                          sd=hyper$sigma_beta),
-                    colour="blue", alpha=.7, linetype="dashed")
-)
-```
+The posteriors are compared to the priors.
 
 The posterior for the cell size factors $S_c$:
 ```{r posteriorS}
@@ -42,6 +24,13 @@ The posterior for the gene means $\phi_g$:
                                           sd=hyper$sigma_phi),
                     colour="blue", alpha=.7, linetype="dashed")
 )
+```
+
+The posterior for the gene means $\phi_g$ by gene:
+```{r posteriorPhiByGene}
+(ggplot(samples.l$phi,
+        aes(x=factor(g), y=phi))
+    + geom_boxplot())
 ```
 
 The posterior for the between time variances $\psi_g$:
@@ -64,22 +53,8 @@ The posterior for the within time variances $\omega_g$:
 )
 ```
 
+
 ## Other posteriors
-
-The posterior for the pseudotimes $\tau_c$:
-```{r posteriorTau}
-qplot(geom="density", x=as.vector(la$tau)) + geom_rug()
-```
-
-The posterior for the log likelihoods of the held-out data:
-```{r posteriorLL}
-qplot(geom="density", x=as.vector(la$ll)) + geom_rug()
-```
-
-The posterior for the predicted means:
-```{r posteriorMean}
-qplot(geom="density", x=as.vector(la$predictedmean)) + geom_rug(alpha=.1)
-```
 
 The posterior for the model log probability:
 ```{r posteriorLP}
@@ -93,7 +68,7 @@ The measurement noise compared to the temporal variation:
         environment=environment()) + geom_point())
 ```
 
-Measurement noise:
+Measurement noise by gene:
 ```{r measurementNoise}
 (ggplot(noise.levels,
         aes(x=gene, y=log(omega), fill=gene %in% genes.high.psi),
@@ -101,7 +76,7 @@ Measurement noise:
     + geom_boxplot())
 ```
 
-Temporal variation:
+Temporal variation by gene:
 ```{r temporalVariation}
 (ggplot(noise.levels,
         aes(x=gene, y=log(psi), fill=gene %in% genes.high.psi),
@@ -109,7 +84,7 @@ Temporal variation:
     + geom_boxplot())
 ```
 
-Measurement noise against temporal variation (summarised by gene):
+Measurement noise against temporal variation by gene:
 ```{r measurementNoiseByGene}
 (ggplot(gene.noise.levels,
         aes(x=psi, y=omega, color=gene %in% genes.high.psi),
