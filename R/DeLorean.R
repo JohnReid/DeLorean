@@ -699,7 +699,7 @@ plot.S.posteriors <- function(dl) {
 #'
 #' @export
 #'
-plot.best.predictions <- function(dl, genes=NULL) {
+plot.best.predictions <- function(dl, genes=NULL, add.data=T) {
     if (is.null(genes)) {
         genes <- dl$genes.high.psi
     }
@@ -713,26 +713,57 @@ plot.best.predictions <- function(dl, genes=NULL) {
         gp <- (ggplot(best.mean
                           %>% left_join(gene.map)
                           %>% filter(gene %in% genes),
-                      aes(x=modulo.period(tau), y=predictedmean + phi),
-                      environment=environment())
-            + geom_line(alpha=.3)
-            + geom_ribbon(aes(x=modulo.period(tau),
-                              y=predictedmean + phi,
-                              ymin=predictedmean+phi-2*sqrt(predictedvar),
-                              ymax=predictedmean+phi+2*sqrt(predictedvar)),
-                        alpha=.1)
-            + geom_point(aes(x=modulo.period(tau),
-                             y=expr - S,
-                             color=capture),
-                        data=sample.best %>% filter(gene %in% genes),
-                        size=4,
-                        alpha=.7)
+                      environment=environment()))
+        gp <- (
+            plot.add.profiles(gp, color='green', genes)
             + facet_wrap(~ gene)
             + scale_x_continuous(name="Pseudotime",
                                  breaks=unique(cell.meta$obstime))
             + scale_y_continuous(name="Expression")
         )
+        if (add.data) {
+            gp <- plot.add.expr(gp, dl, genes)
+        }
     })
+}
+
+#' Add expression profiles to a plot
+#'
+#' @param gp Plot object
+#' @param genes Genes to plot
+#' @param color Color to use
+#'
+#' @export
+#'
+plot.add.profiles <- function(gp, color='black', genes=NULL) {
+    (gp
+        + geom_line(alpha=.3,
+                    color=color,
+                    aes(x=modulo.period(tau), y=predictedmean + phi))
+        + geom_ribbon(aes(x=modulo.period(tau),
+                          y=predictedmean + phi,
+                          ymin=predictedmean+phi-2*sqrt(predictedvar),
+                          ymax=predictedmean+phi+2*sqrt(predictedvar)),
+                      fill=color,
+                      alpha=.1))
+}
+
+#' Add expression data to a plot
+#'
+#' @param gp Plot object
+#' @param dl de.lorean object
+#' @param genes Genes to plot
+#'
+#' @export
+#'
+plot.add.expr <- function(gp, dl, genes=NULL) {
+    (gp
+        + geom_point(aes(x=modulo.period(tau),
+                         y=expr - S,
+                         color=capture),
+                     data=dl$sample.best %>% filter(gene %in% genes),
+                     size=4,
+                     alpha=.7))
 }
 
 #' Single cell expression data and meta data from Trapnell et al. (2014).
