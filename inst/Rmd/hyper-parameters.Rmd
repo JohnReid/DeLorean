@@ -1,29 +1,37 @@
 
 # Hyper-parameter estimation
 
+This document describes how the DeLorean package estimates the hyper parameters
+for its model. We do not describe the model in this document. In this data set
+we have expression data for $G=`r nrow(dl$gene.meta)`$ genes and
+$C=`r nrow(dl$cell.meta)`$ cells, $x_{g,c}$, where $1\le g \le G$ and
+$1 \le c \le C$.
 
-We have expression data for $G$ genes and $C$ cells, $x_{g,c}$,
-where $1\le g \le G$ and $1 \le c \le C$
 
+# Estimation of cell size factors: $S_c$
 
-# Cell size factors: S
-
+The cell size factors represent the relative amount of biological material in
+each cell. They are used to account for effects such as sequencing depth or
+lysis efficiency.
 First we calculate the mean expression for each gene, that is the average of
-all those expression values that did not drop out.
+all its expression values.
 $$
 \mu_g = \textrm{Mean}_c (x_{g,c})
 $$
-which has this density:
+which has this density over genes:
 ```{r geneMean}
 (ggplot(gene.expr, aes(x=x.mean)) + geom_density() + geom_rug())
 
 ```
 
-Now we estimate the cell size factors
+Now we estimate the cell size factors. We use the median for robustness and
+examine every gene's relative expression levels in each cell
 $$
 \hat{S}_c = \text{Median}_g (x_{g,c} - \mu_g)
 $$
-which have this density (we show the empirical Bayes prior in dotted blue):
+We estimate the hyperparameters for the cell size factors by fitting a normal
+distribution. The estimated cell size factsrs have this density
+(we show the empirical Bayes prior in dotted blue):
 ```{r cellSizeFactors}
 (ggplot(cell.expr, aes(x=S.hat)) + geom_density() + geom_rug()
     + stat_function(fun=function(x) dnorm(x,
@@ -36,7 +44,7 @@ which have this density (we show the empirical Bayes prior in dotted blue):
 
 
 
-## Expression variation: $\phi$, $\psi$, $\omega$
+## Estimation of expression variation: $\phi_g$, $\psi_g$, $\omega_g$
 
 Given the estimated cell size factors, we can adjust our gene
 measurements, accounting for the different cell sizes
@@ -44,8 +52,9 @@ $$
 \hat{x}_{g,c} = x_{g,c} - \hat{S}_c
 $$
 
-Plot the adjusted s.d. against the unadjusted.
-Hopefully the adjusted is lower in general.
+We expect this should reduce the variation in the expression levels on average.
+We check this by plotting the standard deviation of the adjusted versus
+the unadjusted.
 ```{r adjVsUnadj}
 (ggplot(gene.expr,
         aes(x=x.sd, y=x.hat.sd))
@@ -55,17 +64,8 @@ Hopefully the adjusted is lower in general.
 
 ```
 
-Is there a relationship between the adjusted s.d. and the mean?
-The correlation is `r with(gene.expr, {cor(phi.hat, x.hat.sd)})`
-```{r adjSDvsMean}
-(ggplot(gene.expr,
-        aes(x=phi.hat, y=x.hat.sd))
-    + geom_point()
-)
 
-```
-
-From these adjusted expression measurements, we can estimate the genes' means
+From these adjusted expression measurements, we can reestimate the genes' means
 $$
 \hat{\mu}_g = \textrm{Mean}_c (\hat{x}_{g,c})
 $$
@@ -79,12 +79,16 @@ which have this density:
 )
 
 ```
+we again show the hyperparameters as the dotted blue line.
 
 Having estimated the gene expression means, we can decompose the observed
 variance.  We examine the variance both between and within time points. We
 expect some of the variance within a time point to be associated with noise in
 the temporal dimension, that is estimating the pseudotime correctly should
-reduce the within time variance.
+reduce the within time variance. The estimation procedure has a parameter
+$\delta$ (which in this example was `r opts$delta`) that allows the user to
+determine how much of the within time variance they wish to ascribe to
+between time variance.
 
 Let
 $$
