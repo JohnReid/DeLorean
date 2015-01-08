@@ -30,7 +30,7 @@ $$
 \hat{S}_c = \text{Median}_g (x_{g,c} - \mu_g)
 $$
 We estimate the hyperparameters for the cell size factors by fitting a normal
-distribution. The estimated cell size factsrs have this density
+distribution. The estimated cell size factors have this density
 (we show the empirical Bayes prior in dotted blue):
 ```{r cellSizeFactors}
 (ggplot(cell.expr, aes(x=S.hat)) + geom_density() + geom_rug()
@@ -69,7 +69,8 @@ From these adjusted expression measurements, we can reestimate the genes' means
 $$
 \hat{\mu}_g = \textrm{Mean}_c (\hat{x}_{g,c})
 $$
-which have this density:
+which have this density (again we show the hyperparameters as a
+dotted blue line):
 ```{r geneAdjMean}
 (ggplot(gene.expr, aes(x=phi.hat)) + geom_density() + geom_rug()
     + stat_function(fun=function(x) dnorm(x,
@@ -79,7 +80,6 @@ which have this density:
 )
 
 ```
-we again show the hyperparameters as the dotted blue line.
 
 Having estimated the gene expression means, we can decompose the observed
 variance.  We examine the variance both between and within time points. We
@@ -92,12 +92,12 @@ between time variance.
 
 Let
 $$
-t_c \in \{\kappa_1, \dots, \kappa_T\}
+k_c \in \{\kappa_1, \dots, \kappa_T\}
 $$
 be the time point at which cell $c$ was captured. We partition the cells
 by their captured time points indexed by $1 \le t \le T$:
 $$
-\mathcal{K}_t = \{c: t_c = \kappa_t\}
+\mathcal{K}_t = \{c: k_c = \kappa_t\}
 $$
 We group the expression measurements by gene and observed time to
 calculate means and variances:
@@ -154,15 +154,18 @@ $$
 \hat{\omega}_g &= \bar{\omega}_g - \delta \bar{\omega}_g
 \end{align}
 $$
-giving these densities:
-
-```{r geneVarBetweenWithinAdj}
+giving this density for the between time variation:
+```{r geneVarBetweenAdj}
 (ggplot(gene.var, aes(x=psi.hat)) + geom_density() + geom_rug()
     + stat_function(fun=function(x) dlnorm(x,
                                            mean=hyper$mu_psi,
                                            sd=hyper$sigma_psi),
                     colour="blue", alpha=.7, linetype="dashed")
 )
+```
+
+and this density for the within time variation:
+```{r geneVarWithinAdj}
 (ggplot(gene.var, aes(x=omega.hat)) + geom_density() + geom_rug()
     + stat_function(fun=function(x) dlnorm(x,
                                            mean=hyper$mu_omega,
