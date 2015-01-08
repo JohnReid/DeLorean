@@ -127,7 +127,7 @@ dl <- estimate.hyper(
 Choose a few cells from each stage.
 ```{r filterCells}
 set.seed(1)
-num.at.each.stage <- 2
+num.at.each.stage <- 9
 te.sampled.cells <- (
     dl$cell.meta
     %>% filter(capture < "32C" | "TE" == cell.type)
@@ -156,6 +156,7 @@ run.model <- function(dl, cells.sampled) {
     dl <- examine.convergence(dl)
     dl <- process.posterior(dl)
     dl <- analyse.noise.levels(dl)
+    dl <- make.predictions(dl)
     dl
 }
 dl.te  <- run.model(dl,  te.sampled.cells$cell)
@@ -164,16 +165,19 @@ dl.epi <- run.model(dl, epi.sampled.cells$cell)
 
 ```
 
+Compare the profiles in the three fitted models for the TE, PE and ICM.
 
 ```{r compareProfiles}
-load_all('..')
-dl.te  <- make.predictions(dl.te)
-dl.pe  <- make.predictions(dl.pe)
-dl.epi <- make.predictions(dl.epi)
-gp <- plot(dl.te, type="best.predictions", profile.color='orange', add.data=F)
-gp <- plot.add.profiles(gp, dl=dl.pe , color='green', genes=dl.te$genes.high.psi)
-gp <- plot.add.profiles(gp, dl=dl.epi, color='blue' , genes=dl.te$genes.high.psi)
+# load_all('..')
+gp <- plot(dl.te, type="best.predictions", profile.color='orange',
+           add.data=F, genes=dl.te$gene.map$gene)
+gp <- plot.add.profiles(gp, dl=dl.pe , color='green',
+                        genes=dl.te$gene.map$gene)
+gp <- plot.add.profiles(gp, dl=dl.epi, color='blue',
+                        genes=dl.te$gene.map$gene)
+# png('Guo-fates.png', width=1400, height=900)
 print(gp)
+# dev.off()
 
 ```
 
