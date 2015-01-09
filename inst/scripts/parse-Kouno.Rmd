@@ -71,7 +71,7 @@ kouno.cell.meta <- data.frame(
                    function(t) rep(time.points[t], 120))),
         ordered=TRUE,
         levels=time.points)) %>% mutate(obstime=obs.times[capture])
-kouno.gene.meta <- data.frame(gene=names(expr %>% select(-cell)))
+kouno.gene.meta <- data.frame(gene=names(expr %>% select(-cell, -X)))
 
 ```
 
