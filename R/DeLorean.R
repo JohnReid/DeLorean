@@ -758,7 +758,7 @@ cov.calc.gene.conditioned <- function(dl,
             sample.iter <- best.sample
         }
         Sigma <- cov.calc.gene(dl, gene.idx, cov.fn, sample.iter)
-        num.cells <- nrow(dl.te$cell.map)
+        num.cells <- nrow(dl$cell.map)
         # From Appendix A.2 of Rasmussen/Williams GP book
         slice.obsd <- 1:num.cells
         slice.test <- (num.cells+1):nrow(Sigma)
