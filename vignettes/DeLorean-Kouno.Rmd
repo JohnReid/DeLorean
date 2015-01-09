@@ -104,7 +104,7 @@ dl <- de.lorean(
     kouno.cell.meta)
 dl <- estimate.hyper(
     dl,
-    sigma.tau=0.5,
+    sigma.tau=12,
     delta=.5)
 # knit.report(dl, "hyper-parameters")
 
