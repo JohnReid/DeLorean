@@ -1048,3 +1048,32 @@ NULL
 #' @source \url{http://www.sciencedirect.com/science/article/pii/S1534580710001103}
 #'
 NULL
+
+#' Kouno et al. investigated the transcriptional network controlling how
+#' THP-1 human myeloid monocytic leukemia cells differentiate into
+#' macrophages. They provide expression values for 45 genes in 960 single
+#' cells captured across 8 distinct time points.
+#'
+#' @docType data
+#' @keywords datasets
+#'
+#' @name kouno.expr
+#' @aliases kouno.cell.meta
+#' @aliases kouno.gene.meta
+#'
+#' @usage data(KounoDeLorean)
+#'
+#' @format There are three objects in this data:
+#' \itemize{
+#'   \item kouno.expr A matrix of log expression values with
+#'     no missing data. Rows are named by genes and columns are
+#'     named by cells/samples.
+#'   \item kouno.gene.meta A data frame containing meta-data
+#'     about the genes.
+#'   \item kouno.cell.meta A data frame containing meta-data
+#'     about the cells
+#' }
+#'
+#' @source \url{http://genomebiology.com/2013/14/10/R118/abstract}
+#'
+NULL

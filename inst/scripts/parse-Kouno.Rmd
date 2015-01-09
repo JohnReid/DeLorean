@@ -1,0 +1,120 @@
+
+---
+title: Parse Kuono et al. data
+author: John Reid
+output: html_document
+---
+
+
+```{r config, echo=FALSE, message=FALSE}
+library(knitr)
+library(rmarkdown)
+#
+# knitr options
+#
+opts_chunk$set(
+    fig.path = 'figures/Kuono-',
+    stop_on_error = TRUE,
+    fig.width = 12.5,
+    fig.height = 8)
+
+```
+
+```{r build, echo=FALSE, eval=FALSE}
+library(rmarkdown)
+library(devtools)
+load_all('../..')
+render('parse-Kouno.Rmd')
+
+```
+
+```{r loadLibs, echo=FALSE, message=FALSE}
+# suppressMessages(loadfonts())
+#
+# Stylesheet
+#
+options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
+                                               package="DeLorean"))
+
+```
+
+
+
+Kouno et al. investigated the transcriptional network controlling how THP-1
+human myeloid monocytic leukemia cells differentiate into macrophages. Load
+their data from the CSV provided as supplementary information in their paper.
+
+```{r}
+library(dplyr)
+expr <- read.csv('../../data/gb-2013-14-10-r118-s3.csv')
+
+```
+
+
+Their cell labels have been messed up but Excel, so regenerate these.
+```{r}
+time.points <- c("0h", "1h", "6h", "12h", "24h", "48h", "72h", "96h")
+obs.times <- c(0, 1, 6, 12, 24, 48, 72, 96)
+cell.ids <- (
+    as.vector(
+        sapply(1:length(time.points),
+               function(t) sapply(1:120,
+                                  function(c) sprintf("%s-%03d",
+                                                      time.points[t],
+                                                      c)))))
+expr$cell <- factor(cell.ids, levels=cell.ids)
+kouno.cell.meta <- data.frame(
+    cell=expr$cell,
+    capture=factor(
+        as.vector(
+            sapply(1:length(time.points),
+                   function(t) rep(time.points[t], 120))),
+        ordered=TRUE,
+        levels=time.points)) %>% mutate(obstime=obs.times[capture])
+kouno.gene.meta <- data.frame(gene=names(expr %>% select(-cell, -X)))
+
+```
+
+
+Kouno et al.'s data includes single cell expression values for
+`r nrow(kouno.gene.meta)` genes in `r nrow(kouno.cell.meta)` cells
+spread over `r length(unique(kouno.cell.meta$capture))` time points.
+
+
+Melt the data into a long format and log2 transform.
+```{r}
+kouno.l <- melt(expr, variable.name="gene", value.name="expr")
+kouno.l <- kouno.l %>% mutate(log.expr=log2(expr))
+
+```
+
+
+Plot the raw expression and the log transformed expression.
+```{r}
+ggplot(kouno.l, aes(x=expr)) + geom_histogram()
+ggplot(kouno.l, aes(x=log.expr)) + geom_histogram()
+
+```
+
+The log2 expression looks normally distributed. We will use this for
+as input to the DeLorean package. Cast the long format back into a matrix
+for use in the DeLorean package.
+```{r}
+kouno.expr <- kouno.l %>% acast(gene ~ cell, value.var="log.expr")
+```
+
+
+Save the data in a format suitable for DeLorean package.
+```{r}
+save(kouno.expr,
+     kouno.gene.meta,
+     kouno.cell.meta,
+     file='../../data/KounoDeLorean.rda')
+
+```
+
+
+R version and packages used:
+```{r Rversion}
+sessionInfo()
+```
