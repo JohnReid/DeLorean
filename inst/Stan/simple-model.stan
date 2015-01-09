@@ -56,7 +56,8 @@ functions {
         matrix[cols(tau),cols(tau)] result;
         for (c1 in 1:cols(tau)) {
             for (c2 in 1:c1) {
-                result[c1,c2] <- cov_fn(tau[c2] - tau[c1], periodic, period, l);
+                result[c1,c2] <- cov_fn(tau[c2] - tau[c1], periodic,
+                                        period, l);
                 if(c1 != c2) {
                     result[c2,c1] <- result[c1,c2];
                 }
@@ -170,9 +171,9 @@ model {
         expr[g] ~ multi_normal(
                     S + phi[g],
                     psi[g] * cov_symmetric(tau,
-                                            periodic,
-                                            period,
-                                            l_pe)
+                                           periodic,
+                                           period,
+                                           l_pe)
                         + omega[g] * identity);
     }
 }
@@ -207,10 +208,10 @@ generated quantities {
         #
         # Cholesky decompose the covariance of the inputs
         L_g <- cholesky_decompose(
-                    psi_g * cov_symmetric(tau,
-                                            periodic,
-                                            period,
-                                            l_pe)
+                   psi_g * cov_symmetric(tau,
+                                         periodic,
+                                         period,
+                                         l_pe)
                     + omega_g * identity);
         a <- mdivide_right_tri_low(
                 mdivide_left_tri_low(
@@ -220,10 +221,10 @@ generated quantities {
         #
         # Calculate predicted mean on test inputs
         kstartest <- psi_g * cov(tau,
-                                    testinput,
-                                    periodic,
-                                    period,
-                                    l_pe);
+                                 testinput,
+                                 periodic,
+                                 period,
+                                 l_pe);
         predictedmean[g] <- a * kstartest;
         #
         # Calculate predicted variance on test inputs
