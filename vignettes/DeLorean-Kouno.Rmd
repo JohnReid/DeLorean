@@ -116,7 +116,7 @@ dl <- estimate.hyper(
 Choose a few cells from each stage.
 ```{r filterCells}
 set.seed(1)
-num.at.each.stage <- 3
+num.at.each.stage <- 7
 sampled.cells <- (
     dl$cell.meta
     %>% group_by(capture)
