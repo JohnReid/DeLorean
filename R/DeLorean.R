@@ -68,7 +68,8 @@ summary.de.lorean <- function(dl) {
 plot.de.lorean <- function(dl, type="best.predictions", ...) {
     result <- switch(type,
         best.predictions=plot.best.predictions(dl, ...),
-        S.posteriors=plot.S.posteriors(dl, ...)
+        S.posteriors=plot.S.posteriors(dl, ...),
+        pseudotime=plot.pseudotime(dl, ...)
     )
     if (is.null(result)) {
         error('Unknown plot type')
@@ -850,6 +851,24 @@ plot.marg.like <- function(dl) {
                           colour=is.held.out),
                       environment=environment())
             + geom_boxplot()
+        )
+    })
+}
+
+#' Plot pseudotime (tau) against observed capture time
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+plot.pseudotime <- function(dl) {
+    with(dl, {
+        gp <- (ggplot(samples.l$tau %>% filter(iter == best.sample),
+                      aes(x=tau, y=obstime, color=capture),
+                      environment=environment())
+            + geom_point()
+            + scale_x_continuous(name="Pseudotime (tau)")
+            + scale_y_continuous(name="Observed (capture) time")
         )
     })
 }
