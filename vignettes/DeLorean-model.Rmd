@@ -95,7 +95,7 @@ theme_set(font.theme)
 ```
 
 
-```{r exp-init, echo=FALSE, message=FALSE}
+```{r exp-init, echo=FALSE, message=FALSE, cache=TRUE}
 tmin <- 0
 tmax <- 3
 twidth <- tmax - tmin
@@ -205,7 +205,7 @@ because the cell (or population of cells) are destroyed as part of the assay.
 We would prefer to have longitudinal data whereby a cell is tracked through
 time and the expression measurements are made on the same biological object at
 distinct time points. However with current technologies this is difficult to
-acheive.
+achieve.
 
 Biological systems are typically noisy and stochastic in nature. In many
 systems we have reason to believe each cell may progress at its own rate.  This
@@ -276,19 +276,19 @@ many genes and cells.
 
 If the model does not enforce smoothness on the expression profiles, the
 data can be explained with low levels of noise.
-```{r exp-predictions-not-smooth, echo=FALSE, message=FALSE}
+```{r exp-predictions-not-smooth, echo=FALSE, message=FALSE, cache=TRUE, dependson="exp-init"}
 print(plot.predictions(make.predictions(sigma.gp=2 , sigma.noise=.3, length.scale=.1)))
 ```
 
 If too much smoothness is enforced, the model requires high noise levels to
 explain the expression profiles.
-```{r exp-predictions-too-smooth, echo=FALSE, message=FALSE}
+```{r exp-predictions-too-smooth, echo=FALSE, message=FALSE, cache=TRUE, dependson="exp-init"}
 print(plot.predictions(make.predictions(sigma.gp=.3, sigma.noise=2 , length.scale=1)))
 ```
 
-The model tries to balance the smoothness against the noise to acheive
+The model tries to balance the smoothness against the noise to achieve
 expression profiles that are reasonably smooth but have low noise levels.
-```{r exp-predictions, echo=FALSE, message=FALSE}
+```{r exp-predictions, echo=FALSE, message=FALSE, cache=TRUE, dependson="exp-init"}
 print(plot.predictions(make.predictions(sigma.gp=2 , sigma.noise=.3, length.scale=1)))
 
 ```
@@ -296,8 +296,10 @@ print(plot.predictions(make.predictions(sigma.gp=2 , sigma.noise=.3, length.scal
 
 # Data
 
-The DeLorean model is fit to a matrix of expression data for $G$ genes (rows)
-in $C$ cells (columns). Each cell $c$ has been captured at a time point $t_c$.
+The DeLorean model is fit to a matrix of expression data $x_{g,c}$ for
+$G$ genes (rows) in $C$ cells (columns). Each cell $c$ has been captured
+at a time point
+$k_c \in \{\kappa_1,\dots,\kappa_T\}$.
 The expression measurements are modelled using Gaussian processes
 (`r citet(bib[["rasmussen_gaussian_2006"]])`). Expression values often
 have a roughly normal distribution on a logarithmic scale and because of this
@@ -307,19 +309,19 @@ fitting the DeLorean model.
 
 # Model
 
-The model can be split into two parts: one part represents the gene expression
-profiles; the other part represents the pseudotimes associated with each
-cell.
+The model can be split into several parts: one part represents the gene
+expression profiles; another part represents the pseudotimes associated with
+each cell; and another part links the expression data to the profiles.
 
 ## Gene expression profiles
 
 The expression profiles are modelled using Gaussian processes. The expression
 profile of each gene $g$ is a draw from a Gaussian process
 $$
-    x_{g}(.) \sim \mathcal{GP}(\phi_g(.), \Sigma_g(., .))
+    x_{g}() \sim \mathcal{GP}(\phi_g(), \Sigma_g(,))
 $$
 where $\phi_g$ is a (constant) gene-specific mean function, and $\Sigma_g$
-is a gene specific covariance function.
+is a gene-specific covariance function.
 $$
     \phi_g \sim \mathcal{N}(\mu_\phi, \sigma_\phi) \\
     \Sigma_g(\tau_1, \tau_2)
@@ -331,12 +333,23 @@ that are shared across genes; $\psi_g$ parameterises the
 amount of temporal variation this gene profile has; and $\omega_g$ models
 the noise levels for this gene.
 $$
-    \phi_g \sim \mathcal{N}(\mu_\psi, \sigma_\psi) \\
-    \omega_g \sim \mathcal{N}(\mu_\omega, \sigma_\omega) \\
+    \log \psi_g \sim \mathcal{N}(\mu_\psi, \sigma_\psi) \\
+    \log \omega_g \sim \mathcal{N}(\mu_\omega, \sigma_\omega) \\
 $$
-$\Sigma_\tau$ is taken to be a Matern$\frac{3}{2}$ covariance function. Our
-experience shows that this function captures our smoothness constraints well
-although any reasonable covariance function could be used.
+
+
+## Pseudotimes
+
+The pseudotime for a cell, $\tau_c$, is given a prior centred on the time
+the cell was captured.
+$$
+    \tau_c \sim \mathcal{N}(k_c, \sigma_\tau)
+$$
+Each $\tau_c$ is used in the calculation of the covariance structure over
+pseudotimes $\Sigma_\tau$.  $\Sigma_\tau$ is taken to be a Matern$_{3/2}$
+covariance function. Our experience shows that this function captures
+our smoothness constraints well although any reasonable covariance
+function could be used.
 $$
     \Sigma_\tau(\tau_1, \tau_2)
         = \textrm{Matern}_{3/2}(r=\frac{|\tau_1 - \tau_2|}{l})
@@ -345,13 +358,29 @@ $$
 where $l$ is a length-scale hyperparameter.
 
 
-## Pseudotimes
+## Expression data
+
+The model links the expression data to the expression profiles by evaluating
+the profiles at the pseudotimes and adjusting for a cell size factor, $S_c$.
+$$
+    x_{g,c} = x_g(\tau_c) + S_c
+$$
+The cell size factors represent technical and biological effects such as
+sequencing depth and lysis efficiency and account for data in which
+average expression varies by cell. In our experience this is a common effect
+in single cell data and should be accounted for. We place a prior on the
+cell sizes that are estimated by the model.
+$$
+    S_c \sim \mathcal{N}(\mu_S, \sigma_S)
+$$
 
 ## Hyperparameters
 
-All of the hyperparameters $\mu_\phi, \sigma_\phi, \mu_\psi, \sigma_\psi,
-\mu_\omega, \sigma_\omega$ are estimated by an empirical Bayes procedure (see a
-separate vignette). The hyperparameters $l, \sigma_tau$ are supplied directly
-by the user of the DeLorean package.
+All of the hyperparameters
+$\mu_\phi, \sigma_\phi, \mu_\psi, \sigma_\psi, \mu_\omega, \sigma_\omega, \mu_S, \sigma_S$
+are estimated by an empirical
+Bayes procedure (see a separate vignette). The hyperparameters
+$l, \sigma_\tau$
+are supplied directly by the user of the DeLorean package.
 
 # References
