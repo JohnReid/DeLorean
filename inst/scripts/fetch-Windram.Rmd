@@ -1,0 +1,94 @@
+
+---
+title: Fetch Windram et al. data
+author: John Reid
+output: html_document
+---
+
+
+```{r config, echo=FALSE, message=FALSE}
+library(knitr)
+library(rmarkdown)
+#
+# knitr options
+#
+opts_chunk$set(
+    fig.path = 'figures/Windram-',
+    stop_on_error = TRUE,
+    fig.width = 12.5,
+    fig.height = 8)
+
+```
+
+```{r build, echo=FALSE, eval=FALSE}
+library(rmarkdown)
+library(devtools)
+load_all('../..')
+render('fetch-Windram.Rmd')
+
+```
+
+```{r loadLibs, echo=FALSE, message=FALSE}
+library(dplyr)
+# suppressMessages(loadfonts())
+#
+# Stylesheet
+#
+options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
+                                               package="DeLorean"))
+
+```
+
+
+
+Windram et al. investigated the defense response in *Arabidopsis thaliana*
+to the necrotrophic fungal pathogen *Botrytis cinerea*.
+
+```{r}
+# library(dplyr)
+# source("http://bioconductor.org/biocLite.R")
+# biocLite("GEOquery")
+library(GEOquery)
+gse <- getGEO("GSE29642", GSEMatrix=TRUE)[[1]]
+show(gse)
+length(gse)
+# Expression data
+class(exprs(gse))
+dim(exprs(gse))
+# Phenotypic data
+dim(pData(gse))
+class(pData(gse))
+names(pData(gse))
+
+windram.expr <- exprs(gse)
+colnames(windram.expr)
+windram.gene.meta <- data.frame(gene=rownames(windram.expr))
+windram.cell.meta <- data.frame(
+    cell=pData(gse)$geo_accession,
+    # title=pData(gse)$title,
+    obstime=as.numeric(str_match(pData(gse)$title, "[[:digit:]]+")),
+    condition=str_match(pData(gse)$title, "^Mock|Botrytis")
+) %>% mutate(capture=factor(as.character(obstime),
+                            ordered=TRUE,
+                            levels=unique(as.character(obstime))))
+windram.cell.meta
+levels(windram.cell.meta$capture)
+
+```
+
+
+
+Save the data in a format suitable for DeLorean package.
+```{r}
+save(windram.expr,
+     windram.gene.meta,
+     windram.cell.meta,
+     file='../../data/WindramDeLorean.rda')
+
+```
+
+
+R version and packages used:
+```{r Rversion}
+sessionInfo()
+```

@@ -1096,3 +1096,32 @@ NULL
 #' @source \url{http://genomebiology.com/2013/14/10/R118/abstract}
 #'
 NULL
+
+#' Windram et al. investigated the defense response in Arabidopsis
+#' thaliana to the necrotrophic fungal pathogen Botrytis cinerea.
+#' They collected data at 24 time points in two conditions for
+#' 30336 genes.
+#'
+#' @docType data
+#' @keywords datasets
+#'
+#' @name windram.expr
+#' @aliases windram.cell.meta
+#' @aliases windram.gene.meta
+#'
+#' @usage data(WindramDeLorean)
+#'
+#' @format There are three objects in this data:
+#' \itemize{
+#'   \item windram.expr A matrix of log expression values with
+#'     no missing data. Rows are named by genes and columns are
+#'     named by cells/samples.
+#'   \item windram.gene.meta A data frame containing meta-data
+#'     about the genes.
+#'   \item windram.cell.meta A data frame containing meta-data
+#'     about the cells
+#' }
+#'
+#' @source \url{http://www.plantcell.org/content/24/9/3530.long}
+#'
+NULL
