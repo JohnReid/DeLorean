@@ -104,7 +104,7 @@ dl <- de.lorean(
     windram.cell.meta)
 dl <- estimate.hyper(
     dl,
-    sigma.tau=12,
+    sigma.tau=2,
     delta=.5)
 # knit.report(dl, "hyper-parameters")
 
@@ -144,7 +144,7 @@ dl <- analyse.noise.levels(dl)
 dl <- make.predictions(dl)
 gp <- plot(dl, type="best.predictions")
 print(gp)
-plot.(dl, type="pseudotime")
+plot(dl, type="pseudotime")
 
 ```
 
