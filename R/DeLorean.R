@@ -290,7 +290,7 @@ estimate.hyper <- function(
 }
 
 
-#' Filter genes and cells
+#' Filter genes
 #'
 #' @param dl de.lorean object
 #'
@@ -306,6 +306,14 @@ filter.genes <- function(dl, gene.filter) {
         }
     })
 }
+
+
+#' Filter cells
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
 filter.cells <- function(dl, cell.filter) {
     within(dl, {
         if( ! is.null(cell.filter) ) {
