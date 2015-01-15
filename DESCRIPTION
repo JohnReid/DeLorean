@@ -10,7 +10,8 @@ Depends:
     stringr (>= 0.6.2),
     dplyr (>= 0.2),
     reshape2 (>= 1.4),
-    ggplot2 (>= 1.0.0)
+    ggplot2 (>= 1.0.0),
+    knitr (>= 1.8)
 License: MIT
 LazyData: true
 VignetteBuilder: knitr

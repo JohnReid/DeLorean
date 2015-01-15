@@ -250,26 +250,32 @@ estimate.hyper <- function(
                           x.sd=sd(x),
                           phi.hat=mean(x.hat),
                           x.hat.sd=sd(x.hat))
+            %>% filter(! is.na(x.sd), ! is.na(x.hat.sd))
         )
         stopifnot(! is.na(gene.expr))
+        stopifnot(nrow(gene.expr) > 0)  # Must have some rows left
         # Examine the variation within genes and times
         gene.time.expr <- (expr.l
             %>% left_join(cell.meta)
             %>% group_by(gene, capture)
             %>% summarise(x.mean=mean(x.hat),
                           x.var=var(x.hat))
+            %>% filter(! is.na(x.var))
         )
         stopifnot(! is.na(gene.time.expr))
+        stopifnot(nrow(gene.time.expr) > 0)  # Must have some rows left
         # Decomposition of variance within and between time.
         gene.var <- (gene.time.expr
             %>% group_by(gene)
             %>% summarise(omega.bar=mean(x.var, na.rm=TRUE),
                           psi.bar=var(x.mean, na.rm=TRUE))
+            %>% filter(! is.na(psi.bar))
             %>% mutate(within.time.mislabelled = opts$delta * omega.bar,
                        omega.hat = omega.bar - within.time.mislabelled,
                        psi.hat = psi.bar + within.time.mislabelled)
         )
         stopifnot(! is.na(gene.var))
+        stopifnot(nrow(gene.var) > 0)  # Must have some rows left
         if (is.null(length.scale)) {
             length.scale <- time.width
         }
