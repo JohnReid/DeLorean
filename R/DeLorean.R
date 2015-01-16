@@ -69,10 +69,11 @@ plot.de.lorean <- function(dl, type="best.predictions", ...) {
     result <- switch(type,
         best.predictions=plot.best.predictions(dl, ...),
         S.posteriors=plot.S.posteriors(dl, ...),
-        pseudotime=plot.pseudotime(dl, ...)
+        pseudotime=plot.pseudotime(dl, ...),
+        convergence=plot.convergence(dl, ...)
     )
     if (is.null(result)) {
-        error('Unknown plot type')
+        stop('Unknown plot type')
     }
     result
 }
@@ -883,6 +884,28 @@ plot.pseudotime <- function(dl) {
             + geom_point()
             + scale_x_continuous(name="Pseudotime (tau)")
             + scale_y_continuous(name="Observed (capture) time")
+        )
+    })
+}
+
+#' Plot the Rhat convergence statistics. examine.convergence must be called
+#' before this plot can be made.
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+plot.convergence <- function(dl) {
+    with(dl, {
+        rhat.df <- data.frame(
+            rhat=rhat.sorted,
+            param=names(rhat.sorted),
+            parameter=str_match(names(rhat.sorted), "^[[:alpha:]]+"))
+        gp <- (ggplot(rhat.df,
+                      aes(x=rhat, colour=parameter),
+                      environment=environment())
+            + geom_density()
+            + geom_rug()
         )
     })
 }
