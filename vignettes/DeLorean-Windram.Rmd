@@ -10,6 +10,14 @@ output: html_document
 %\VignetteIndexEntry{DeLorean analysis of Arabidopsis time series}
 -->
 
+```{r build, echo=FALSE, eval=FALSE}
+library(devtools)
+library(rmarkdown)
+load_all('..')
+render('DeLorean-Windram.Rmd')
+
+```
+
 
 ```{r config, echo=FALSE, message=FALSE}
 library(knitr)
@@ -37,14 +45,6 @@ cite_options(
     check.entries = TRUE)
     # hyperlink = TRUE)
 bib <- read.bibtex("DeLorean.bib")
-
-```
-
-```{r build, echo=FALSE, eval=FALSE}
-library(devtools)
-library(rmarkdown)
-load_all('..')
-render('DeLorean-Windram.Rmd')
 
 ```
 
@@ -94,14 +94,35 @@ summary(windram.cell.meta)
 ```
 
 
-# Estimate hyperparameters
+# Obfuscate time points
 
-Examine data for empirical Bayes estimation of hyperparameters.
-```{r empiricalBayes}
+Reduce resolution of observed capture time points
+```{r}
+windram.cell.meta$obstime <- floor((windram.cell.meta$obstime-1) / 8) * 8 + 4
+windram.cell.meta$capture <- (
+    factor(as.character(windram.cell.meta$obstime),
+           ordered=TRUE,
+           levels=unique(as.character(windram.cell.meta$obstime))))
+
+```
+
+Just consider the *Botrytis* cells
+```{r}
 dl <- de.lorean(
     windram.expr,
     windram.gene.meta,
     windram.cell.meta)
+botrytis.cells <- filter(dl$cell.meta, condition == "Botrytis")$cell
+cell.filter <- function(cells) cells %in% botrytis.cells
+dl <- filter.cells(dl, cell.filter)
+
+```
+
+
+# Estimate hyperparameters
+
+Examine data for empirical Bayes estimation of hyperparameters.
+```{r empiricalBayes}
 dl <- estimate.hyper(
     dl,
     sigma.tau=2,
@@ -113,13 +134,10 @@ dl <- estimate.hyper(
 
 # Choose genes and cells
 
-Choose a few genes and the botrytis cells.
+Choose a few genes.
 ```{r filterCells}
 set.seed(1)
-botrytis.cells <- filter(dl$cell.meta, condition == "Botrytis")$cell
-cell.filter <- function(cells) cells %in% botrytis.cells
-dl <- filter.cells(dl, cell.filter)
-num.genes <- 150
+num.genes <- 15
 sampled.genes <- sample_n(dl$gene.meta, num.genes)$gene
 gene.filter <- function(genes) genes %in% sampled.genes
 dl <- filter.genes(dl, gene.filter)
