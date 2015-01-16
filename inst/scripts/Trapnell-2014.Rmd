@@ -1,8 +1,8 @@
-
 ```{r compile, eval=FALSE, include=FALSE}
 library(knitr)
 module <- 'Trapnell-2014'
-system.time(knit2html(sprintf('%s.Rmd', module), stylesheet='foghorn.css'))
+system.time(knit2html(sprintf('%s.Rmd', module),
+                      stylesheet='../Rmd/foghorn.css'))
 
 ```
 
@@ -12,22 +12,31 @@ system.time(knit2html(sprintf('%s.Rmd', module), stylesheet='foghorn.css'))
 # install_rstan()
 library(VGAM)
 library(splines)
+library(dplyr)
+library(reshape2)
+library(stringr)
+library(ggplot2)
 
 ```
 
 
 # Investigate Trapnell et al. (2014) single-cell RNA-seq data
 
-Load data.
-```{r loadData, eval=FALSE}
-
-data.dir <- '.'
+Load data from GEO file.
+```{r loadData}
+data.dir <- '../../data'
 truseq <- 'GSE52529_truseq_fpkm_matrix.txt.gz'
-trapnell <- read.csv(paste(data.dir, 'GSE52529_fpkm_matrix.txt.gz', sep='/'), sep="\t")
+trapnell <- read.csv(paste(data.dir, 'GSE52529_fpkm_matrix.txt.gz', sep='/'),
+                     sep="\t")
 trapnell$gene <- factor(rownames(trapnell), levels=rownames(trapnell))
 trapnell.l <- (
     melt(trapnell, variable.name="cell", value.name="fpkm")
     %>% mutate(fpkm.log10=log10(fpkm)))
+
+```
+
+Parse the cell meta data.
+```{r}
 cell.meta <- (
     data.frame(cell=factor(levels(trapnell.l$cell)))
     %>% mutate(capture=str_match(levels(cell),
@@ -48,24 +57,9 @@ expr.threshold <- 1  # The value above which genes are considered expressed
 
 ```
 
-Get gene names
-```{r}
-library("biomaRt")
-ensembl <- useMart("ensembl", dataset="hsapiens_gene_ensembl")
-filters <- listFilters(ensembl)
-attributes = listAttributes(ensembl)
-gene.meta$ensembl_gene_id <- str_match(gene.meta$gene, '(ENSG[0-9]+)')[,1]
-gene.names <- getBM(attributes=c('ensembl_gene_id',
-                                 'hgnc_symbol'),
-                    mart = ensembl)
-gene.meta <- gene.meta %>% left_join(gene.names) %>% select(-ensembl_gene_id)
-
-```
-
 
 Filter genes as in Trapnell et al.
 ```{r filterGenes}
-
 gene.meta <- (
     trapnell.l
     %>% group_by(gene)
@@ -81,7 +75,11 @@ trapnell.f <- (
 )
 length(unique(trapnell.f$gene))
 
-# Use Tobit model to filter genes on a differential expression test
+```
+
+
+Use Tobit model to filter genes on a differential expression test.
+```{r}
 fit.model <- function(form) {
     vgam(form, family=tobit(Lower=log10(min.expr), Upper=Inf))
 }
@@ -110,11 +108,32 @@ length(genes.diff.expr)
 ```
 
 
-Reshape data into general format for model.
-```{r reshapeData, eval=FALSE}
+Get gene names.
+```{r}
+library("biomaRt")
+ensembl <- useMart("ensembl", dataset="hsapiens_gene_ensembl")
+filters <- listFilters(ensembl)
+attributes = listAttributes(ensembl)
+gene.meta$ensembl_gene_id <- str_match(gene.meta$gene, '(ENSG[0-9]+)')[,1]
+gene.names <- getBM(attributes=c('ensembl_gene_id',
+                                 'hgnc_symbol'),
+                    mart = ensembl)
+gene.meta <- (
+    gene.meta
+    %>% left_join(gene.names)  # Join the name to the ID
+    %>% dplyr::select(-ensembl_gene_id)
+    %>% group_by(gene)  # Just take first name for each gene
+    %>% do(head(., 1))
+    %>% ungroup()
+)
 
+```
+
+
+Reshape data into general format for model.
+```{r reshapeData}
 fpkm <- trapnell.f %>% dcast(gene ~ cell, value.var="fpkm")
-fpkm.m <- as.matrix(fpkm %>% select(-gene))
+fpkm.m <- as.matrix(fpkm %>% dplyr::select(-gene))
 rownames(fpkm.m) <- fpkm$gene
 expr <- log10(fpkm.m + 1)
 
