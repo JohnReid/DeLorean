@@ -467,13 +467,23 @@ compile.model.simple <- function(dl) {
 }
 
 
-#' Find best tau
+#' Find best tau to initialise chains with by using empirical Bayes parameter
+#' estimates and sampling tau from its prior.
 #'
 #' @param dl de.lorean object
+#' @param num.tau.candidates How many candidates to examine Defaults to 6000.
+#' @param use.parallel Calculate in parallel
+#' @param num.cores Number of cores to run on. Defaults to max(detectCores()-1, 1)
 #'
 #' @export
 #'
-find.best.tau <- function(dl, num.tau.candidates = 6000) {
+find.best.tau <- function(dl,
+                          num.tau.candidates = 6000,
+                          use.parallel = TRUE,
+                          num.cores = NULL) {
+    if (is.null(num.cores)) {
+        num.cores <- max(detectCores() - 1, 1)
+    }
     within(dl, {
         # Define a function that chooses tau
         init.chain.find.tau <- function() {
@@ -496,7 +506,13 @@ find.best.tau <- function(dl, num.tau.candidates = 6000) {
                 tau=pars$tau)
         }
         # Choose tau several times and calculate log probability
-        tau.inits <- lapply(1:num.tau.candidates, try.tau.init)
+        if (use.parallel) {
+            tau.inits <- mclapply(1:num.tau.candidates,
+                                  mc.cores=num.cores,
+                                  try.tau.init)
+        } else {
+            tau.inits <- lapply(1:num.tau.candidates, try.tau.init)
+        }
         # qplot(sapply(tau.inits, function(init) init$lp))
         # Which tau gave highest log probability?
         tau.inits.order <- order(sapply(tau.inits, function(init) -init$lp))
@@ -508,11 +524,11 @@ find.best.tau <- function(dl, num.tau.candidates = 6000) {
 
 #' Fit the model
 #'
+#' @param dl de.lorean object
 #' @param num.cores Number of cores to run on. Defaults to max(detectCores()-1, 1)
-#' @param chain Number of chains to run on each core
+#' @param chains Number of chains to run on each core
 #' @param iter Number of iterations in each chain
 #' @param thin How many samples to generate before retaining one
-#' @param dl de.lorean object
 #'
 #' @export
 #'
