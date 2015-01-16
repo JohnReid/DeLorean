@@ -88,101 +88,27 @@ theme_set(font.theme)
 ```
 
 
-```{r exp-init, echo=FALSE, message=FALSE, cache=TRUE}
-tmin <- 0
-tmax <- 3
-twidth <- tmax - tmin
-tlims <- c(tmin, tmax)
-num.inputs <- 100
-inputs <- (0:num.inputs) * twidth / num.inputs + tmin
-sigma.gp <- 2
-sigma.noise <- .3
-kern <- kernCreate(1, 'rbf')
-K <- (
-    sigma.gp ** 2 * kernCompute(kern, inputs, inputs)
-    + diag(sigma.noise ** 2, num.inputs + 1, num.inputs + 1))
-output <- mvrnorm(n=1, mu=rep(2, num.inputs+1), Sigma=K)
-# qplot(x=inputs, y=output)
-set.seed(2)
-times <- c("0h", "20h", "40h", "60h", "80h")
-times <- factor(times, levels=times, ordered=TRUE)
-N <- 40
-.data <- data.frame(obstime=sample(times, N, replace=TRUE), c=1:N)
-.data <- .data %>% mutate(tau=rnorm(n=N, mean=as.integer(obstime), sd=.5))
-K <- (
-    sigma.gp ** 2 * kernCompute(kern, .data$tau, .data$tau)
-    + diag(sigma.noise ** 2, N, N))
-mu <- 3
-.data$expr <- mvrnorm(n=1, mu=rep(0, N), Sigma=K)
-to.hours <- function(.t) (.t - 1) * 20
-# range(to.hours(.data$tau))
-xmin <- -15
-xmax <-  95
-scale.x <- scale_x_continuous(breaks=to.hours(as.integer(times)),
-                              limits=c(xmin, xmax))
-scale.obs.time <- scale_colour_manual(name="Observed\ntime", values=mrc.colors)
-from.hours <- function(.h) .h / 20 + 1
-.data.m <- melt(.data %>% mutate(Observed=to.hours(as.integer(obstime)),
-                                 Pseudotime=to.hours(tau)),
-                id.vars="c",
-                measure.vars=c("Observed", "Pseudotime"),
-                value.name="time") %>% left_join(.data)
-# names(.data.m)
-# sample_n(.data.m, 6)
-#
-# Make predictions
-#
-rbfCreate <- function(sigma.gp, length.scale) {
-    function(tau1, tau2) {
-        d <- outer(tau1, tau2, "-")
-        sigma.gp**2 * exp(-(d/length.scale)**2/2)
-    }
-}
-make.predictions <- function(sigma.gp, sigma.noise, length.scale=1) {
-    kern <- rbfCreate(sigma.gp, length.scale)
-    K <- kern(.data$tau, .data$tau) + diag(sigma.noise ** 2, N, N)
-    L <- chol(K)
-    max(abs(t(L) %*% L - K))
-    alpha <- solve(L, solve(t(L), .data$expr))
-    class(alpha)
-    max(abs(K %*% alpha - .data$expr))
-    # max(L * t(L) - K)
-    predictions <- data.frame(input=((10*xmin):(10*xmax))/10)
-    xstar <- from.hours(predictions$input)
-    Kstar <- kern(.data$tau, xstar)
-    predictions$fstar <- mu + as.vector(t(Kstar) %*% alpha)
-    v <- solve(t(L), Kstar)
-    dim(v)
-    Kstarstar <- as.vector(diag(kern(xstar, xstar)) + sigma.noise ** 2)
-    dim(Kstarstar)
-    predictions$V <- Kstarstar - diag(t(v) %*% v)
-    stopifnot(all(predictions$var >= 0))
-    predictions
-}
-# predictions <- make.predictions(sigma.gp=.3, sigma.noise=2)
-# predictions <- make.predictions(sigma.gp=2.2, sigma.noise=.1, length.scale=.01)
-scale.y <- scale_y_continuous(limits=c(-2, 10))
-plot.predictions <- function(predictions) {
-    (ggplot(.data, aes(x=to.hours(tau), y=mu+expr))
-        + geom_ribbon(data=predictions,
-                    aes(x=input,
-                        y=fstar,
-                        ymin=fstar-2*sqrt(V),
-                        ymax=fstar+2*sqrt(V)),
-                    alpha=.1)
-        + geom_line(data=predictions, aes(x=input, y=fstar))
-        + geom_point(aes(color=obstime), alpha=.6, size=5)
-        + xlab("Pseudotime")
-        + ylab("Expression")
-        + scale.obs.time
-        + scale.x
-        + scale.y
-        + font.theme
-        + guides(color=FALSE)
-    )
-}
+The DeLorean package uses the Stan modelling language and inference engine.
+The Stan inference engine implements a Hamiltonian Monte Carlo algorithm which
+samples from the full posterior of the model. However, the posterior of the
+DeLorean model is multimodal and multimodal posteriors can be difficult to
+sample from. The greatest source of multimodality are the pseudotime
+parameters.  The ordering of the cells in pseudotime space has many local
+optima. Moving between these optima can be difficult for the sampling algorithm
+as cells need to reverse their pseudotemporal order. This is difficult if the
+expression levels in the two cells are not close.
 
-```
+To mitigate the difficulties associated with multimodality, DeLorean employs a
+strategy that searches for good initial values for its MCMC chains.  DeLorean
+fixes the initial values of all parameters except for the pseudotime
+parameters, $\tau_c$, to reasonable initial values as estimated by the
+empirical Bayes hyperparameters. DeLorean samples sets of the $\tau_c$ from
+their prior and calculates the log probability of the model using each set.
+The sets with the highest log probabilities are used to initialise distinct
+MCMC chains.
+
+Stan: proven Hamiltonian MCMC algorithm; efficient; parallel.
+Full posterior good: capture uncertainty
 
 
 # Introduction
