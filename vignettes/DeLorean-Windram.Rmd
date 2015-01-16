@@ -12,8 +12,8 @@ output: html_document
 
 ```{r build, echo=FALSE, eval=FALSE}
 library(devtools)
-library(rmarkdown)
 load_all('..')
+library(rmarkdown)
 render('DeLorean-Windram.Rmd')
 
 ```
@@ -98,6 +98,8 @@ summary(windram.cell.meta)
 
 Reduce resolution of observed capture time points.
 ```{r}
+windram.cell.meta$obstime.orig <- windram.cell.meta$obstime
+windram.cell.meta$capture.orig <- windram.cell.meta$capture
 windram.cell.meta$obstime <- floor((windram.cell.meta$obstime-1) / 8) * 8 + 4
 windram.cell.meta$capture <- (
     factor(as.character(windram.cell.meta$obstime),
@@ -137,7 +139,7 @@ dl <- estimate.hyper(
 Choose a few genes.
 ```{r filterCells}
 set.seed(1)
-num.genes <- 15
+num.genes <- 150
 sampled.genes <- sample_n(dl$gene.meta, num.genes)$gene
 gene.filter <- function(genes) genes %in% sampled.genes
 dl <- filter.genes(dl, gene.filter)
@@ -157,12 +159,13 @@ system.time(dl <- fit.model(dl))
 Examine the model fit and plot the profiles.
 ```{r examineFit}
 dl <- examine.convergence(dl)
+plot(dl, type="convergence")
 dl <- process.posterior(dl)
+plot(dl, type="pseudotime")
 dl <- analyse.noise.levels(dl)
 dl <- make.predictions(dl)
 gp <- plot(dl, type="best.predictions")
 print(gp)
-plot(dl, type="pseudotime")
 
 ```
 
