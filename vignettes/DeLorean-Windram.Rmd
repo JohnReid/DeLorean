@@ -96,7 +96,7 @@ summary(windram.cell.meta)
 
 # Obfuscate time points
 
-Reduce resolution of observed capture time points
+Reduce resolution of observed capture time points.
 ```{r}
 windram.cell.meta$obstime <- floor((windram.cell.meta$obstime-1) / 8) * 8 + 4
 windram.cell.meta$capture <- (
@@ -106,7 +106,7 @@ windram.cell.meta$capture <- (
 
 ```
 
-Just consider the *Botrytis* cells
+Just consider the *Botrytis* cells.
 ```{r}
 dl <- de.lorean(
     windram.expr,
