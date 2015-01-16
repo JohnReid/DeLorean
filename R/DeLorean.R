@@ -78,6 +78,18 @@ plot.de.lorean <- function(dl, type="best.predictions", ...) {
     result
 }
 
+
+#' The filename of the R markdown report.
+#'
+#' @param report.name The report name
+#'
+#' @export
+report.file <- function(report.name) {
+    system.file("inst", "Rmd", sprintf("%s.Rmd", report.name),
+                package="DeLorean")
+}
+
+
 #' Knit a report, the file inst/Rmd/<report.name>.Rmd must exist in
 #' the package directory.
 #'

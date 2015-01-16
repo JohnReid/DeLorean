@@ -1,14 +1,9 @@
+```{r include=FALSE}
+# Attach the DeLorean data frame to access members
+attach(dl)
+```
 
-# Hyper-parameter estimation
-
-This document describes how the DeLorean package estimates the hyper parameters
-for its model. We do not describe the model in this document. In this data set
-we have expression data for $G=`r nrow(dl$gene.meta)`$ genes and
-$C=`r nrow(dl$cell.meta)`$ cells, $x_{g,c}$, where $1\le g \le G$ and
-$1 \le c \le C$.
-
-
-# Estimation of cell size factors: $S_c$
+## Estimation of cell size factors: $S_c$
 
 The cell size factors represent the relative amount of biological material in
 each cell. They are used to account for effects such as sequencing depth or
@@ -44,7 +39,7 @@ distribution. The estimated cell size factors have this density
 
 
 
-## Estimation of expression variation: $\phi_g$, $\psi_g$, $\omega_g$
+### Estimation of expression variation: $\phi_g$, $\psi_g$, $\omega_g$
 
 Given the estimated cell size factors, we can adjust our gene
 measurements, accounting for the different cell sizes
@@ -173,4 +168,9 @@ and this density for the within time variation:
                     colour="blue", alpha=.7, linetype="dashed")
 )
 
+```
+
+```{r include=FALSE}
+# Detach the previously attached DeLorean data frame
+detach(dl)
 ```

@@ -1,72 +1,47 @@
----
-title: Test Vignette
-author: John Reid
-bibliography: DeLorean.bib
-output: html_document
----
-
-<!--
-%\VignetteEngine{knitr::rmarkdown}
-%\VignetteIndexEntry{Test vignette}
--->
-
-
-```{r config, echo=FALSE, message=FALSE}
-library(knitr)
-library(knitcitations)
-library(rmarkdown)
-#
-# knitr options
-#
-opts_chunk$set(
-    fig.path = 'figures/test-',
-    stop_on_error = TRUE,
-    fig.width = 12.5,
-    fig.height = 8)
-#
-# Citations
-#
-cleanbib()
-cite_options(
-    # hyperlink = 'to.doc',
-    hyperlink = TRUE,
-    # style = 'html',
-    # citation_format = 'text',
-    citation_format = "pandoc",
-    cite.style = "numeric",
-    check.entries = TRUE)
-    # hyperlink = TRUE)
-bib <- read.bibtex("DeLorean.bib")
-
-```
-
 ```{r build, echo=FALSE, eval=FALSE}
 library(devtools)
 load_all('..')
+library(rmarkdown)
 render('test.Rmd')
 
 ```
 
-```{r loadLibs, echo=FALSE, message=FALSE}
-# suppressMessages(loadfonts())
+
+# Data
+
+McDavid et al.'s data is available in the `DeLorean` R package.
+```{r loadLib}
 library(DeLorean)
-#
-# Stylesheet
-#
-options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
-                                               package="DeLorean"))
+data(McDavidDeLorean)
 
 ```
 
+Create a `de.lorean` object.
+```{r}
+dl <- de.lorean(
+    mcdavid.expr,
+    mcdavid.gene.meta,
+    mcdavid.cell.meta)
 
-## McDavid et al. cell cycle experiments
+```
 
-`r citet(bib[["mcdavid_modeling_2014"]])`
-assayed actively cycling single
-cells in order to examine the confounding effect of the cell cycle on
-single cell expression analyses. They measured the expression of 333 genes
-in 930 cells across three cell cycle phases and three cell lines.
+```{r child=report.file("data")}
+```
 
+
+# Estimate hyperparameters
+
+Examine data for empirical Bayes estimation of hyperparameters.
+```{r empiricalBayes}
+dl <- estimate.hyper(
+    dl,
+    sigma.tau=1.5,
+    delta=.5)
+
+```
+
+```{r child=report.file("hyper-parameters")}
+```
 
 R version and packages used:
 ```{r Rversion}

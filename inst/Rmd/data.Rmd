@@ -1,0 +1,41 @@
+```{r include=FALSE}
+# Attach the DeLorean data frame to access members
+attach(dl)
+```
+
+This data set contains expression data, $x_{g,c}$, for
+$G=`r nrow(dl$gene.meta)`$ genes and $C=`r nrow(dl$cell.meta)`$ cells.
+The expression values are distributed as
+```{r echo=FALSE, message=FALSE}
+qplot(as.vector(expr))
+
+```
+
+
+The cells were captured at `r length(unique(cell.meta$capture))` distinct
+time points.
+```{r echo=FALSE}
+ggplot(cell.meta, aes(capture)) + geom_bar()
+
+```
+
+We have the following meta data for the cells:
+```{r echo=FALSE}
+summary(cell.meta)
+# sapply(cell.meta, class)
+
+```
+
+
+We have the following meta data for the genes:
+```{r echo=FALSE}
+summary(gene.meta)
+# sapply(cell.meta, class)
+
+```
+
+
+```{r include=FALSE}
+# Detach the previously attached DeLorean data frame
+detach(dl)
+```
