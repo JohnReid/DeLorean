@@ -1,0 +1,379 @@
+---
+title: Inference in the DeLorean model
+author: John Reid
+bibliography: DeLorean.bib
+output: html_document
+---
+
+<!--
+%\VignetteEngine{knitr::rmarkdown}
+%\VignetteIndexEntry{Inference in the DeLorean model}
+-->
+
+
+```{r config, echo=FALSE, message=FALSE}
+library(knitr)
+library(knitcitations)
+library(rmarkdown)
+#
+# knitr options
+#
+opts_chunk$set(
+    fig.path = 'figures/inference-',
+    stop_on_error = TRUE,
+    fig.width = 12.5,
+    fig.height = 8)
+#
+# Citations
+#
+cleanbib()
+cite_options(
+    # hyperlink = 'to.doc',
+    hyperlink = TRUE,
+    # style = 'html',
+    # citation_format = 'text',
+    citation_format = "pandoc",
+    cite.style = "numeric",
+    check.entries = TRUE)
+    # hyperlink = TRUE)
+bib <- read.bibtex("DeLorean.bib")
+
+```
+
+```{r build, echo=FALSE, eval=FALSE}
+#library(devtools)
+#load_all('..')
+library(rmarkdown)
+render('DeLorean-inference.Rmd')
+
+```
+
+```{r loadLibs, echo=FALSE, message=FALSE}
+# suppressMessages(loadfonts())
+library(DeLorean)
+#
+# Stylesheet
+#
+options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
+                                               package="DeLorean"))
+
+```
+
+```{r setUpThemes, echo=FALSE, message=FALSE}
+loadfonts(quiet=TRUE)
+
+mrc.colors <- c(
+    rgb(138, 121, 103, maxColorValue=255),
+    rgb(217, 165, 41 , maxColorValue=255),
+    rgb(153, 152, 40 , maxColorValue=255),
+    rgb(117, 139, 121, maxColorValue=255),
+    rgb(33 , 103, 126, maxColorValue=255),
+    rgb(208, 114, 50 , maxColorValue=255),
+    rgb(106, 59 , 119, maxColorValue=255),
+    rgb(130, 47 , 90 , maxColorValue=255)
+)
+
+#
+# Check/install fonts
+#
+# install.packages("extrafont")
+# font_import()
+# fonts()
+# fonttable()
+
+font.family <- "Verdana"
+font.theme <- theme_update(text=element_text(family=font.family))
+theme_set(font.theme)
+
+```
+
+
+```{r exp-init, echo=FALSE, message=FALSE, cache=TRUE}
+tmin <- 0
+tmax <- 3
+twidth <- tmax - tmin
+tlims <- c(tmin, tmax)
+num.inputs <- 100
+inputs <- (0:num.inputs) * twidth / num.inputs + tmin
+sigma.gp <- 2
+sigma.noise <- .3
+kern <- kernCreate(1, 'rbf')
+K <- (
+    sigma.gp ** 2 * kernCompute(kern, inputs, inputs)
+    + diag(sigma.noise ** 2, num.inputs + 1, num.inputs + 1))
+output <- mvrnorm(n=1, mu=rep(2, num.inputs+1), Sigma=K)
+# qplot(x=inputs, y=output)
+set.seed(2)
+times <- c("0h", "20h", "40h", "60h", "80h")
+times <- factor(times, levels=times, ordered=TRUE)
+N <- 40
+.data <- data.frame(obstime=sample(times, N, replace=TRUE), c=1:N)
+.data <- .data %>% mutate(tau=rnorm(n=N, mean=as.integer(obstime), sd=.5))
+K <- (
+    sigma.gp ** 2 * kernCompute(kern, .data$tau, .data$tau)
+    + diag(sigma.noise ** 2, N, N))
+mu <- 3
+.data$expr <- mvrnorm(n=1, mu=rep(0, N), Sigma=K)
+to.hours <- function(.t) (.t - 1) * 20
+# range(to.hours(.data$tau))
+xmin <- -15
+xmax <-  95
+scale.x <- scale_x_continuous(breaks=to.hours(as.integer(times)),
+                              limits=c(xmin, xmax))
+scale.obs.time <- scale_colour_manual(name="Observed\ntime", values=mrc.colors)
+from.hours <- function(.h) .h / 20 + 1
+.data.m <- melt(.data %>% mutate(Observed=to.hours(as.integer(obstime)),
+                                 Pseudotime=to.hours(tau)),
+                id.vars="c",
+                measure.vars=c("Observed", "Pseudotime"),
+                value.name="time") %>% left_join(.data)
+# names(.data.m)
+# sample_n(.data.m, 6)
+#
+# Make predictions
+#
+rbfCreate <- function(sigma.gp, length.scale) {
+    function(tau1, tau2) {
+        d <- outer(tau1, tau2, "-")
+        sigma.gp**2 * exp(-(d/length.scale)**2/2)
+    }
+}
+make.predictions <- function(sigma.gp, sigma.noise, length.scale=1) {
+    kern <- rbfCreate(sigma.gp, length.scale)
+    K <- kern(.data$tau, .data$tau) + diag(sigma.noise ** 2, N, N)
+    L <- chol(K)
+    max(abs(t(L) %*% L - K))
+    alpha <- solve(L, solve(t(L), .data$expr))
+    class(alpha)
+    max(abs(K %*% alpha - .data$expr))
+    # max(L * t(L) - K)
+    predictions <- data.frame(input=((10*xmin):(10*xmax))/10)
+    xstar <- from.hours(predictions$input)
+    Kstar <- kern(.data$tau, xstar)
+    predictions$fstar <- mu + as.vector(t(Kstar) %*% alpha)
+    v <- solve(t(L), Kstar)
+    dim(v)
+    Kstarstar <- as.vector(diag(kern(xstar, xstar)) + sigma.noise ** 2)
+    dim(Kstarstar)
+    predictions$V <- Kstarstar - diag(t(v) %*% v)
+    stopifnot(all(predictions$var >= 0))
+    predictions
+}
+# predictions <- make.predictions(sigma.gp=.3, sigma.noise=2)
+# predictions <- make.predictions(sigma.gp=2.2, sigma.noise=.1, length.scale=.01)
+scale.y <- scale_y_continuous(limits=c(-2, 10))
+plot.predictions <- function(predictions) {
+    (ggplot(.data, aes(x=to.hours(tau), y=mu+expr))
+        + geom_ribbon(data=predictions,
+                    aes(x=input,
+                        y=fstar,
+                        ymin=fstar-2*sqrt(V),
+                        ymax=fstar+2*sqrt(V)),
+                    alpha=.1)
+        + geom_line(data=predictions, aes(x=input, y=fstar))
+        + geom_point(aes(color=obstime), alpha=.6, size=5)
+        + xlab("Pseudotime")
+        + ylab("Expression")
+        + scale.obs.time
+        + scale.x
+        + scale.y
+        + font.theme
+        + guides(color=FALSE)
+    )
+}
+
+```
+
+
+# Introduction
+
+DeLorean uses a probabilistic model to estimate pseudotimes in cross-sectional
+time-series. The basic idea is that a dynamic regulatory system can be
+characterised by the expression profiles of its genes. That is, as the system
+moves between states the genes exhibit characteristic behaviours consistent
+with the regulatory network that they encode. We are interested in inferring
+these networks from expression data. Typically the gene expression
+data we capture about the system state is cross-sectional in nature. This is
+because the cell (or population of cells) are destroyed as part of the assay.
+We would prefer to have longitudinal data whereby a cell is tracked through
+time and the expression measurements are made on the same biological object at
+distinct time points. However with current technologies this is difficult to
+achieve.
+
+Biological systems are typically noisy and stochastic in nature. In many
+systems we have reason to believe each cell may progress at its own rate.  This
+is a particular problem for cross-sectional data as the expression measurements
+made at a particular time point are no longer directly comparable. The DeLorean
+model estimates pseudotimes that are designed to mitigate this effect. The
+pseudotime for a cell represents how far through the system the cell has
+progressed. The difference between the pseudotime and the observed time
+represents how quickly or slowly the cell has progressed relative to the other
+cells. Once a pseudotime has been estimated for each cell it is easy to infer
+expression profiles for all the assayed genes. However, the estimation of
+pseudotimes is an underdetermined problem and many plausible estimates are
+possible. The DeLorean model aims to resolve this by balancing the smoothness
+of the expression profiles against the noise levels in the measurements. The
+model expects gene expression profiles to be smooth over time. That is we
+assume genes do not frequently change in their expression levels. This
+assumption is crucial to resolve different interpretations of the expression
+data. On the one hand, any given expression data could be explained by very
+smooth expression levels with high levels of noise. Here the noise would
+capture almost all the variation in the signal. However, on the other hand,
+extremely dynamic expression profiles can explain the data with very low noise
+levels.
+
+As an example, suppose we have data for a few cells taken at time points
+0h, 20h, 40h, 60h and 80h. When the expression of a gene is plotted against
+these time points, the expression profile can look quite noisy.
+```{r exp-capture, echo=FALSE, message=FALSE}
+# (ggplot(.data.m, aes(x=time, y=mu+expr, color=obstime))
+    # + geom_point(alpha=.6, size=5)
+    # + xlab("Time")
+    # + ylab("Expression")
+    # + scale.obs.time
+    # + scale.x
+    # + font.theme
+    # + facet_grid(variable ~ .)
+    # + guides(color=FALSE)
+# )
+(ggplot(.data, aes(x=to.hours(as.integer(obstime)), y=mu+expr, color=obstime))
+    + geom_point(alpha=.6, size=5)
+    + xlab("Cell capture time")
+    + ylab("Expression")
+    + scale.obs.time
+    + scale.x
+    + font.theme
+    + guides(color=FALSE)
+)
+```
+
+However if the expression data is plotted against estimated pseudotimes it
+is possible to dramatically reduce the noise.
+```{r exp-pseudotime, echo=FALSE, message=FALSE}
+(ggplot(.data, aes(x=to.hours(tau), y=mu+expr, color=obstime))
+    + geom_point(alpha=.6, size=5)
+    + xlab("Pseudotime")
+    + ylab("Expression")
+    + scale.obs.time
+    + scale.x
+    + font.theme
+    + guides(color=FALSE)
+)
+```
+
+In the case of one gene it is trivial to find pseudotimes that reduce the
+noise.  However when many genes are considered simultaneously the problem
+becomes far more interesting. In this case, it is difficult to find good
+pseudotimes that present us with smooth low-noise expression profiles across
+many genes and cells.
+
+If the model does not enforce smoothness on the expression profiles, the
+data can be explained with low levels of noise.
+```{r exp-predictions-not-smooth, echo=FALSE, message=FALSE, cache=TRUE, dependson="exp-init"}
+print(plot.predictions(make.predictions(sigma.gp=2 , sigma.noise=.3, length.scale=.1)))
+```
+
+If too much smoothness is enforced, the model requires high noise levels to
+explain the expression profiles.
+```{r exp-predictions-too-smooth, echo=FALSE, message=FALSE, cache=TRUE, dependson="exp-init"}
+print(plot.predictions(make.predictions(sigma.gp=.3, sigma.noise=2 , length.scale=1)))
+```
+
+The model tries to balance the smoothness against the noise to achieve
+expression profiles that are reasonably smooth but have low noise levels.
+```{r exp-predictions, echo=FALSE, message=FALSE, cache=TRUE, dependson="exp-init"}
+print(plot.predictions(make.predictions(sigma.gp=2 , sigma.noise=.3, length.scale=1)))
+
+```
+
+
+# Data
+
+The DeLorean model is fit to a matrix of expression data $x_{g,c}$ for
+$G$ genes (rows) in $C$ cells (columns). Each cell $c$ has been captured
+at a time point
+$k_c \in \{\kappa_1,\dots,\kappa_T\}$.
+The expression measurements are modelled using Gaussian processes
+(`r citet(bib[["rasmussen_gaussian_2006"]])`). Expression values often
+have a roughly normal distribution on a logarithmic scale and because of this
+it is normally suitable to log-transform the absolute expression values before
+fitting the DeLorean model.
+
+
+# Model
+
+The model can be split into several parts: one part represents the gene
+expression profiles; another part represents the pseudotimes associated with
+each cell; and another part links the expression data to the profiles.
+
+## Gene expression profiles
+
+The expression profiles are modelled using Gaussian processes. The expression
+profile of each gene $g$ is a draw from a Gaussian process
+$$
+    x_{g}() \sim \mathcal{GP}(\phi_g(), \Sigma_g(,))
+$$
+where $\phi_g$ is a (constant) gene-specific mean function, and $\Sigma_g$
+is a gene-specific covariance function.
+$$
+    \phi_g \sim \mathcal{N}(\mu_\phi, \sigma_\phi) \\
+    \Sigma_g(\tau_1, \tau_2)
+        = \psi_g \Sigma_\tau(\tau_1, \tau_2) + \omega_g \delta_{\tau_1,\tau_2}
+$$
+Here $\Sigma_\tau$ is a covariance function that defines the covariance
+structure over the pseudotimes, that is it imposes the smoothness constraints
+that are shared across genes; $\psi_g$ parameterises the
+amount of temporal variation this gene profile has; and $\omega_g$ models
+the noise levels for this gene.
+$$
+    \log \psi_g \sim \mathcal{N}(\mu_\psi, \sigma_\psi) \\
+    \log \omega_g \sim \mathcal{N}(\mu_\omega, \sigma_\omega) \\
+$$
+
+
+## Pseudotimes
+
+The pseudotime for a cell, $\tau_c$, is given a prior centred on the time
+the cell was captured.
+$$
+    \tau_c \sim \mathcal{N}(k_c, \sigma_\tau)
+$$
+Each $\tau_c$ is used in the calculation of the covariance structure over
+pseudotimes $\Sigma_\tau$.  $\Sigma_\tau$ is taken to be a Matern$_{3/2}$
+covariance function. Our experience shows that this function captures
+our smoothness constraints well although any reasonable covariance
+function could be used.
+$$
+    \Sigma_\tau(\tau_1, \tau_2)
+        = \textrm{Matern}_{3/2}(r=\frac{|\tau_1 - \tau_2|}{l})
+        = (1 + \sqrt{3}r) \exp[-\sqrt{3}r]
+$$
+where $l$ is a length-scale hyperparameter.
+
+
+## Expression data
+
+The model links the expression data to the expression profiles by evaluating
+the profiles at the pseudotimes and adjusting for a cell size factor, $S_c$.
+$$
+    x_{g,c} = x_g(\tau_c) + S_c
+$$
+The cell size factors represent technical and biological effects such as
+sequencing depth and lysis efficiency and account for data in which
+average expression varies by cell. In our experience this is a common effect
+in single cell data and should be accounted for. We place a prior on the
+cell sizes that are estimated by the model.
+$$
+    S_c \sim \mathcal{N}(\mu_S, \sigma_S)
+$$
+
+## Hyperparameters
+
+All of the hyperparameters
+$\mu_\phi, \sigma_\phi, \mu_\psi, \sigma_\psi, \mu_\omega, \sigma_\omega, \mu_S, \sigma_S$
+are estimated by an empirical
+Bayes procedure (see a separate vignette). The hyperparameters
+$l, \sigma_\tau$
+are supplied directly by the user of the DeLorean package.
+
+# References
