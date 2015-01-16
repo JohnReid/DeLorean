@@ -10,6 +10,14 @@ output: html_document
 %\VignetteIndexEntry{DeLorean analysis of Trapnell et al. myoblast data}
 -->
 
+```{r build, echo=FALSE, eval=FALSE}
+library(devtools)
+load_all('..')
+library(rmarkdown)
+render('DeLorean-Trapnell.Rmd')
+
+```
+
 
 ```{r config, echo=FALSE, message=FALSE}
 library(knitr)
@@ -40,13 +48,6 @@ bib <- read.bibtex("DeLorean.bib")
 
 ```
 
-```{r build, echo=FALSE, eval=FALSE}
-library(devtools)
-load_all('..')
-render('DeLorean-Trapnell.Rmd')
-
-```
-
 ```{r loadLibs, echo=FALSE, message=FALSE}
 # suppressMessages(loadfonts())
 library(DeLorean)
@@ -63,13 +64,16 @@ Load data.
 ```{r loadData, eval=FALSE}
 library(DeLorean)
 data(TrapnellDeLorean)
+dim(trapnell.expr)
 
 ```
 
 Summarise the meta-data.
 ```{r summariseMeta}
-summary(trapnell.gene.meta)
-summary(trapnell.cell.meta)
+dim(trapnell.gene.meta)
+sample_n(trapnell.gene.meta, 5)
+dim(trapnell.cell.meta)
+sample_n(trapnell.cell.meta, 5)
 
 ```
 
@@ -117,8 +121,7 @@ Define and compile the model, find the best initialisation, and fit the model.
 dl <- format.for.stan(dl)
 dl <- compile.model.simple(dl)
 dl <- find.best.tau(dl)
-dl <- fit.model(dl, num.cores = 24)
-sort(sapply(dl, object.size))
+dl <- fit.model(dl)
 
 ```
 
