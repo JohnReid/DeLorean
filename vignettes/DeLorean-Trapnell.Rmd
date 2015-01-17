@@ -61,41 +61,44 @@ options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
 
 
 Load data.
-```{r loadData, eval=FALSE}
+```{r loadData}
 library(DeLorean)
 data(TrapnellDeLorean)
-dim(trapnell.expr)
-
-```
-
-Summarise the meta-data.
-```{r summariseMeta}
-dim(trapnell.gene.meta)
-sample_n(trapnell.gene.meta, 5)
-dim(trapnell.cell.meta)
-sample_n(trapnell.cell.meta, 5)
-
-```
-
-Examine data for empirical Bayes estimation of hyperparameters.
-```{r empBayes}
 dl <- de.lorean(
     trapnell.expr,
     trapnell.gene.meta,
     trapnell.cell.meta)
+
+```
+
+```{r child=report.file("data")}
+```
+
+
+# Estimate hyperparameters
+
+Examine data for empirical Bayes estimation of hyperparameters.
+```{r empBayes}
 dl <- estimate.hyper(
     dl,
     sigma.tau=6,
     delta=.5)
-# knit.report(dl, "hyper-parameters")
 
 ```
+
+
+```{r child=report.file("hyper-parameters")}
+```
+
+
+# Choose genes and cells
 
 Select cells at random if we have too many.
 ```{r chooseCells}
 
 set.seed(1)
 max.cells <- 47
+max.cells <- 17
 cells.sampled <- sample(trapnell.cell.meta$cell, max.cells)
 cell.filter <- function(cells) cells %in% cells.sampled
 dl <- filter.cells(dl, cell.filter)
@@ -107,6 +110,7 @@ Select genes by variance.
 ```{r chooseGenes}
 
 max.genes <- 51
+max.genes <- 13
 genes.high.var <- (trapnell.gene.meta
                    %>% arrange(-lpe.sd)
                    %>% head(max.genes))$gene
@@ -116,40 +120,51 @@ dl <- filter.genes(dl, gene.filter)
 ```
 
 
+# Compile and fit model
+
 Define and compile the model, find the best initialisation, and fit the model.
 ```{r model}
 dl <- format.for.stan(dl)
 dl <- compile.model.simple(dl)
 dl <- find.best.tau(dl)
-dl <- fit.model(dl)
+system.time(dl <- fit.model(dl))
 
 ```
 
-Examine convergence.
+
+# Examine convergence.
+
 ```{r examConv}
 dl <- examine.convergence(dl)
-dl$rhat.sorted
 
 ```
 
+```{r child=report.file("convergence")}
+```
+
+
+
+# Analyse posterior
 
 Examine posterior.
 ```{r posterior}
 dl <- process.posterior(dl)
-
-#
-# Analyse gene noise levels
-#
 dl <- analyse.noise.levels(dl)
-# knit.report(dl, "posterior")
 
-#
-# Plot predictions from best sample
-#
+```
+
+```{r child=report.file("posterior")}
+```
+
+
+# Profiles
+
+Calculate expression profiles.
+```{r makePredictions}
 dl <- make.predictions(dl)
-gp <- plot(dl, type="best.predictions")
-print(gp)
+```
 
+```{r child=report.file("profiles")}
 ```
 
 
