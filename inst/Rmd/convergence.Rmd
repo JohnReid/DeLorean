@@ -1,6 +1,6 @@
 ## Convergence
 
-We plot the $\hat{R}$ statistics calculated by `Stan` coloured by parameter.
+We plot the $\hat{R}$ statistics calculated by `Stan`.
 ```{r}
 plot(dl, type="convergence")
 

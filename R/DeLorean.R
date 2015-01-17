@@ -930,10 +930,9 @@ plot.convergence <- function(dl) {
             param=names(rhat.sorted),
             parameter=str_match(names(rhat.sorted), "^[[:alpha:]]+"))
         gp <- (ggplot(rhat.df,
-                      aes(x=rhat, colour=parameter),
+                      aes(y=rhat, x=parameter),
                       environment=environment())
-            + geom_density()
-            + geom_rug()
+            + geom_boxplot()
         )
     })
 }
