@@ -56,16 +56,11 @@ library(DeLorean)
 #
 options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
                                                package="DeLorean"))
-
-```
-
-```{r}
 font.family <- "Verdana"
 font.theme <- theme_update(text=element_text(family=font.family))
 theme_set(font.theme)
 
 ```
-
 
 
 `r citet(bib[["windram_arabidopsis_2012"]])` assayed leaves at 24 time points
@@ -82,19 +77,7 @@ data(WindramDeLorean)
 ```
 
 
-This will load a 150 (genes) by 48 (samples) matrix containing the expression
-measurements.
-```{r exprDim}
-dim(windram.expr)
-```
-and two data frames of meta data for the genes and cells.
-```{r meta}
-summary(windram.gene.meta)
-summary(windram.cell.meta)
-```
-
-
-# Obfuscate time points
+## Obfuscate time points
 
 Reduce resolution of observed capture time points.
 ```{r}
@@ -120,6 +103,9 @@ dl <- filter.cells(dl, cell.filter)
 
 ```
 
+```{r child=report.file("data")}
+```
+
 
 # Estimate hyperparameters
 
@@ -127,10 +113,12 @@ Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes}
 dl <- estimate.hyper(
     dl,
-    sigma.tau=2,
+    sigma.tau=4,
     delta=.5)
-# knit.report(dl, "hyper-parameters")
 
+```
+
+```{r child=report.file("hyper-parameters")}
 ```
 
 
@@ -156,17 +144,39 @@ system.time(dl <- fit.model(dl))
 ```
 
 
-Examine the model fit and plot the profiles.
-```{r examineFit}
-dl <- examine.convergence(dl)
-plot(dl, type="convergence")
-dl <- process.posterior(dl)
-plot(dl, type="pseudotime")
-dl <- analyse.noise.levels(dl)
-dl <- make.predictions(dl)
-gp <- plot(dl, type="best.predictions")
-print(gp)
+# Examine convergence.
 
+```{r examConv}
+dl <- examine.convergence(dl)
+
+```
+
+```{r child=report.file("convergence")}
+```
+
+
+
+# Analyse posterior
+
+Examine posterior.
+```{r posterior}
+dl <- process.posterior(dl)
+dl <- analyse.noise.levels(dl)
+
+```
+
+```{r child=report.file("posterior")}
+```
+
+
+# Profiles
+
+Calculate expression profiles.
+```{r makePredictions}
+dl <- make.predictions(dl)
+```
+
+```{r child=report.file("profiles")}
 ```
 
 
