@@ -90,6 +90,15 @@ report.file <- function(report.name) {
 }
 
 
+#' The filename of the R markdown stylesheet
+#'
+#' @export
+#'
+de.lorean.stylesheet <- function() {
+    system.file("inst", "Rmd", "foghorn.css", package="DeLorean")
+}
+
+
 #' Knit a report, the file inst/Rmd/<report.name>.Rmd must exist in
 #' the package directory.
 #'
@@ -100,18 +109,9 @@ report.file <- function(report.name) {
 #' @export
 #'
 knit.report <- function(dl, report.name) {
-    report.path <- system.file("inst", "Rmd", sprintf("%s.Rmd", report.name),
-                               package="DeLorean")
-    stylesheet.path <- system.file("inst", "Rmd", "foghorn.css",
-                                   package="DeLorean")
-    with(dl, {
-        knit2html(report.path,
-                  # output=paste(output.dir,
-                  #              sprintf('%s.html', report.name),
-                  #              sep='/'),
-                  envir=environment(),
-                  stylesheet=stylesheet.path)
-    })
+    knit2html(report.file(report.name),
+              envir=environment(),
+              stylesheet=de.lorean.stylesheet())
 }
 
 #' Calculate a suitable value for a rug plot given the
