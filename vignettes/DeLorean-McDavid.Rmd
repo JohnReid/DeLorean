@@ -133,7 +133,6 @@ genes.for.stan <- sample((filter(mcdavid.gene.meta,
 gene.filter <- function(genes) genes %in% genes.for.stan
 dl <- filter.genes(dl, gene.filter)
 
-partition <- partition.de.lorean(dl, pieces=3)
 ```
 
 
