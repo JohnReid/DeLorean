@@ -208,11 +208,6 @@ dl$peak.max.cor
 ```
 
 
-```{r citations, echo=FALSE, message=FALSE}
-write.bibtex(file="DeLorean.bib")
-```
-
-
 R version and packages used:
 ```{r Rversion}
 sessionInfo()
