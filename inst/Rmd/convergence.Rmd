@@ -1,0 +1,7 @@
+## Convergence
+
+We plot the $\hat{R}$ statistics calculated by `Stan` coloured by parameter.
+```{r}
+plot(dl, type="convergence")
+
+```

@@ -1,3 +1,11 @@
+```{r build, echo=FALSE, eval=FALSE}
+library(devtools)
+load_all('..')
+library(rmarkdown)
+render('DeLorean-McDavid.Rmd')
+
+```
+
 ---
 title: DeLorean analysis of McDavid et al. cell cycle data
 author: John Reid
@@ -36,19 +44,11 @@ cite_options(
     cite.style = "numeric",
     check.entries = TRUE)
     # hyperlink = TRUE)
-print(getwd())
 bib <- read.bibtex("DeLorean.bib")
 
 ```
 
-```{r build, echo=FALSE, eval=FALSE}
-library(devtools)
-load_all('..')
-render('DeLorean-McDavid.Rmd')
-
-```
-
-```{r loadLibs, echo=FALSE, message=FALSE}
+```{r init, echo=FALSE, message=FALSE, warning=FALSE}
 # suppressMessages(loadfonts())
 library(DeLorean)
 #
@@ -56,27 +56,11 @@ library(DeLorean)
 #
 options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
                                                package="DeLorean"))
-
-```
-
-
-```{r themes, eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE}
-mrc.colors <- c(
-    rgb(138, 121, 103, maxColorValue=255),
-    rgb(217, 165, 41 , maxColorValue=255),
-    rgb(153, 152, 40 , maxColorValue=255),
-    rgb(117, 139, 121, maxColorValue=255),
-    rgb(33 , 103, 126, maxColorValue=255),
-    rgb(208, 114, 50 , maxColorValue=255),
-    rgb(106, 59 , 119, maxColorValue=255),
-    rgb(130, 47 , 90 , maxColorValue=255)
-)
 font.family <- "Verdana"
 font.theme <- theme_update(text=element_text(family=font.family))
 theme_set(font.theme)
 
 ```
-
 
 
 `r citet(bib[["mcdavid_modeling_2014"]])` assayed actively cycling single
@@ -87,38 +71,35 @@ in 930 cells across three cell cycle phases and three cell lines.
 
 # Data
 
-McDavid et al.'s data is available in the `DeLorean` R package.
+McDavid et al.'s data is available in the `DeLorean` R package. Not all 333
+genes are represented as several are rarely expressed.
 ```{r loadLib}
 library(DeLorean)
 data(McDavidDeLorean)
+dl <- de.lorean(
+    mcdavid.expr,
+    mcdavid.gene.meta,
+    mcdavid.cell.meta)
 
 ```
-This will load a 253 by 930 matrix containing the expression measurements. Not
-all 333 genes are represented as several are rarely expressed.
-```{r exprDim}
-dim(mcdavid.expr)
+
+```{r child=report.file("data")}
 ```
-and two data frames of meta data for the genes and cells.
-```{r meta}
-summary(mcdavid.gene.meta)
-summary(mcdavid.cell.meta)
-```
+
 
 
 # Estimate hyperparameters
 
 Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes}
-dl <- de.lorean(
-    mcdavid.expr,
-    mcdavid.gene.meta,
-    mcdavid.cell.meta)
 dl <- estimate.hyper(
     dl,
     sigma.tau=1.5,
     delta=.5)
-# knit.report(dl, "hyper-parameters")
 
+```
+
+```{r child=report.file("hyper-parameters")}
 ```
 
 
@@ -140,11 +121,11 @@ Choose a handful of genes with low $p$-values from the McDavid et al.
 differential expression test.
 ```{r filterGenes}
 max.genes <- 23
-max.rank <- 140
-genes.for.stan <- (filter(mcdavid.gene.meta,
-                                 ! is.na(cbRank),
-                                 cbRank < max.rank + 1)
-                   %>% arrange(cbRank))$gene
+# max.rank <- 140
+# genes.for.stan <- (filter(mcdavid.gene.meta,
+                                 # ! is.na(cbRank),
+                                 # cbRank < max.rank + 1)
+                   # %>% arrange(cbRank))$gene
 genes.for.stan <- sample((filter(mcdavid.gene.meta,
                                  pvalue > 5)
                           %>% arrange(cbRank))$gene,
@@ -155,13 +136,6 @@ dl <- filter.genes(dl, gene.filter)
 partition <- partition.de.lorean(dl, pieces=3)
 ```
 
-
-# Investigate robustness
-```{r robustness, eval=FALSE}
-robustness.test <- test.robustness.de.lorean(dl)
-print(robustness.test$gp)
-
-```
 
 # Compile and fit model
 
@@ -176,11 +150,14 @@ system.time(dl <- fit.model(dl))
 ```
 
 
-Examine convergence.
+# Examine convergence.
+
 ```{r examConv}
 dl <- examine.convergence(dl)
-dl$rhat.sorted
 
+```
+
+```{r child=report.file("convergence")}
 ```
 
 
@@ -190,31 +167,31 @@ dl$rhat.sorted
 Examine posterior.
 ```{r posterior}
 dl <- process.posterior(dl)
-# A colour scale for the observed time
-scale.obstime <- scale_colour_manual(name="Observed\ntime",
-                                    values=mrc.colors.3)
-highest.ranked.genes <- (
-    dl$gene.map
-    %>% left_join(mcdavid.gene.meta)
-    %>% arrange(cbRank)
-    %>% head(16))$gene
-
-#
-# Analyse gene noise levels
-#
 dl <- analyse.noise.levels(dl)
-# knit.report(dl, "posterior")
 
-#
-# Plot predictions from best sample
-#
+```
+
+```{r child=report.file("posterior")}
+```
+
+
+# Profiles
+
+Calculate expression profiles.
+```{r makePredictions}
 dl <- make.predictions(dl)
-gp <- plot(dl, type="best.predictions")
-print(gp)
+```
+
+```{r child=report.file("profiles")}
+```
+
+
+# Examine peak times
+
+```{r peakTimes}
 
 # Plot cbPeaktime against best sample max predicted mean time
 print(plot.best.predictions(dl, genes="CDCA8"))
-print(plot.S.posteriors(dl))
 dl <- within(dl, {
     peak.vs.max <- (best.mean
         %>% group_by(g)
@@ -228,148 +205,13 @@ dl$peak.max.cor
     + geom_point()
 )
 
-#
-# Investigate difference in noise levels between genes
-#
-(ggplot(dl$samples.l$omega %>% left_join(dl$gene.map),
-        aes(x=factor(cbRank), y=omega))
-    + geom_boxplot()
-)
-
-```
-
-
-```{r oldCode, eval=FALSE, include=FALSE}
-
-#
-# Try to match maximal expression to peak time
-#
-find.maximum <- function(g) {
-    with(dl, {
-        maximum <- which.max(stan.data$expr[g,])
-        tau <- (dl$samples.l$tau
-                %>% filter(iter == best.sample,
-                           c == maximum))$tau
-        return(tau)
-    })
-}
-maxima.unadj <- (dl$gene.map %>% mutate(max.loc=Vectorize(find.maximum)(g)))
-(ggplot(maxima.unadj, aes(x=cbPeaktime, y=max.loc))
-    + geom_point()
-)
-
-#
-# Investigate mixing over tau
-#
-with(dl, {
-    (ggplot(samples.l$tau,
-            # %>% filter(c %in% c(1,3,5,9,10)),
-            # %>% group_by(iter)
-            # %>% summarise(cell.order=order(c)),
-            aes(x=iter, y=tau, color=factor(c)))
-        + geom_line(alpha=.3)
-    )
-})
-
-# Plot cbPeaktime against mean sample max predicted mean time
-with(dl, {
-    print(ggplot(predicted.mean
-            %>% group_by(gene)
-            %>% summarise(predicted.peak=tau[which.max(predictedmean)],
-                        cbPeaktime=cbPeaktime[1]),
-            aes(x=cbPeaktime, y=predicted.peak))
-        + geom_point()
-    )
-})
-
-(ggplot(samples.l$tau,
-        aes(x=iter, y=tau.offset, color=factor(c)))
-    + geom_line(alpha=.3)
-)
-
-(ggplot(samples.l$tau,
-        aes(x=iter, y=tau, color=factor(c)))
-    + geom_line(alpha=.3)
-)
-
-(ggplot(samples.l$tau,
-        # aes(x=factor(c, levels=order(expr.f.stan$time)),
-        aes(x=factor(c, levels=order(la$tau[best.sample,])),
-            y=tau,
-            fill=factor(expr.f.stan$time[c])))
-    + geom_boxplot(alpha=.1)
-)
-
-(ggplot(samples.l$alpha,
-        aes(x=iter, y=alpha, color=factor(c)))
-    + geom_line()
-)
-
-(ggplot(samples.l$S,
-        aes(x=iter, y=S, color=factor(c)))
-    + geom_line()
-)
-
-best.sample <- which.max(samples.l$lp__$lp__)
-best.sample
-qplot(x=la$lp__, y=rowMeans(la$ll))
-
-expr.f.et <- melt(unname(expr.f.stan$et), varnames=c("g","c"), value.name="et")
-(ggplot(expr.f.et
-        %>% filter(g < 11, et > 0)
-        %>% left_join(samples.l$tau)
-        %>% filter(iter == best.sample),
-        aes(x=tau, y=et, color=factor(g)))
-    + geom_line()
-)
-
-(ggplot(samples.l$ll
-        %>% group_by(q)
-        %>% summarise(mean.ll=mean(ll)),
-        aes(x=mean.ll))
-    + geom_density()
-    + geom_rug()
-)
-
-(ggplot(samples.l$alpha,
-        aes(x=alpha, color=factor(c)))
-    + geom_density()
-    + geom_rug()
-)
-
-cell.factors <- samples.l$alpha %>% left_join(samples.l$S)
-(ggplot(cell.factors,
-        aes(x=alpha, y=S, color=factor(c)))
-    + geom_point(alpha=.3)
-)
-
-(ggplot(samples.l$tau,
-        aes(x=factor(c), y=tau.offset, fill=factor(obstime)))
-    + geom_boxplot()
-)
-
-# Plot mean predicted expression
-predicted.mean <- (samples.l$predictedmean
-              %>% group_by(g, t)
-              %>% summarise(predictedmean=mean(predictedmean))
-              %>% mutate(tau=modulo.period(
-                                (t-1) * period / (expr.f.stan$numtest-1)))
-              %>% left_join(gene.map))
-(ggplot(predicted.mean %>% filter(gene %in% highest.ranked.genes),
-        aes(x=tau, y=predictedmean))
-    + geom_line(alpha=.3)
-    + geom_point(aes(x=modulo.period(tau), y=expr - phi - S),
-                 data=sample.best %>% filter(gene %in% highest.ranked.genes,
-                                             expr > stan.minexpr))
-    + facet_wrap(~ gene)
-)
-
 ```
 
 
 ```{r citations, echo=FALSE, message=FALSE}
 write.bibtex(file="DeLorean.bib")
 ```
+
 
 R version and packages used:
 ```{r Rversion}
