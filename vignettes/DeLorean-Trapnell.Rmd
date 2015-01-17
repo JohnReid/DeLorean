@@ -95,10 +95,8 @@ dl <- estimate.hyper(
 
 Select cells at random if we have too many.
 ```{r chooseCells}
-
 set.seed(1)
-max.cells <- 47
-max.cells <- 17
+max.cells <- 147
 cells.sampled <- sample(trapnell.cell.meta$cell, max.cells)
 cell.filter <- function(cells) cells %in% cells.sampled
 dl <- filter.cells(dl, cell.filter)
@@ -108,11 +106,9 @@ dl <- filter.cells(dl, cell.filter)
 
 Select genes by variance.
 ```{r chooseGenes}
-
-max.genes <- 51
-max.genes <- 13
-genes.high.var <- (trapnell.gene.meta
-                   %>% arrange(-lpe.sd)
+max.genes <- 151
+genes.high.var <- (dl$gene.var
+                   %>% arrange(-psi.bar)
                    %>% head(max.genes))$gene
 gene.filter <- function(genes) genes %in% genes.high.var
 dl <- filter.genes(dl, gene.filter)
