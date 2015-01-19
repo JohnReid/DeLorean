@@ -8,7 +8,7 @@ Depends:
     parallel,
     rstan (>= 2.4.0),
     stringr (>= 0.6.2),
-    dplyr (>= 0.2),
+    dplyr (>= 0.4.1.9000),
     reshape2 (>= 1.4),
     ggplot2 (>= 1.0.0),
     knitr (>= 1.8)
