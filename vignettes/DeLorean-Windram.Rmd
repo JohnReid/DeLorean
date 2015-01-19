@@ -199,6 +199,14 @@ dev.off()
 
 ```
 
+The correlation between the obfuscated capture time with the pseudotime of
+the best sample.
+```{r}
+with(dl$samples.l$tau %>% filter(iter == dl$best.sample),
+     cor(tau, obstime.orig))
+
+```
+
 R version and packages used:
 ```{r Rversion}
 sessionInfo()
