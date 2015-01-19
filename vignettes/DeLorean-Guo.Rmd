@@ -102,7 +102,7 @@ dl <- estimate.hyper(
 Choose a few genes.
 ```{r filterGenes}
 set.seed(1)
-num.genes <- 13
+num.genes <- nrow(dl$gene.meta)  # All genes
 sampled.genes <- sample_n(dl$gene.meta, num.genes)$gene
 gene.filter <- function(genes) genes %in% sampled.genes
 dl <- filter.genes(dl, gene.filter)
@@ -111,7 +111,7 @@ dl <- filter.genes(dl, gene.filter)
 
 Choose a few cells from each stage.
 ```{r filterCells}
-num.at.each.stage <- 2
+num.at.each.stage <- 9
 te.sampled.cells <- (
     dl$cell.meta
     %>% filter(capture < "32C" | "TE" == cell.type)
@@ -136,7 +136,7 @@ run.model <- function(dl, cells.sampled) {
     dl <- format.for.stan(dl)
     dl <- compile.model.simple(dl)
     dl <- find.best.tau(dl)
-    system.time(dl <- fit.model(dl))
+    system.time(dl <- fit.model(dl, num.cores=20))
     dl <- examine.convergence(dl)
     dl <- process.posterior(dl)
     dl <- analyse.noise.levels(dl)
