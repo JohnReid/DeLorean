@@ -180,6 +180,25 @@ dl <- make.predictions(dl)
 ```
 
 
+# Examine pseudotime
+
+Did `DeLorean` learn the obfuscated pseudotime?
+```{r pseudotime}
+gp <- with(dl, {
+    (ggplot(samples.l$tau %>% filter(iter == best.sample),
+                    aes(x=tau, y=obstime.orig, color=capture),
+                    environment=environment())
+        + geom_point()
+        + scale_x_continuous(name="Pseudotime (tau)")
+        + scale_y_continuous(name="Unobfuscated time")
+    )
+})
+png('pseudotime-vs-obfuscated.png')
+print(gp)
+dev.off()
+
+```
+
 R version and packages used:
 ```{r Rversion}
 sessionInfo()
