@@ -152,10 +152,9 @@ dl.epi <- run.model(dl, epi.sampled.cells$cell)
 Compare the profiles in the three fitted models for the TE, PE and ICM.
 
 ```{r compareProfiles}
-load_all('..')
-gp <- plot.cmp.profiles(TE=dl.te, PE=dl.pe, EPI=dl.epi)
+gp <- plot.cmp.profiles(TE=dl.te, PE=dl.pe, EPI=dl.epi,
+                        genes=dl.te$gene.map$gene)
 print(gp)
-
 png('Guo-fates.png', width=1400, height=900)
 print(gp)
 dev.off()

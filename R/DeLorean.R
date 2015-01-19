@@ -971,12 +971,12 @@ plot.cmp.profiles <- function(..., genes = NULL) {
         genes <- dls[[1]]$genes.high.psi
     }
     stopifnot(! is.null(names(dls)))  # Must have names for de.lorean objects
-    get.mean <- function(name) {
-        with(dls[[name]], (
+    get.mean <- function(.name) {
+        with(dls[[.name]], (
             best.mean
             %>% left_join(gene.map)
             %>% filter(gene %in% genes)
-            %>% mutate(name=factor(name, levels=dl.levels))
+            %>% mutate(name=factor(.name, levels=dl.levels))
         ))
     }
     means <- do.call(rbind, lapply(names(dls), get.mean))
