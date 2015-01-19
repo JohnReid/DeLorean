@@ -10,6 +10,12 @@ output: html_document
 %\VignetteIndexEntry{DeLorean analysis of Guo et al. mouse embryo data}
 -->
 
+```{r build, echo=FALSE, eval=FALSE}
+library(devtools)
+load_all('..')
+library(rmarkdown)
+render('DeLorean-Guo.Rmd')
+
 
 ```{r config, echo=FALSE, message=FALSE}
 library(knitr)
@@ -40,14 +46,6 @@ bib <- read.bibtex("DeLorean.bib")
 
 ```
 
-```{r build, echo=FALSE, eval=FALSE}
-library(devtools)
-library(rmarkdown)
-load_all('..')
-render('DeLorean-Guo.Rmd')
-
-```
-
 ```{r loadLibs, echo=FALSE, message=FALSE}
 # suppressMessages(loadfonts())
 library(DeLorean)
@@ -56,27 +54,11 @@ library(DeLorean)
 #
 options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
                                                package="DeLorean"))
-
-```
-
-
-```{r themes, eval=TRUE, echo=FALSE, message=FALSE, warning=FALSE}
-mrc.colors <- c(
-    rgb(138, 121, 103, maxColorValue=255),
-    rgb(217, 165, 41 , maxColorValue=255),
-    rgb(153, 152, 40 , maxColorValue=255),
-    rgb(117, 139, 121, maxColorValue=255),
-    rgb(33 , 103, 126, maxColorValue=255),
-    rgb(208, 114, 50 , maxColorValue=255),
-    rgb(106, 59 , 119, maxColorValue=255),
-    rgb(130, 47 , 90 , maxColorValue=255)
-)
 font.family <- "Verdana"
 font.theme <- theme_update(text=element_text(family=font.family))
 theme_set(font.theme)
 
 ```
-
 
 
 `r citet(bib[["guo_resolution_2010"]])` performed qPCR on mouse embryonic
@@ -89,19 +71,14 @@ Guo et al.'s data is available in the `DeLorean` R package.
 ```{r loadLib}
 library(DeLorean)
 data(GuoDeLorean)
+dl <- de.lorean(
+    guo.expr,
+    guo.gene.meta,
+    guo.cell.meta)
 
 ```
 
-
-This will load a 48 (genes) by 442 (cells) matrix containing the expression
-measurements.
-```{r exprDim}
-dim(guo.expr)
-```
-and two data frames of meta data for the genes and cells.
-```{r meta}
-summary(guo.gene.meta)
-summary(guo.cell.meta)
+```{r child=report.file("data")}
 ```
 
 
@@ -109,25 +86,32 @@ summary(guo.cell.meta)
 
 Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes}
-dl <- de.lorean(
-    guo.expr,
-    guo.gene.meta,
-    guo.cell.meta)
 dl <- estimate.hyper(
     dl,
     sigma.tau=0.5,
     delta=.5)
-# knit.report(dl, "hyper-parameters")
 
+```
+
+```{r child=report.file("hyper-parameters")}
 ```
 
 
 # Choose genes and cells
 
+Choose a few genes.
+```{r filterGenes}
+set.seed(1)
+num.genes <- 13
+sampled.genes <- sample_n(dl$gene.meta, num.genes)$gene
+gene.filter <- function(genes) genes %in% sampled.genes
+dl <- filter.genes(dl, gene.filter)
+
+```
+
 Choose a few cells from each stage.
 ```{r filterCells}
-set.seed(1)
-num.at.each.stage <- 9
+num.at.each.stage <- 2
 te.sampled.cells <- (
     dl$cell.meta
     %>% filter(capture < "32C" | "TE" == cell.type)
@@ -168,16 +152,13 @@ dl.epi <- run.model(dl, epi.sampled.cells$cell)
 Compare the profiles in the three fitted models for the TE, PE and ICM.
 
 ```{r compareProfiles}
-# load_all('..')
-gp <- plot(dl.te, type="best.predictions", profile.color='orange',
-           add.data=F, genes=dl.te$gene.map$gene)
-gp <- plot.add.profiles(gp, dl=dl.pe , color='green',
-                        genes=dl.te$gene.map$gene)
-gp <- plot.add.profiles(gp, dl=dl.epi, color='blue',
-                        genes=dl.te$gene.map$gene)
-# png('Guo-fates.png', width=1400, height=900)
+load_all('..')
+gp <- plot.cmp.profiles(TE=dl.te, PE=dl.pe, EPI=dl.epi)
 print(gp)
-# dev.off()
+
+png('Guo-fates.png', width=1400, height=900)
+print(gp)
+dev.off()
 
 ```
 

@@ -956,6 +956,48 @@ plot.S.posteriors <- function(dl) {
     })
 }
 
+#' Plot a comparison of the profiles from several de.lorean objects
+#'
+#' @param ... Named de.lorean objects
+#' @param genes Genes to plot (defaults to genes.high.psi of first de.lorean
+#'   object)
+#'
+#' @export
+#'
+plot.cmp.profiles <- function(..., genes = NULL) {
+    dls <- list(...)
+    dl.levels <- names(dls)
+    if (is.null(genes)) {
+        genes <- dls[[1]]$genes.high.psi
+    }
+    stopifnot(! is.null(names(dls)))  # Must have names for de.lorean objects
+    get.mean <- function(name) {
+        with(dls[[name]], (
+            best.mean
+            %>% left_join(gene.map)
+            %>% filter(gene %in% genes)
+            %>% mutate(name=factor(name, levels=dl.levels))
+        ))
+    }
+    means <- do.call(rbind, lapply(names(dls), get.mean))
+    (ggplot(means,
+                  aes(x=tau),
+                  environment=environment())
+        + geom_line(alpha=.8,
+                    aes(y=predictedmean + phi,
+                        color=name))
+        + geom_ribbon(aes(y=predictedmean + phi,
+                          ymin=predictedmean+phi-2*sqrt(predictedvar),
+                          ymax=predictedmean+phi+2*sqrt(predictedvar),
+                          fill=name),
+                      alpha=.2)
+        + facet_wrap(~ gene)
+        + scale_x_continuous(name="Pseudotime",
+                             breaks=unique(dls[[1]]$obstime))
+        + scale_y_continuous(name="Expression")
+    )
+}
+
 #' Plot best sample predicted expression
 #'
 #' @param dl de.lorean object
