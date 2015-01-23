@@ -207,6 +207,12 @@ with(dl$samples.l$tau %>% filter(iter == dl$best.sample),
 
 ```
 
+```{r echo=FALSE}
+# Save DeLorean object without fit component
+saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Windram.rds")
+```
+
+
 R version and packages used:
 ```{r Rversion}
 sessionInfo()
