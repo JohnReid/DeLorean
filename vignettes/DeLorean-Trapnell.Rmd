@@ -45,6 +45,9 @@ cite_options(
     check.entries = TRUE)
     # hyperlink = TRUE)
 bib <- read.bibtex("DeLorean.bib")
+if (file.exists("config.R")) {
+    source("config.R")
+}
 
 ```
 
