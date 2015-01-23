@@ -493,7 +493,8 @@ compile.model.simple <- function(dl) {
 #' estimates and sampling tau from its prior.
 #'
 #' @param dl de.lorean object
-#' @param num.tau.candidates How many candidates to examine Defaults to 6000.
+#' @param num.tau.candidates How many candidates to examine. Defaults to 6000.
+#' @param num.tau.to.keep How many candidates to keep. Defaults to num.cores.
 #' @param use.parallel Calculate in parallel
 #' @param num.cores Number of cores to run on. Defaults to max(detectCores()-1, 1)
 #'
@@ -501,10 +502,14 @@ compile.model.simple <- function(dl) {
 #'
 find.best.tau <- function(dl,
                           num.tau.candidates = 6000,
+                          num.tau.to.keep = NULL,
                           use.parallel = TRUE,
                           num.cores = NULL) {
     if (is.null(num.cores)) {
         num.cores <- max(detectCores() - 1, 1)
+    }
+    if (is.null(num.tau.to.keep)) {
+        num.tau.to.keep <- num.cores
     }
     within(dl, {
         # Define a function that chooses tau
@@ -538,8 +543,9 @@ find.best.tau <- function(dl,
         # qplot(sapply(tau.inits, function(init) init$lp))
         # Which tau gave highest log probability?
         tau.inits.order <- order(sapply(tau.inits, function(init) -init$lp))
-        sapply(tau.inits[tau.inits.order], function(init) init$lp)[1:10]
-        tau.inits[[tau.inits.order[1]]]
+        # Just keep so many best tau inits
+        tau.inits <- tau.inits[tau.inits.order[1:num.tau.to.keep]]
+        rm(tau.inits.order)
     })
 }
 
@@ -571,7 +577,7 @@ fit.model <- function(
         pars <- dl$init.chain()
         #
         # Replace tau with good tau
-        pars$tau <- dl$tau.inits[[dl$tau.inits.order[chain_id]]]$tau
+        pars$tau <- dl$tau.inits[[chain_id]]$tau
         pars
     }
     # Run the chains in parallel
