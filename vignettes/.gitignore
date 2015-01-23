@@ -1,3 +1,4 @@
+*.rds
 config.R
 pseudotime-vs-obfuscated.png
 DeLorean-model_cache/
