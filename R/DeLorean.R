@@ -545,7 +545,7 @@ find.best.tau <- function(dl,
         tau.inits.order <- order(sapply(tau.inits, function(init) -init$lp))
         # Just keep so many best tau inits
         tau.inits <- tau.inits[tau.inits.order[1:num.tau.to.keep]]
-        rm(tau.inits.order)
+        rm(tau.inits.order, init.chain.find.tau, try.tau.init)
     })
 }
 
@@ -592,8 +592,6 @@ fit.model <- function(
                                 seed=i, chains=chains,
                                 chain_id=i, refresh=-1))
     dl$fit <- sflist2stanfit(sflist)
-    dl$la <- extract(dl$fit, permuted=TRUE)
-    # mean(as.vector(la$ll))
     return(dl)
 }
 
@@ -612,6 +610,7 @@ examine.convergence <- function(dl) {
         ignore.names <- str_detect(rownames(summ),
                                    "^(predictedvar|predictedmean)")
         rhat.sorted <- sort(summ[! ignore.names, "Rhat"])
+        rm(summ)
     })
 }
 
@@ -645,7 +644,8 @@ process.posterior <- function(dl) {
             predictedvar=c("g", "t"),
             logmarglike=c("g")
         )
-        samples.l <- melt.samples(la, sample.dims)
+        samples.l <- melt.samples(extract(dl$fit, permuted=TRUE),
+                                  sample.dims)
         best.sample <- which.max(samples.l$lp__$lp__)
         if (TRUE %in% samples.l$logmarglike$is.held.out) {
             mean.held.out.marg.ll <- mean(
@@ -659,16 +659,6 @@ process.posterior <- function(dl) {
             %>% left_join(cell.map)
             %>% mutate(tau.offset=tau - obstime)
         )
-        samples.all <- (
-            Reduce(left_join, samples.l[! str_detect(names(samples.l),
-                                                     "^predicted")])
-            %>% left_join(melt(unname(stan.m),
-                            varnames=c("g", "c"),
-                            value.name="expr"))
-            %>% left_join(gene.map)
-        )
-        # Just the sample with the best log probability
-        sample.best <- samples.all %>% filter(best.sample == iter)
     })
 }
 
@@ -961,7 +951,7 @@ plot.convergence <- function(dl) {
 #'
 plot.S.posteriors <- function(dl) {
     with(dl, {
-        gp <- (ggplot(samples.all,
+        gp <- (ggplot(samples.l$S %>% left_join(cell.map),
                       aes(x=factor(cell,
                                    levels=arrange(cell.map, capture)$cell),
                           y=S,
@@ -1097,14 +1087,24 @@ plot.add.profiles <- function(gp, dl=NULL, color='black', genes=NULL) {
 #'
 #' @export
 #'
-plot.add.expr <- function(gp, dl, genes=NULL) {
-    (gp
-        + geom_point(aes(x=modulo.period(tau),
-                         y=expr - S,
-                         color=capture),
-                     data=dl$sample.best %>% filter(gene %in% genes),
-                     size=4,
-                     alpha=.7))
+plot.add.expr <- function(gp, dl, genes=NULL, sample.iter=NULL) {
+    if (is.null(sample.iter)) {
+        sample.iter <- dl$best.sample
+    }
+    with(dl, (
+        gp + geom_point(data=samples.l$tau
+                             %>% left_join(samples.l$S)
+                             %>% filter(sample.iter == iter)
+                             %>% left_join(melt(unname(stan.m),
+                                           varnames=c("g", "c"),
+                                           value.name="expr"))
+                             %>% left_join(gene.map)
+                             %>% filter(gene %in% genes),
+                        aes(x=modulo.period(tau),
+                            y=expr - S,
+                            color=capture),
+                        size=4,
+                        alpha=.7)))
 }
 
 #' Single cell expression data and meta data from Trapnell et al. (2014).
