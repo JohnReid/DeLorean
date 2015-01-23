@@ -22,7 +22,9 @@ ggplot(samples.l$tau, aes(x=cell, y=tau)) + geom_boxplot()
 
 The posterior for the cell size factors $S_c$:
 ```{r posteriorS}
-(qplot(geom="density", x=as.vector(la$S)) + geom_rug()
+(ggplot(samples.l$S, aes(x=S))
+    + geom_density()
+    + geom_rug()
     + stat_function(fun=function(x) dnorm(x,
                                           mean=hyper$mu_S,
                                           sd=hyper$sigma_S),
@@ -40,7 +42,9 @@ plot(dl, type="S.posteriors")
 
 The posterior for the gene means $\phi_g$:
 ```{r posteriorPhi}
-(qplot(geom="density", x=as.vector(la$phi)) + geom_rug()
+(ggplot(samples.l$phi, aes(x=phi))
+    + geom_density()
+    + geom_rug()
     + stat_function(fun=function(x) dnorm(x,
                                           mean=hyper$mu_phi,
                                           sd=hyper$sigma_phi),
@@ -59,7 +63,9 @@ The posterior for the gene means $\phi_g$ by gene:
 
 The posterior for the between time variation $\psi_g$:
 ```{r posteriorPsi}
-(qplot(geom="density", x=as.vector(la$psi)) + geom_rug()
+(ggplot(samples.l$psi, aes(x=psi))
+    + geom_density()
+    + geom_rug()
     + stat_function(fun=function(x) dlnorm(x,
                                            mean=hyper$mu_psi,
                                            sd=hyper$sigma_psi),
@@ -79,7 +85,9 @@ Temporal variation by gene:
 
 The posterior for the within time variation $\omega_g$:
 ```{r posteriorOmega}
-(qplot(geom="density", x=as.vector(la$psi)) + geom_rug()
+(ggplot(samples.l$omega, aes(x=omega))
+    + geom_density()
+    + geom_rug()
     + stat_function(fun=function(x) dlnorm(x,
                                            mean=hyper$mu_omega,
                                            sd=hyper$sigma_omega),
@@ -118,7 +126,9 @@ Within time variation against temporal variation by gene:
 
 The posterior for the model log probability:
 ```{r posteriorLP}
-qplot(geom="density", x=as.vector(la$lp__)) + geom_rug()
+(ggplot(samples.l$lp__, aes(x=lp__))
+    + geom_density()
+    + geom_rug())
 ```
 
 
