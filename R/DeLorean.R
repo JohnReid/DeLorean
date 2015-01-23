@@ -468,26 +468,34 @@ compile.model.simple <- function(dl) {
             # message("Saving compiled model to ", compiled.model.file)
             saveRDS(compiled, compiled.model.file)
         }
-        # Define a function to initialise the chains
-        init.chain <- function() {
-            with(stan.data, {
-                list(S=cell.map$S.hat,
-                     tau=rnorm(C, mean=time, sd=sigma_tau),
-                     phi=rnorm(G, mean=mu_phi, sd=sigma_phi),
-                     psi=rlnorm(G, meanlog=mu_psi, sdlog=sigma_psi),
-                     omega=rlnorm(G, meanlog=mu_omega, sdlog=sigma_omega)
-                )
-            })
-        }
         # Try one iteration to check everything is OK
         fit <- stan(fit=compiled,
                     data=stan.data,
-                    init=init.chain,
+                    init=make.chain.init.fn(dl),
                     iter=1,
                     chains=1)
     })
 }
 
+
+#' Define a function to initialise the chains
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+make.chain.init.fn <- function(dl) {
+    function() {
+        with(dl$stan.data, {
+            list(S=dl$cell.map$S.hat,
+                 tau=rnorm(C, mean=time, sd=sigma_tau),
+                 phi=rnorm(G, mean=mu_phi, sd=sigma_phi),
+                 psi=rlnorm(G, meanlog=mu_psi, sdlog=sigma_psi),
+                 omega=rlnorm(G, meanlog=mu_omega, sdlog=sigma_omega)
+            )
+        })
+    }
+}
 
 #' Find best tau to initialise chains with by using empirical Bayes parameter
 #' estimates and sampling tau from its prior.
@@ -574,7 +582,7 @@ fit.model <- function(
         # print(chain_id)
         #
         # Create random parameters
-        pars <- dl$init.chain()
+        pars <- make.chain.init.fn(dl)()
         #
         # Replace tau with good tau
         pars$tau <- dl$tau.inits[[chain_id]]$tau
@@ -584,14 +592,15 @@ fit.model <- function(
     sflist <- mclapply(1:num.cores,
                        mc.cores=num.cores,
                        function(i)
-                           stan(fit=dl$compiled, data=dl$stan.data,
+                           stan(fit=dl$fit, data=dl$stan.data,
                                 thin=thin,
                                 init=init.chain.good.tau,
-                                # init=init.chain,
                                 iter=iter,
                                 seed=i, chains=chains,
                                 chain_id=i, refresh=-1))
     dl$fit <- sflist2stanfit(sflist)
+    dl$compiled <- NULL
+    dl$sflist <- NULL
     return(dl)
 }
 
@@ -659,6 +668,7 @@ process.posterior <- function(dl) {
             %>% left_join(cell.map)
             %>% mutate(tau.offset=tau - obstime)
         )
+        rm(melt.samples)
     })
 }
 
