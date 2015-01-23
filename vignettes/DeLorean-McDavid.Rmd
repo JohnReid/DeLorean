@@ -45,6 +45,9 @@ cite_options(
     check.entries = TRUE)
     # hyperlink = TRUE)
 bib <- read.bibtex("DeLorean.bib")
+if (file.exists("config.R")) {
+    source("config.R")
+}
 
 ```
 
@@ -108,7 +111,7 @@ dl <- estimate.hyper(
 Choose a few cells from the PC3 cell line.
 ```{r filterCells}
 set.seed(1)
-max.cells <- 117
+max.cells <- min(getOption("DL.max.cells", 57))
 cells.PC3 <- sample(filter(mcdavid.cell.meta, "PC3" == cellline)$cell,
                     max.cells)
 cell.filter <- function(cells) cells %in% cells.PC3
@@ -121,15 +124,14 @@ Choose a handful of genes with low $p$-values from the McDavid et al.
 differential expression test.
 ```{r filterGenes}
 use.highest.rank.genes <- TRUE
+max.genes <- min(getOption("DL.max.genes", 147))
 if (use.highest.rank.genes) {
-    max.rank <- 147
     genes.for.stan <- (filter(mcdavid.gene.meta,
                                     ! is.na(cbRank),
-                                    cbRank < max.rank + 1)
+                                    cbRank <= max.genes)
                     %>% arrange(cbRank))$gene
 } else {
     # Just use so many random genes
-    max.genes <- 23
     genes.for.stan <- sample((filter(mcdavid.gene.meta,
                                     pvalue > 5)
                             %>% arrange(cbRank))$gene,
@@ -145,7 +147,6 @@ dl <- filter.genes(dl, gene.filter)
 
 Define and compile the model, find the best initialisation, and fit the model.
 ```{r model}
-load_all('..')
 dl <- format.for.stan(dl, period=3, hold.out=3)
 dl <- compile.model.simple(dl)
 dl <- find.best.tau(dl)
