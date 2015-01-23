@@ -454,10 +454,20 @@ format.for.stan <- function(
 #' @export
 #'
 compile.model.simple <- function(dl) {
+    stan.model.file <- system.file('inst/Stan/simple-model.stan',
+                                   package='DeLorean')
+    data.dir <- system.file('data', package='DeLorean')
+    compiled.model.file <- paste(data.dir, "simple-model.rds", sep='/')
     within(dl, {
-        stan.model.file <- system.file('inst/Stan/simple-model.stan',
-                                 package='DeLorean')
-        compiled <- stan(file=stan.model.file, chains=0)
+        if (file.exists(compiled.model.file)) {
+            # message("Loading pre-compiled model from ", compiled.model.file)
+            compiled <- readRDS(compiled.model.file)
+        } else {
+            # message("Compiling model")
+            compiled <- stan(file=stan.model.file, chains=0)
+            # message("Saving compiled model to ", compiled.model.file)
+            saveRDS(compiled, compiled.model.file)
+        }
         # Define a function to initialise the chains
         init.chain <- function() {
             with(stan.data, {
