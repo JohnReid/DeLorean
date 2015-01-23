@@ -97,11 +97,11 @@ dl <- estimate.hyper(
 # Choose genes and cells
 
 Select cells at random if we have too many.
-```{r chooseCells}
+```{r filterCells}
 set.seed(1)
-max.cells <- 147
-cells.sampled <- sample(trapnell.cell.meta$cell, max.cells)
-cell.filter <- function(cells) cells %in% cells.sampled
+max.cells <- min(getOption("DL.max.cells", 57))
+sampled.cells <- sample(dl$cell.meta$cell, max.cells)
+cell.filter <- function(cells) cells %in% sampled.cells
 dl <- filter.cells(dl, cell.filter)
 
 ```
