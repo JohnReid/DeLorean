@@ -302,7 +302,7 @@ estimate.hyper <- function(
             mu_omega=mean(log(gene.var$omega.hat), na.rm=TRUE),
             sigma_omega=sd(log(gene.var$omega.hat), na.rm=TRUE),
             sigma_tau=opts$sigma.tau,
-            l_pe=length.scale
+            l=length.scale
         )
         rm(expr.l)  # No longer needed
     })

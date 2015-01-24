@@ -4,7 +4,7 @@ functions {
     #
     real
     periodise(real r, real period) {
-        return period * sin(r * pi() / period) / 2;
+        return period / 2 * sin(r * pi() / period);
     }
     #
     # Squared exponential covariance function
@@ -122,7 +122,7 @@ data {
     real<lower=0> sigma_psi;  # S.d. of log between time variation, psi
     real mu_omega;  # Mean of log within time variation, omega
     real<lower=0> sigma_omega;  # S.d. of log within time variation, omega
-    real l_pe;  # Length scale squared for phi
+    real l;  # Length scale squared for phi
     real<lower=0> sigma_tau;  # Standard deviation for pseudotime
     #
     # Held out parameters
@@ -173,7 +173,7 @@ model {
                     psi[g] * cov_symmetric(tau,
                                            periodic,
                                            period,
-                                           l_pe)
+                                           l)
                         + omega[g] * identity);
     }
 }
@@ -211,7 +211,7 @@ generated quantities {
                    psi_g * cov_symmetric(tau,
                                          periodic,
                                          period,
-                                         l_pe)
+                                         l)
                     + omega_g * identity);
         a <- mdivide_right_tri_low(
                 mdivide_left_tri_low(
@@ -224,7 +224,7 @@ generated quantities {
                                  testinput,
                                  periodic,
                                  period,
-                                 l_pe);
+                                 l);
         predictedmean[g] <- a * kstartest;
         #
         # Calculate predicted variance on test inputs
