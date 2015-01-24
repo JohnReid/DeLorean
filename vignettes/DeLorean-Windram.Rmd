@@ -212,6 +212,20 @@ dev.off()
 
 ```
 
+```{r eval=FALSE, echo=FALSE}
+omega=2.5
+.data <- (
+    data.frame(r=1:1000/100)
+    %>% mutate(v=r-omega*floor(r/omega+1/2),
+               u=abs(v),
+               y=sin(pi*r/omega)))
+(ggplot(.data, aes(x=r))
+    + geom_line(aes(y=u), linetype='dashed')
+    # + geom_line(aes(y=omega/2*y), linetype='dotted')
+    + geom_line(aes(y=omega/2*y**2)))
+
+```
+
 The correlation between the obfuscated capture time with the pseudotime of
 the best sample.
 ```{r}
