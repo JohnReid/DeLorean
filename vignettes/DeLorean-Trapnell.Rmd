@@ -161,9 +161,33 @@ dl <- analyse.noise.levels(dl)
 Calculate expression profiles.
 ```{r makePredictions}
 dl <- make.predictions(dl)
+
 ```
 
 ```{r child=report.file("profiles")}
+```
+
+Plot some specific profiles mentioned in Trapnell et al.
+```{r}
+genes.fig.2 <- c("MEF2C", "MYH2", "CDK1", "ID1", "MYOG")
+genes.fig.3.cluster <- c("HES1", "PBX1", "MYOG", "CDK1", "AKT1", "MYF6")
+genes.fig.3.reg <- c("MEF2", "MYOD", "P300", "E47", "MEIS1", "PBX1",
+                     "XBP1", "CUX1", "USF1", "ZIC1", "MZF1", "POU2F1",
+                     "POU3F2", "AHR", "RREB1", "RFX1", "HIVEP2", "PATZ1",
+                     "DDIT3", "BACHA1", "ARID5B")
+genes.fig.3 <- c(genes.fig.3.cluster, genes.fig.3.reg)
+genes.fig.4.a <- c("MZF1", "ZIC1", "XBP1", "CUX1", "ARID5B", "USF1", "POU2F1",
+                   "AHR", "PATZ1", "DDIT3", "BACH1", "MYOG")
+genes.fig.all <- unique(c(genes.fig.2, genes.fig.3, genes.fig.4.a))
+filter(dl$gene.map , hgnc_symbol %in% genes.fig.all)
+filter(dl$gene.meta, hgnc_symbol %in% genes.fig.all)
+png('Trapnell-profiles.png', width=1200, height=800)
+(plot(dl,
+      type="best.predictions",
+      genes=filter(dl$gene.map, hgnc_symbol %in% genes.fig.all)$gene)
+    + facet_wrap(~ hgnc_symbol + gene))
+dev.off()
+
 ```
 
 
