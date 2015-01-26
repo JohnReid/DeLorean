@@ -91,6 +91,35 @@ dl <- de.lorean(
 
 
 
+# PCA analysis
+
+```{r}
+genes.high.rank <- (
+    dl$gene.meta
+    %>% filter(!is.na(cbRank), cbRank < 201)
+    %>% arrange(cbRank))
+levels(dl$cell.meta$cellline)
+cells.PC3 <- (
+    dl$cell.meta
+    %>% filter("PC3" == cellline))
+pca <- prcomp(t(mcdavid.expr[as.character(genes.high.rank$gene),
+                             as.character(cells.PC3$cell)]),
+              .scale=TRUE)
+# Sqrt of eigenvalues
+qplot(pca$sdev)
+# Percentage of variance explained
+qplot(pca$sdev**2 / sum(pca$sdev**2) * 100)
+# Get the PC scores
+pc.scores <- as.data.frame(pca$x)
+pc.scores$cell <- factor(rownames(pca$x), levels=levels(dl$cell.meta$cell))
+pc.scores <- pc.scores %>% left_join(dl$cell.meta)
+# Plot PC1 against PC2
+ggplot(pc.scores, aes(x=PC1, y=PC2, color=capture)) + geom_point()
+# Plot PC1 against PC3
+ggplot(pc.scores, aes(x=PC1, y=PC3, color=capture)) + geom_point()
+
+```
+
 # Estimate hyperparameters
 
 Examine data for empirical Bayes estimation of hyperparameters.
@@ -120,23 +149,12 @@ dl <- filter.cells(dl, cell.filter)
 ```
 
 
-Choose a handful of genes with low $p$-values from the McDavid et al.
+Choose genes with low $p$-values from the McDavid et al.
 differential expression test.
 ```{r filterGenes}
-use.highest.rank.genes <- TRUE
-max.genes <- min(getOption("DL.max.genes", 147))
-if (use.highest.rank.genes) {
-    genes.for.stan <- (filter(mcdavid.gene.meta,
-                                    ! is.na(cbRank),
-                                    cbRank <= max.genes)
-                    %>% arrange(cbRank))$gene
-} else {
-    # Just use so many random genes
-    genes.for.stan <- sample((filter(mcdavid.gene.meta,
-                                    pvalue > 5)
-                            %>% arrange(cbRank))$gene,
-                            max.genes)
-}
+max.genes <- min(getOption("DL.max.genes", 56))
+genes.for.stan <- sample((dl$gene.meta %>% filter(pvalue > 10))$gene,
+                         max.genes)
 gene.filter <- function(genes) genes %in% genes.for.stan
 dl <- filter.genes(dl, gene.filter)
 
