@@ -79,8 +79,13 @@ genes are represented as several are rarely expressed.
 ```{r loadLib}
 library(DeLorean)
 data(McDavidDeLorean)
+
+```
+
+Shift positively expressed genes closer to unexpressed genes to improve fit.
+```{r}
 dl <- de.lorean(
-    mcdavid.expr,
+    pmax(mcdavid.expr - .69, 0),
     mcdavid.gene.meta,
     mcdavid.cell.meta)
 
