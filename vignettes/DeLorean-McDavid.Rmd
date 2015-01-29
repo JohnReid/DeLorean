@@ -173,7 +173,7 @@ Define and compile the model, find the best initialisation, and fit the model.
 dl <- format.for.stan(dl, period=3, hold.out=3)
 dl <- compile.model.simple(dl)
 dl <- find.best.tau(dl)
-system.time(dl <- fit.model(dl))
+system.time(dl <- fit.model(dl, num.cores=getOption("DL.num.cores")))
 
 ```
 
@@ -214,26 +214,117 @@ dl <- make.predictions(dl)
 ```
 
 
+# Cell size vs. pseudotime
+
+```{r}
+periodise <- function(tau, period=3) {
+    wave = floor(tau/period)
+    tau - wave * period
+}
+tau.S <- (
+    dl$samples$tau
+    %>% left_join(dl$samples$S)
+    %>% mutate(tau=periodise(tau, dl$opts$period))
+    %>% arrange(tau))
+# Copy data to beginning and end to ensure periodic loess estimate
+tau.S.lower <- tau.S %>% tail(2000) %>% mutate(tau=tau-dl$opts$period)
+tau.S.upper <- tau.S %>% head(2000) %>% mutate(tau=tau+dl$opts$period)
+tau.S <- rbind(tau.S.lower, tau.S, tau.S.upper)
+# Fit loess
+lo <- loess(S ~ tau, tau.S)
+tau.S$loess <- predict(lo, tau.S)
+# Make predictions at times used in predictedmean
+prediction.times <- (
+    dl$best.mean
+    %>% filter(1 == g, 0 <= tau, tau <= dl$opts$period)
+    %>% select(t, tau))
+prediction.times$cell.size.adj <- predict(lo, prediction.times)
+prediction.times
+# Plot data + fit
+png('cell-size-vs-pseudotime.png', width=1200, height=900)
+(ggplot(tau.S, aes(x=tau, y=S, color=capture))
+    + geom_point()
+    + geom_line(aes(y=loess), color='black')
+)
+dev.off()
+
+```
+
 # Examine peak times
 
 ```{r peakTimes}
 
 # Plot cbPeaktime against best sample max predicted mean time
-print(plot.best.predictions(dl, genes="CDCA8"))
+# print(plot.best.predictions(dl, genes="CDCA8"))
 dl <- within(dl, {
-    peak.vs.max <- (best.mean
+    peak.vs.max <- (best.mean %>% left_join(prediction.times %>% select(-tau))
         %>% group_by(g)
-        %>% summarise(predicted.peak=tau[which.max(predictedmean)])
+        %>% summarise(predicted.peak=tau[which.max(predictedmean)],
+                      predicted.peak.adj=tau[which.max(predictedmean+cell.size.adj)])
         %>% left_join(gene.map))
-    peak.max.cor <- with(peak.vs.max, { cor(cbPeaktime, predicted.peak, use="complete.obs") })
+    peak.max.cor <- with(
+        peak.vs.max %>% filter(cbPeaktime > 10),
+        cor(cbPeaktime,
+            predicted.peak,
+            use="complete.obs"))
+    peak.max.cor.adj <- with(
+        peak.vs.max %>% filter(cbPeaktime > 10),
+        cor(cbPeaktime,
+            predicted.peak.adj,
+            use="complete.obs"))
 })
 dl$peak.max.cor
+dl$peak.max.cor.adj
 
-(ggplot(dl$peak.vs.max, aes(x=cbPeaktime, y=predicted.peak))
+gp <- (
+    ggplot(dl$peak.vs.max, aes(x=cbPeaktime, y=predicted.peak))
     + geom_point()
 )
+print(gp)
+png('peak-vs-max.png', width=1200, height=900)
+print(gp)
+dev.off()
+
+gp <- (
+    ggplot(dl$peak.vs.max, aes(x=cbPeaktime, y=predicted.peak.adj))
+    + geom_point()
+)
+print(gp)
+png('peak-adj-vs-max.png', width=1200, height=900)
+print(gp)
+dev.off()
 
 ```
+
+Calculate correlation based on estimate of peak time from capture time.
+```{r}
+expr.l <- melt(unname(dl$expr), varnames=c("g", "c"), value.name="x")
+names(expr.l)
+peaks <- (
+    expr.l
+    %>% group_by(g)
+    %>% summarise(c=c[which.max(x)])
+    %>% left_join(dl$cell.map)
+    %>% left_join(dl$gene.map))
+peaks
+gp <- (
+    ggplot(peaks, aes(x=cbPeaktime, y=capture))
+    + geom_point())
+print(gp)
+png('capture-peaks.png', width=1200, height=900)
+print(gp)
+dev.off()
+peak.capture.cor <- with(
+    peaks,
+    cor(cbPeaktime, as.integer(capture), use="complete.obs"))
+peak.capture.cor
+
+```
+
+The correlation between the capture time of the peak to the peak time in
+[CycleBase](http://www.cyclebase.org/About "CycleBase") is
+`r peak.capture.cor'.
+
 
 
 ```{r echo=FALSE}
