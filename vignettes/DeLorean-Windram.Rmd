@@ -84,9 +84,12 @@ data(WindramDeLorean)
 
 Reduce resolution of observed capture time points.
 ```{r}
+group.size <- 12
 windram.cell.meta$obstime.orig <- windram.cell.meta$obstime
 windram.cell.meta$capture.orig <- windram.cell.meta$capture
-windram.cell.meta$obstime <- floor((windram.cell.meta$obstime-1) / 8) * 8 + 4
+windram.cell.meta$obstime <- (
+    floor((windram.cell.meta$obstime-1) / group.size) * group.size
+    + group.size / 2)
 windram.cell.meta$capture <- (
     factor(as.character(windram.cell.meta$obstime),
            ordered=TRUE,
@@ -94,13 +97,18 @@ windram.cell.meta$capture <- (
 
 ```
 
-Just consider the *Botrytis* cells.
+Just consider the *Botrytis* cells and select some at random if we have
+too many.
 ```{r}
+set.seed(1)
 dl <- de.lorean(
     windram.expr,
     windram.gene.meta,
     windram.cell.meta)
-botrytis.cells <- filter(dl$cell.meta, condition == "Botrytis")$cell
+max.cells <- min(getOption("DL.max.cells", 24))
+botrytis.cells <- sample(
+    filter(dl$cell.meta, condition == "Botrytis")$cell,
+    max.cells)
 cell.filter <- function(cells) cells %in% botrytis.cells
 dl <- filter.cells(dl, cell.filter)
 
@@ -116,7 +124,7 @@ Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes}
 dl <- estimate.hyper(
     dl,
-    sigma.tau=4,
+    sigma.tau=group.size / 2,
     delta=.5)
 
 ```
@@ -126,17 +134,6 @@ dl <- estimate.hyper(
 
 
 # Choose genes
-
-Select cells at random if we have too many.
-```{r filterCells}
-set.seed(1)
-max.cells <- min(getOption("DL.max.cells", 24))
-sampled.cells <- sample(dl$cell.meta$cell, max.cells)
-cell.filter <- function(cells) cells %in% sampled.cells
-dl <- filter.cells(dl, cell.filter)
-
-```
-
 
 Choose a few genes.
 ```{r filterGenes}
@@ -153,7 +150,8 @@ Format the data for Stan and fit the model.
 dl <- format.for.stan(dl)
 dl <- compile.model.simple(dl)
 dl <- find.best.tau(dl)
-system.time(dl <- fit.model(dl))
+system.time(dl <- fit.model(dl, num.cores=getOption("DL.num.cores")))
+
 ```
 
 
@@ -202,29 +200,18 @@ gp <- with(dl, {
                     aes(x=tau, y=obstime.orig, color=capture),
                     environment=environment())
         + geom_point()
-        + scale_x_continuous(name="Pseudotime (tau)")
-        + scale_y_continuous(name="Unobfuscated time")
+        + scale_x_continuous(name="Estimated pseudotime (tau)")
+        + scale_y_continuous(name="Unobfuscated capture time")
     )
 })
-png('pseudotime-vs-obfuscated.png')
+print(gp)
+# png('pseudotime-vs-obfuscated.png')
+pdf('pseudotime-vs-obfuscated.pdf')
 print(gp)
 dev.off()
 
 ```
 
-```{r eval=FALSE, echo=FALSE}
-omega=2.5
-.data <- (
-    data.frame(r=1:1000/100)
-    %>% mutate(v=r-omega*floor(r/omega+1/2),
-               u=abs(v),
-               y=sin(pi*r/omega)))
-(ggplot(.data, aes(x=r))
-    + geom_line(aes(y=u), linetype='dashed')
-    # + geom_line(aes(y=omega/2*y), linetype='dotted')
-    + geom_line(aes(y=omega/2*y**2)))
-
-```
 
 The correlation between the obfuscated capture time with the pseudotime of
 the best sample.
@@ -237,10 +224,13 @@ with(dl$samples.l$tau %>% filter(iter == dl$best.sample),
 ```{r echo=FALSE}
 # Save DeLorean object without fit component
 saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Windram.rds")
+# dl <- readRDS("Windram.rds")
+
 ```
 
 
 R version and packages used:
 ```{r Rversion}
+date()
 sessionInfo()
 ```
