@@ -48,6 +48,13 @@ bib <- read.bibtex("DeLorean.bib")
 if (file.exists("config.R")) {
     source("config.R")
 }
+#
+# Widths for saving figures
+#
+text.width <- 4.79  # LaTeX width in inches
+golden.ratio <- 1.618  # Pleasing ratio
+fig.width <- text.width
+fig.height <- text.width / golden.ratio
 
 ```
 
@@ -238,14 +245,22 @@ prediction.times <- (
     dl$best.mean
     %>% filter(1 == g, 0 <= tau, tau <= dl$opts$period)
     %>% select(t, tau))
-prediction.times$cell.size.adj <- predict(lo, prediction.times)
+prediction.times$S <- predict(lo, prediction.times)
 prediction.times
 # Plot data + fit
-png('cell-size-vs-pseudotime.png', width=1200, height=900)
-(ggplot(tau.S, aes(x=tau, y=S, color=capture))
-    + geom_point()
+gp <- (ggplot(tau.S, aes(x=tau, y=S, color=capture))
+    + geom_point(alpha=.1)
     + geom_line(aes(y=loess), color='black')
+    + scale_x_continuous(name="pseudotime")
+    + scale_y_continuous(name="cell size")
+    + scale_color_discrete(name="phase")
+    + coord_cartesian(xlim = c(0, 3))
+    + guides(colour=guide_legend(override.aes=list(alpha=1)))
 )
+print(gp)
+png('McDavid-cell-size-vs-pseudotime.png', width=fig.width, height=fig.height,
+    units='in', res=72*2)
+print(gp)
 dev.off()
 
 ```
@@ -256,47 +271,63 @@ dev.off()
 
 # Plot cbPeaktime against best sample max predicted mean time
 # print(plot.best.predictions(dl, genes="CDCA8"))
-dl <- within(dl, {
-    peak.vs.max <- (best.mean %>% left_join(prediction.times %>% select(-tau))
-        %>% group_by(g)
-        %>% summarise(predicted.peak=tau[which.max(predictedmean)],
-                      predicted.peak.adj=tau[which.max(predictedmean+cell.size.adj)])
-        %>% left_join(gene.map))
-    peak.max.cor <- with(
-        peak.vs.max %>% filter(cbPeaktime > 10),
-        cor(cbPeaktime,
-            predicted.peak,
-            use="complete.obs"))
-    peak.max.cor.adj <- with(
-        peak.vs.max %>% filter(cbPeaktime > 10),
-        cor(cbPeaktime,
-            predicted.peak.adj,
-            use="complete.obs"))
+peak.distance <- Vectorize(function(peak.1, peak.2) {
+    if (peak.1 - peak.2 > .5) {
+        peak.1 <- peak.1 - 1
+    }
+    if (peak.2 - peak.1 > .5) {
+        peak.2 <- peak.2 - 1
+    }
+    abs(peak.1 - peak.2)
 })
-dl$peak.max.cor
-dl$peak.max.cor.adj
-
+# peak.distance(c(.1, .2, .1, .9), c(.2, .1, .9, .1))
+calc.rms <- function(d) sqrt(sum(d))/length(d)
+calc.rmse <- function(xhat, x) calc.rms(peak.distance(xhat, x))
+dl <- within(dl, {
+    peak.vs.max <- (predictions %>% left_join(prediction.times %>% select(-tau))
+        %>% group_by(iter, g)
+        %>% summarise(predicted.peak=periodise(tau[which.max(predictedmean)]),
+                      predicted.peak.adj=periodise(tau[which.max(predictedmean+S)]))
+        %>% left_join(gene.map)
+        %>% filter(! is.na(cbPeaktime)))
+    peak.max.dist <- (
+        peak.vs.max
+        %>% group_by(iter)
+        %>% summarise(rmse=calc.rmse(cbPeaktime/100,
+                                     predicted.peak/3),
+                      rmse.adj=calc.rmse(cbPeaktime/100,
+                                         predicted.peak.adj/3)))
+})
+sample_n(dl$peak.max.dist, 15)
 gp <- (
-    ggplot(dl$peak.vs.max, aes(x=cbPeaktime, y=predicted.peak))
+    ggplot(dl$peak.max.dist, aes(x=rmse, y=rmse.adj))
     + geom_point()
-)
+    + scale_x_continuous(name="RMSE (not adjusted)")
+    + scale_y_continuous(name="RMSE (cell size adjusted)")
+    + geom_abline(alpha=.5))
 print(gp)
-png('peak-vs-max.png', width=1200, height=900)
+pdf('McDavid-rmse-vs-rmse-adj.pdf', width=fig.width, height=fig.height)
 print(gp)
 dev.off()
+mean(dl$peak.max.dist$rmse)
+mean(dl$peak.max.dist$rmse.adj)
 
 gp <- (
-    ggplot(dl$peak.vs.max, aes(x=cbPeaktime, y=predicted.peak.adj))
-    + geom_point()
+    ggplot(dl$peak.vs.max %>% filter(dl$best.sample == iter),
+           aes(x=cbPeaktime, y=predicted.peak, label=gene))
+    + geom_point(alpha=.7, size=2)
+    + scale_x_continuous(name="CycleBase peak time")
+    + scale_y_continuous(name="estimated peak time")
+    + geom_point(aes(y=predicted.peak.adj), alpha=.7, size=2, color="blue")
 )
 print(gp)
-png('peak-adj-vs-max.png', width=1200, height=900)
+pdf('McDavid-peak-vs-max.pdf', width=fig.width, height=fig.height)
 print(gp)
 dev.off()
 
 ```
 
-Calculate correlation based on estimate of peak time from capture time.
+Calculate distance between peak time and capture time.
 ```{r}
 expr.l <- melt(unname(dl$expr), varnames=c("g", "c"), value.name="x")
 names(expr.l)
@@ -306,16 +337,19 @@ peaks <- (
     %>% summarise(c=c[which.max(x)])
     %>% left_join(dl$cell.map)
     %>% left_join(dl$gene.map))
-peak.capture.cor <- with(
-    peaks,
-    cor(cbPeaktime, as.integer(capture), use="complete.obs"))
-peak.capture.cor
+peak.capture.dist <- with(
+    peaks %>% filter(! is.na(cbPeaktime)),
+    calc.rmse(cbPeaktime/100,
+              (as.integer(capture) - .5) / 2))
+peak.capture.dist
 gp <- (
     ggplot(peaks %>% filter(! is.na(cbPeaktime)), aes(x=capture, y=cbPeaktime))
     + geom_boxplot()
+    + scale_y_continuous(name="CycleBase peak time")
+    + scale_x_discrete(name="cell cycle phase")
     + coord_flip())
 print(gp)
-png('capture-peaks.png', width=1200, height=900)
+pdf('McDavid-capture-peaks.pdf', width=fig.width, height=fig.height)
 print(gp)
 dev.off()
 
@@ -336,13 +370,13 @@ gp <- with(dl, {
     (ggplot(.data, aes(x=modulo.period(tau)), environment=environment())
         + geom_line(alpha=.3,
                     data=.data,
-                    aes(y=predictedmean+phi+cell.size.adj))
-        + geom_ribbon(aes(ymin=predictedmean+phi+cell.size.adj-2*sqrt(predictedvar),
-                          ymax=predictedmean+phi+cell.size.adj+2*sqrt(predictedvar)),
+                    aes(y=predictedmean+phi+S))
+        + geom_ribbon(aes(ymin=predictedmean+phi+S-2*sqrt(predictedvar),
+                          ymax=predictedmean+phi+S+2*sqrt(predictedvar)),
                       alpha=.1))
 })
 print(gp)
-png('profiles-adj-cell-size.png', width=1200, height=900)
+pdf('McDavid-profiles-adj.pdf', width=fig.width, height=fig.height)
 print(gp)
 dev.off()
 
