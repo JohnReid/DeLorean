@@ -245,7 +245,7 @@ posterior.cor <- (
 mean(posterior.cor$pseudotime.capture.cor)
 gp <- (ggplot(posterior.cor, aes(x=pseudotime.capture.cor))
     + geom_histogram()
-    + scale_x_continuous(name="Correlation"))
+    + scale_x_continuous(name="correlation"))
 print(gp)
 pdf('Windram-posterior-cor.pdf', width=fig.width, height=fig.height)
 print(gp)
