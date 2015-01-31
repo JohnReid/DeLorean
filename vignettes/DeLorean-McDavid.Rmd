@@ -306,25 +306,48 @@ peaks <- (
     %>% summarise(c=c[which.max(x)])
     %>% left_join(dl$cell.map)
     %>% left_join(dl$gene.map))
-peaks
-gp <- (
-    ggplot(peaks, aes(x=cbPeaktime, y=capture))
-    + geom_point())
-print(gp)
-png('capture-peaks.png', width=1200, height=900)
-print(gp)
-dev.off()
 peak.capture.cor <- with(
     peaks,
     cor(cbPeaktime, as.integer(capture), use="complete.obs"))
 peak.capture.cor
+gp <- (
+    ggplot(peaks %>% filter(! is.na(cbPeaktime)), aes(x=capture, y=cbPeaktime))
+    + geom_boxplot()
+    + coord_flip())
+print(gp)
+png('capture-peaks.png', width=1200, height=900)
+print(gp)
+dev.off()
 
 ```
 
 The correlation between the capture time of the peak to the peak time in
 [CycleBase](http://www.cyclebase.org/About "CycleBase") is
-`r peak.capture.cor'.
+`r peak.capture.cor`.
 
+Plot the profiles adjusted for the cell size.
+```{r}
+gp <- with(dl, {
+    modulo.period <- function(t) t - floor(t / opts$period) * opts$period
+    .data <- (best.mean
+        %>% left_join(prediction.times, by="t")
+        %>% left_join(gene.map)
+        %>% filter(gene %in% genes.high.psi))
+    (ggplot(.data, aes(x=modulo.period(tau)), environment=environment())
+        + geom_line(alpha=.3,
+                    data=.data,
+                    aes(y=predictedmean+phi+cell.size.adj))
+        + geom_ribbon(aes(ymin=predictedmean+phi+cell.size.adj-2*sqrt(predictedvar),
+                          ymax=predictedmean+phi+cell.size.adj+2*sqrt(predictedvar)),
+                      alpha=.1))
+})
+print(gp)
+png('profiles-adj-cell-size.png', width=1200, height=900)
+print(gp)
+dev.off()
+
+
+```
 
 
 ```{r echo=FALSE}
