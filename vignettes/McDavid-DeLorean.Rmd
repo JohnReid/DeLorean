@@ -173,6 +173,14 @@ dl <- filter.genes(dl, gene.filter)
 ```
 
 
+Save expression data and meta data.
+```{r}
+saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
+        file='McDavid-input.rds')
+
+```
+
+
 # Compile and fit model
 
 Define and compile the model, find the best initialisation, and fit the model.
