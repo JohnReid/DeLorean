@@ -370,28 +370,6 @@ pdf('McDavid-profiles.pdf', width=fig.width*2, height=fig.height*2)
 print(gp)
 dev.off()
 
-gp <- with(dl, {
-    modulo.period <- function(t) t - floor(t / opts$period) * opts$period
-    .data <- (
-        predictions
-        filter(best.sample == iter)
-        %>% left_join(prediction.times, by="t")
-        %>% left_join(gene.map)
-        %>% filter(gene %in% genes.high.psi))
-    (ggplot(.data, aes(x=modulo.period(tau)), environment=environment())
-        + geom_line(alpha=.3,
-                    data=.data,
-                    aes(y=predictedmean+phi+S))
-        + geom_ribbon(aes(ymin=predictedmean+phi+S-2*sqrt(predictedvar),
-                          ymax=predictedmean+phi+S+2*sqrt(predictedvar)),
-                      alpha=.1))
-})
-print(gp)
-pdf('McDavid-profiles-adj.pdf', width=fig.width, height=fig.height)
-print(gp)
-dev.off()
-
-
 ```
 
 
