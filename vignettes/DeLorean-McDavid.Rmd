@@ -234,16 +234,16 @@ tau.S <- (
     %>% mutate(tau=periodise(tau, dl$opts$period))
     %>% arrange(tau))
 # Copy data to beginning and end to ensure periodic loess estimate
-tau.S.lower <- tau.S %>% tail(2000) %>% mutate(tau=tau-dl$opts$period)
-tau.S.upper <- tau.S %>% head(2000) %>% mutate(tau=tau+dl$opts$period)
+tau.S.lower <- tau.S %>% tail(9000) %>% mutate(tau=tau-dl$opts$period)
+tau.S.upper <- tau.S %>% head(9000) %>% mutate(tau=tau+dl$opts$period)
 tau.S <- rbind(tau.S.lower, tau.S, tau.S.upper)
 # Fit loess
 lo <- loess(S ~ tau, tau.S)
 tau.S$loess <- predict(lo, tau.S)
 # Make predictions at times used in predictedmean
 prediction.times <- (
-    dl$best.mean
-    %>% filter(1 == g, 0 <= tau, tau <= dl$opts$period)
+    dl$predictions
+    %>% filter(dl$best.sample == iter, 1 == g, 0 <= tau, tau <= dl$opts$period)
     %>% select(t, tau))
 prediction.times$S <- predict(lo, prediction.times)
 prediction.times
@@ -270,7 +270,7 @@ dev.off()
 ```{r peakTimes}
 
 # Plot cbPeaktime against best sample max predicted mean time
-# print(plot.best.predictions(dl, genes="CDCA8"))
+# print(plot.profiles(dl, genes="CDCA8"))
 peak.distance <- Vectorize(function(peak.1, peak.2) {
     if (peak.1 - peak.2 > .5) {
         peak.1 <- peak.1 - 1
@@ -328,6 +328,8 @@ dev.off()
 ```
 
 Calculate distance between peak time and capture time.
+Capture times are as defined in
+[CycleBase](http://www.cyclebase.org/About "CycleBase").
 ```{r}
 expr.l <- melt(unname(dl$expr), varnames=c("g", "c"), value.name="x")
 names(expr.l)
@@ -355,15 +357,24 @@ dev.off()
 
 ```
 
-The correlation between the capture time of the peak to the peak time in
-[CycleBase](http://www.cyclebase.org/About "CycleBase") is
-`r peak.capture.cor`.
 
 Plot the profiles adjusted for the cell size.
 ```{r}
+load_all('..')
+gp <- plot(dl, type="profiles", cell.size.adj=F, adjust.model=lo)
+pdf('McDavid-profiles-adj.pdf', width=fig.width*2, height=fig.height*2)
+print(gp)
+dev.off()
+gp <- plot(dl, type="profiles")
+pdf('McDavid-profiles.pdf', width=fig.width*2, height=fig.height*2)
+print(gp)
+dev.off()
+
 gp <- with(dl, {
     modulo.period <- function(t) t - floor(t / opts$period) * opts$period
-    .data <- (best.mean
+    .data <- (
+        predictions
+        filter(best.sample == iter)
         %>% left_join(prediction.times, by="t")
         %>% left_join(gene.map)
         %>% filter(gene %in% genes.high.psi))

@@ -8,7 +8,7 @@ attach(dl)
 
 We plot the expression profiles of the most temporally varying genes.
 ```{r}
-plot(dl, type="best.predictions")
+plot(dl, type="profiles")
 
 ```
 

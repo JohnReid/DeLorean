@@ -145,7 +145,7 @@ dl <- examine.convergence(dl)
 dl <- process.posterior(dl)
 dl <- analyse.noise.levels(dl)
 dl <- make.predictions(dl)
-gp <- plot(dl, type="best.predictions")
+gp <- plot(dl, type="profiles")
 print(gp)
 
 ```

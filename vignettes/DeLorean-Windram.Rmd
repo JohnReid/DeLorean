@@ -218,7 +218,7 @@ print(gp)
 dev.off()
 # Save profiles as well
 pdf('Windram-profiles.pdf', width=2*fig.width, height=2*fig.height)
-plot(dl, type="best.predictions")
+plot(dl, type="profiles")
 dev.off()
 # Save tau posterior
 pdf('Windram-tau-posterior.pdf', width=2*fig.width, height=2*fig.height)

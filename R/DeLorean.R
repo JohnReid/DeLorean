@@ -65,9 +65,9 @@ summary.de.lorean <- function(dl) {
 #'
 #' @export
 #'
-plot.de.lorean <- function(dl, type="best.predictions", ...) {
+plot.de.lorean <- function(dl, type="profiles", ...) {
     result <- switch(type,
-        best.predictions=plot.best.predictions(dl, ...),
+        profiles=plot.profiles(dl, ...),
         S.posteriors=plot.S.posteriors(dl, ...),
         pseudotime=plot.pseudotime(dl, ...),
         convergence=plot.convergence(dl, ...)
@@ -892,7 +892,6 @@ make.predictions <- function(dl) {
                             # %>% left_join(S)
                             %>% left_join(phi)
                             %>% mutate(tau=test.input[t]))
-        best.mean <- filter(predictions, best.sample == iter)
     })
 }
 
@@ -977,10 +976,16 @@ plot.S.posteriors <- function(dl) {
 #' @param ... Named de.lorean objects
 #' @param genes Genes to plot (defaults to genes.high.psi of first de.lorean
 #'   object)
+#' @param sample.iter Which sample to plot
 #'
 #' @export
 #'
-plot.cmp.profiles <- function(..., genes = NULL) {
+plot.cmp.profiles <- function(...,
+                              sample.iter = NULL,
+                              genes = NULL) {
+    if (is.null(sample.iter)) {
+        sample.iter <- dl$best.sample
+    }
     dls <- list(...)
     dl.levels <- names(dls)
     if (is.null(genes)) {
@@ -989,7 +994,8 @@ plot.cmp.profiles <- function(..., genes = NULL) {
     stopifnot(! is.null(names(dls)))  # Must have names for de.lorean objects
     get.mean <- function(.name) {
         with(dls[[.name]], (
-            best.mean
+            predictions
+            %>% filter(sample.iter == iter)
             %>% left_join(gene.map)
             %>% filter(gene %in% genes)
             %>% mutate(name=factor(.name, levels=dl.levels))
@@ -1018,15 +1024,22 @@ plot.cmp.profiles <- function(..., genes = NULL) {
 #'
 #' @param dl de.lorean object
 #' @param genes Genes to plot (defaults to genes.high.psi)
+#' @param add.data Add actual expression data to plot
+#' @param sample.iter Which sample to plot
 #'
 #' @export
 #'
-plot.best.predictions <- function(dl,
-                                  genes=NULL,
-                                  profile.color='black',
-                                  add.data=T) {
+plot.profiles <- function(dl,
+                          genes=NULL,
+                          profile.color='black',
+                          add.data=T,
+                          sample.iter=NULL,
+                          ...) {
     if (is.null(genes)) {
         genes <- dl$genes.high.psi
+    }
+    if (is.null(sample.iter)) {
+        sample.iter <- dl$best.sample
     }
     with(dl, {
         if (opts$periodic) {
@@ -1035,19 +1048,20 @@ plot.best.predictions <- function(dl,
         } else {
             modulo.period <- function(t) { t }
         }
-        gp <- (ggplot(best.mean
-                          %>% left_join(gene.map)
-                          %>% filter(gene %in% genes),
+        gp <- (ggplot(predictions
+                      %>% filter(sample.iter == iter)
+                      %>% left_join(gene.map)
+                      %>% filter(gene %in% genes),
                       environment=environment()))
         gp <- (
-            plot.add.profiles(gp, color=profile.color, genes=genes)
+            plot.add.profiles(gp, dl, color=profile.color, genes=genes, ...)
             + facet_wrap(~ gene)
             + scale_x_continuous(name="Pseudotime",
                                  breaks=unique(cell.meta$obstime))
             + scale_y_continuous(name="Expression")
         )
         if (add.data) {
-            gp <- plot.add.expr(gp, dl, genes)
+            gp <- plot.add.expr(gp, dl, genes, ...)
         }
         gp
     })
@@ -1059,29 +1073,52 @@ plot.best.predictions <- function(dl,
 #' @param dl de.lorean object
 #' @param genes Genes to plot
 #' @param color Color to use
+#' @param sample.iter Which sample to plot
+#' @param adjust.model A fitted model to adjust expression levels by
 #'
 #' @export
 #'
-plot.add.profiles <- function(gp, dl=NULL, color='black', genes=NULL) {
+plot.add.profiles <- function(gp,
+                              dl,
+                              color='black',
+                              genes=NULL,
+                              sample.iter=NULL,
+                              adjust.model=NULL,
+                              ...) {
     if (is.null(genes)) {
         genes <- dl$genes.high.psi
     }
-    if (is.null(dl)) {
-        .data <- NULL
-    } else {
+    if (is.null(sample.iter)) {
+        sample.iter <- dl$best.sample
+    }
+    .data <- (
+        dl$predictions
+        %>% filter(sample.iter == iter)
+        %>% left_join(dl$gene.map)
+        %>% filter(gene %in% genes)
+    )
+    if (! is.null(adjust.model)) {
+        print(names(.data))
+        adjustments <- (
+            .data
+            %>% group_by(t)
+            %>% summarise(tau=tau[1]))
+        print(tail(adjustments))
+        adjustments$adjustment <- predict(adjust.model,
+                                          newdata=adjustments)
+        .T <- nrow(adjustments)
+        print(adjustments$adjustment[1:(.T-1)]-adjustments$adjustment[2:.T])
         .data <- (
-            dl$best.mean
-                %>% left_join(dl$gene.map)
-                %>% filter(gene %in% genes)
-        )
+            .data
+            %>% left_join(select(adjustments, -tau))
+            %>% mutate(predictedmean=predictedmean+adjustment))
     }
     (gp
         + geom_line(alpha=.3,
                     color=color,
                     data=.data,
-                    aes(x=modulo.period(tau), y=predictedmean + phi))
-        + geom_ribbon(aes(x=modulo.period(tau),
-                          y=predictedmean + phi,
+                    aes(x=tau, y=predictedmean + phi))
+        + geom_ribbon(aes(x=tau,
                           ymin=predictedmean+phi-2*sqrt(predictedvar),
                           ymax=predictedmean+phi+2*sqrt(predictedvar)),
                       data=.data,
@@ -1094,27 +1131,43 @@ plot.add.profiles <- function(gp, dl=NULL, color='black', genes=NULL) {
 #' @param gp Plot object
 #' @param dl de.lorean object
 #' @param genes Genes to plot
+#' @param sample.iter Which sample to plot
+#' @param cell.size.adj Adjust expression by posterior estimate of cell size
 #'
 #' @export
 #'
-plot.add.expr <- function(gp, dl, genes=NULL, sample.iter=NULL) {
+plot.add.expr <- function(gp,
+                          dl,
+                          genes,
+                          sample.iter=NULL,
+                          cell.size.adj=T,
+                          ...)
+{
     if (is.null(sample.iter)) {
         sample.iter <- dl$best.sample
     }
-    with(dl, (
-        gp + geom_point(data=samples.l$tau
-                             %>% left_join(samples.l$S)
-                             %>% filter(sample.iter == iter)
-                             %>% left_join(melt(unname(stan.m),
-                                           varnames=c("g", "c"),
-                                           value.name="expr"))
-                             %>% left_join(gene.map)
-                             %>% filter(gene %in% genes),
+    with(dl, {
+        .data <- (
+            samples.l$tau
+            %>% filter(sample.iter == iter)
+            %>% left_join(melt(unname(stan.m),
+                          varnames=c("g", "c"),
+                          value.name="expr"))
+            %>% left_join(gene.map)
+            %>% filter(gene %in% genes))
+        if (cell.size.adj) {
+            .data <- (
+                .data
+                %>% left_join(samples.l$S)
+                %>% mutate(expr=expr - S))
+        }
+        gp + geom_point(data=.data,
                         aes(x=modulo.period(tau),
-                            y=expr - S,
+                            y=expr,
                             color=capture),
                         size=4,
-                        alpha=.7)))
+                        alpha=.7)
+    })
 }
 
 #' Single cell expression data and meta data from Trapnell et al. (2014).
