@@ -1,0 +1,150 @@
+```{r build, echo=FALSE, eval=FALSE}
+library(devtools)
+load_all('..')
+library(rmarkdown)
+render('Windram-McDavid.Rmd')
+
+```
+
+---
+title: Monocle analysis of Windram et al. arabidopsis data
+author: John Reid
+bibliography: DeLorean.bib
+output: html_document
+---
+
+
+```{r config, echo=FALSE, message=FALSE}
+library(knitr)
+library(knitcitations)
+library(rmarkdown)
+#
+# knitr options
+#
+opts_chunk$set(
+    fig.path = 'figures/Windram-',
+    stop_on_error = TRUE,
+    fig.width = 12.5,
+    fig.height = 8)
+#
+# Citations
+#
+cleanbib()
+cite_options(
+    # hyperlink = 'to.doc',
+    hyperlink = TRUE,
+    # style = 'html',
+    # citation_format = 'text',
+    citation_format = "pandoc",
+    cite.style = "numeric",
+    check.entries = TRUE)
+    # hyperlink = TRUE)
+bib <- read.bibtex("DeLorean.bib")
+if (file.exists("config.R")) {
+    source("config.R")
+}
+#
+# Widths for saving figures
+#
+text.width <- 4.79  # LaTeX width in inches
+golden.ratio <- 1.618  # Pleasing ratio
+fig.width <- text.width
+fig.height <- text.width / golden.ratio
+
+```
+
+```{r init, echo=FALSE, message=FALSE, warning=FALSE}
+# suppressMessages(loadfonts())
+library(DeLorean)
+#
+# Stylesheet
+#
+options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
+                                               package="DeLorean"))
+font.family <- "Verdana"
+font.theme <- theme_update(text=element_text(family=font.family))
+theme_set(font.theme)
+
+```
+
+
+# Data
+
+Load the data that we used for the DeLorean analysis and create a
+`CellDataSet` for use with `Monocle`.
+```{r loadLib}
+library(monocle)
+.data <- readRDS('Windram-input.rds')
+colnames(.data$expr) <- rownames(.data$cell.meta) <- .data$cell.meta$cell
+rownames(.data$expr) <- rownames(.data$gene.meta) <- .data$gene.meta$gene
+cds <- new("CellDataSet",
+                   exprs=exp(.data$expr),
+                   phenoData=new("AnnotatedDataFrame",
+                                 data=as.data.frame(.data$cell.meta)),
+                   featureData=new("AnnotatedDataFrame",
+                                   data=as.data.frame(.data$gene.meta)))
+
+```
+
+
+
+
+# Reduce dimension
+
+```{r}
+cds <- reduceDimension(cds, use_irlba=F)
+
+```
+
+# Order cells
+
+```{r}
+cds <- orderCells(cds, reverse=F)
+
+```
+
+Plot the spanning tree.
+```{r}
+p <- plot_spanning_tree(cds, color_by="capture")
+print(p)
+pdf('Windram-Monocle-order.pdf', width=fig.width, height=fig.height)
+print(p)
+dev.off()
+
+```
+
+Plot some genes in pseudotime.
+```{r}
+genes.to.plot <- c("CATMA3a14910", "CATMA1a54343", "CATMA3a44230")
+p <- plot_genes_in_pseudotime(cds[genes.to.plot], color_by="capture")
+print(p)
+pdf('Windram-Monocle-pseudotime.pdf', width=fig.width, height=fig.height)
+print(p)
+dev.off()
+
+```
+
+Plot pseudotime against true capture time.
+```{r}
+.data <- as(phenoData(cds), "data.frame")
+p <- (
+    ggplot(.data,
+           aes(x=Pseudotime,
+               y=obstime.orig))
+    + geom_point()
+    + scale_x_continuous(name="pseudotime")
+    + scale_y_continuous(name="capture time"))
+print(p)
+pdf('Windram-Monocle-compare.pdf', width=fig.width, height=fig.height)
+print(p)
+dev.off()
+# What is the correlation?
+with(.data, cor(obstime.orig, Pseudotime))
+
+```
+
+
+R version and packages used:
+```{r Rversion}
+sessionInfo()
+```
