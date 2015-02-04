@@ -7,7 +7,7 @@ attach(dl)
 
 
 We plot the expression profiles of the most temporally varying genes.
-```{r}
+```{r profiles}
 plot(dl, type="profiles")
 
 ```

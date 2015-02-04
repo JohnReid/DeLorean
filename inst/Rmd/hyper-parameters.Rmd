@@ -1,4 +1,4 @@
-```{r include=FALSE}
+```{r hyperAttach, include=FALSE}
 # Attach the DeLorean data frame to access members
 attach(dl)
 ```
@@ -170,7 +170,7 @@ and this density for the within time variation:
 
 ```
 
-```{r include=FALSE}
+```{r hyperDetach, include=FALSE}
 # Detach the previously attached DeLorean data frame
 detach(dl)
 ```

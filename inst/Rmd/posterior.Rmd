@@ -1,4 +1,4 @@
-```{r include=FALSE}
+```{r posteriorAttach, include=FALSE}
 # Attach the DeLorean data frame to access members
 attach(dl)
 ```
@@ -15,7 +15,11 @@ plot(dl, type="pseudotime")
 
 The full tau posterior for each cell.
 ```{r tauPosterior}
-ggplot(samples.l$tau, aes(x=cell, y=tau)) + geom_boxplot()
+(
+    ggplot(samples.l$tau, aes(x=cell, y=tau, color=capture))
+    + geom_boxplot()
+    + coord_flip()
+)
 ```
 
 ### Cell sizes
@@ -132,7 +136,7 @@ The posterior for the model log probability:
 ```
 
 
-```{r include=FALSE}
+```{r posteriorDetach, include=FALSE}
 # Detach the previously attached DeLorean data frame
 detach(dl)
 ```
