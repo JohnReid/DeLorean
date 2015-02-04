@@ -290,7 +290,7 @@ estimate.hyper <- function(
         stopifnot(! is.na(gene.var))
         stopifnot(nrow(gene.var) > 0)  # Must have some rows left
         if (is.null(length.scale)) {
-            length.scale <- time.width
+            length.scale <- time.width / 2
         }
         hyper <- list(
             mu_S=mean(cell.expr$S.hat),
