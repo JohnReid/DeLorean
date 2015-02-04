@@ -14,7 +14,7 @@ output: html_document
 library(devtools)
 load_all('..')
 library(rmarkdown)
-render('DeLorean-Windram.Rmd')
+render('Windram-DeLorean.Rmd')
 
 ```
 
@@ -152,6 +152,14 @@ dl <- filter.genes(dl, gene.filter)
 ```
 
 
+Save expression data and meta data.
+```{r}
+saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
+        file='Windram-input.rds')
+
+```
+
+
 Format the data for Stan and fit the model.
 ```{r fitModel}
 dl <- format.for.stan(dl)
@@ -208,7 +216,8 @@ gp <- with(dl, {
                     environment=environment())
         + geom_point()
         + scale_x_continuous(name="pseudotime")
-        + scale_y_continuous(name="true capture time")
+        + scale_y_continuous(name="capture time")
+        + scale_color_discrete(name="low-resolution\ngroup")
     )
 })
 print(gp)
