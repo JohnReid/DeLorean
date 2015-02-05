@@ -167,7 +167,7 @@ test.robustness.de.lorean <- function(
     full.model <- run.model(dl)
     # Get tau posterior
     full.tau <- (full.model$samples.l$tau
-                    %>% select(-c)
+                    %>% dplyr::select(-c)
                     %>% mutate(fit="part"))
     # Fit each piece
     piece.models <- lapply(partition, run.model)
@@ -175,7 +175,7 @@ test.robustness.de.lorean <- function(
     # mean
     get.tau.posterior <- function(piece.model) {
         posterior <- (piece.model$samples.l$tau
-            %>% select(-c)
+            %>% dplyr::select(-c)
             %>% mutate(fit="full"))
         cells <- unique(posterior$cell)
         full.mean <- mean((full.tau %>% filter(cell %in% cells))$tau)
@@ -412,7 +412,7 @@ format.for.stan <- function(
                                             levels=levels(cell.meta$cell)))
                     %>% left_join(cell.meta)
                     %>% left_join(cell.expr))
-        stopifnot(! is.na(cell.map %>% select(cell, capture, obstime)))
+        stopifnot(! is.na(cell.map %>% dplyr::select(cell, capture, obstime)))
         #
         # Calculate the time points at which to make predictions
         test.input <- (
@@ -504,18 +504,18 @@ make.chain.init.fn <- function(dl) {
 #' @param num.tau.candidates How many candidates to examine. Defaults to 6000.
 #' @param num.tau.to.keep How many candidates to keep. Defaults to num.cores.
 #' @param use.parallel Calculate in parallel
-#' @param num.cores Number of cores to run on. Defaults to max(detectCores()-1, 1)
+#' @param num.cores Number of cores to run on.
+#'          Defaults to getOption("DL.num.cores", max(detectCores()-1, 1))
 #'
 #' @export
 #'
-find.best.tau <- function(dl,
-                          num.tau.candidates = 6000,
-                          num.tau.to.keep = NULL,
-                          use.parallel = TRUE,
-                          num.cores = NULL) {
-    if (is.null(num.cores)) {
-        num.cores <- max(detectCores() - 1, 1)
-    }
+find.best.tau <- function(
+    dl,
+    num.tau.candidates = 6000,
+    num.tau.to.keep = NULL,
+    use.parallel = TRUE,
+    num.cores = getOption("DL.num.cores", max(detectCores() - 1, 1))
+) {
     if (is.null(num.tau.to.keep)) {
         num.tau.to.keep <- num.cores
     }
@@ -561,7 +561,8 @@ find.best.tau <- function(dl,
 #' Fit the model
 #'
 #' @param dl de.lorean object
-#' @param num.cores Number of cores to run on. Defaults to max(detectCores()-1, 1)
+#' @param num.cores Number of cores to run on.
+#'          Defaults to getOption("DL.num.cores", max(detectCores()-1, 1))
 #' @param chains Number of chains to run on each core
 #' @param iter Number of iterations in each chain
 #' @param thin How many samples to generate before retaining one
@@ -570,14 +571,11 @@ find.best.tau <- function(dl,
 #'
 fit.model <- function(
     dl,
-    num.cores = NULL,
+    num.cores = getOption("DL.num.cores", max(detectCores() - 1, 1)),
     chains = 1,
     iter = 1000,
     thin = 50)
 {
-    if (is.null(num.cores)) {
-        num.cores <- max(detectCores() - 1, 1)
-    }
     init.chain.good.tau <- function(chain_id) {
         # print(chain_id)
         #
@@ -1110,7 +1108,7 @@ plot.add.profiles <- function(gp,
         print(adjustments$adjustment[1:(.T-1)]-adjustments$adjustment[2:.T])
         .data <- (
             .data
-            %>% left_join(select(adjustments, -tau))
+            %>% left_join(dplyr::select(adjustments, -tau))
             %>% mutate(predictedmean=predictedmean+adjustment))
     }
     (gp
