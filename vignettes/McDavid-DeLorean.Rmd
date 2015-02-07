@@ -317,9 +317,31 @@ print(gp)
 pdf('McDavid-rmse-vs-rmse-adj.pdf', width=fig.width, height=fig.height)
 print(gp)
 dev.off()
+# Test for normality
+with(dl$peak.max.dist, shapiro.test(rmse.adj))
+with(dl$peak.max.dist, shapiro.test(rmse))
+gp <- (
+    ggplot(dl$peak.max.dist, aes(x=rmse.adj))
+    + geom_density()
+    + geom_rug()
+    + scale_x_continuous(name="RMSE (cell size adjusted)"))
+pdf('McDavid-rmse-adj.pdf', width=fig.width, height=fig.height)
+print(gp)
+dev.off()
+gp <- (
+    ggplot(dl$peak.max.dist, aes(sample=rmse.adj))
+    + stat_qq())
+pdf('McDavid-rmse-adj-qq.pdf', width=fig.width, height=fig.height)
+print(gp)
+dev.off()
+# t-test for differences
+with(dl$peak.max.dist, t.test(x=rmse,
+                              y=rmse.adj,
+                              paired=TRUE,
+                              alternative="greater"))
+# Mean of both RMSEs
 mean(dl$peak.max.dist$rmse)
 mean(dl$peak.max.dist$rmse.adj)
-
 gp <- (
     ggplot(dl$peak.vs.max %>% filter(dl$best.sample == iter),
            aes(x=cbPeaktime, y=predicted.peak, label=gene))
@@ -352,6 +374,18 @@ peak.capture.dist <- with(
     calc.rmse(cbPeaktime/100,
               (as.integer(capture) - .5) / 2))
 peak.capture.dist
+# t-test
+with(dl$peak.max.dist, t.test(x=peak.capture.dist,
+                              y=rmse.adj,
+                              alternative="greater"))
+
+# Assuming a normal distribution for the adjusted RMSE, what is
+# the likelihood of observing at least as extreme as the
+# peak capture RMSE.
+with(dl$peak.max.dist, pnorm(peak.capture.dist,
+                             mean=mean(rmse.adj),
+                             sd=sd(rmse.adj),
+                             lower.tail=F))
 gp <- (
     ggplot(peaks %>% filter(! is.na(cbPeaktime)), aes(x=capture, y=cbPeaktime))
     + geom_boxplot()

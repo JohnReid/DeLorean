@@ -165,3 +165,31 @@ identity.matrix <- function(N) {
 }
 
 
+#' Add posterior representation to a plot.
+#'
+#' @param gp Plot object
+#' @param .data Data frame containing variables to plot (mean, var)
+#'        phi, predictedvar)
+#' @param color Color to use
+#' @param line.alpha Alpha to use for mean line
+#' @param ribbon.alpha Alpha to use for variance ribbon
+#'
+#' @export
+#'
+plot.add.mean.and.variance <- function(gp,
+                                       .data=NULL,
+                                       color='black',
+                                       line.alpha=.3,
+                                       ribbon.alpha=.1) {
+    (gp
+        + geom_line(data=.data,
+                    aes(x=x, y=mean),
+                    color=color,
+                    alpha=line.alpha)
+        + geom_ribbon(data=.data,
+                      aes(x=x,
+                          ymin=mean-2*sqrt(var),
+                          ymax=mean+2*sqrt(var)),
+                      fill=color,
+                      alpha=ribbon.alpha))
+}

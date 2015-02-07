@@ -134,17 +134,12 @@ plot.cmp.profiles <- function(...,
         ))
     }
     means <- do.call(rbind, lapply(names(dls), get.mean))
-    (ggplot(means,
-                  aes(x=tau),
-                  environment=environment())
-        + geom_line(alpha=.8,
-                    aes(y=predictedmean + phi,
-                        color=name))
-        + geom_ribbon(aes(y=predictedmean + phi,
-                          ymin=predictedmean+phi-2*sqrt(predictedvar),
-                          ymax=predictedmean+phi+2*sqrt(predictedvar),
-                          fill=name),
-                      alpha=.2)
+    gp <- ggplot(mutate.profile.data(means),
+                 aes(x=tau),
+                 environment=environment())
+    gp <- plot.add.mean.and.variance(gp, color=name, line.alpha=8, ribbon.alpha=.2)
+    (
+        gp
         + facet_wrap(~ gene)
         + scale_x_continuous(name="Pseudotime",
                              breaks=unique(dls[[1]]$obstime))
@@ -167,6 +162,7 @@ plot.profiles <- function(dl,
                           add.data=T,
                           sample.iter=NULL,
                           ...) {
+    varargs <- list(...)
     if (is.null(genes)) {
         genes <- dl$genes.high.psi
     }
@@ -185,77 +181,70 @@ plot.profiles <- function(dl,
                       %>% left_join(gene.map)
                       %>% filter(gene %in% genes),
                       environment=environment()))
+        profile.data <- (
+            dl$predictions
+            %>% filter(sample.iter == iter)
+            %>% left_join(dl$gene.map)
+            %>% filter(gene %in% genes)
+        )
         gp <- (
-            plot.add.profiles(gp, dl, color=profile.color, genes=genes, ...)
+            plot.add.mean.and.variance(
+                gp,
+                .data=mutate.profile.data(profile.data),
+                color=profile.color)
             + facet_wrap(~ gene)
             + scale_x_continuous(name="Pseudotime",
                                  breaks=unique(cell.meta$obstime))
             + scale_y_continuous(name="Expression")
         )
         if (add.data) {
-            gp <- plot.add.expr(gp, dl, genes, ...)
+            expr.data <- (
+                gene.map
+                %>% filter(gene %in% genes)
+                %>% left_join(melt(unname(stan.m), varnames=c("g", "c"), value.name="expr"))
+                %>% left_join(samples.l$tau
+                              %>% filter(sample.iter == iter)
+                              %>% mutate(tau=modulo.period(tau))))
+            if (! is.null(varargs$cell.size.adj) && varargs$cell.size.adj) {
+                expr.data <- (
+                    expr.data
+                    %>% left_join(samples.l$S)
+                    %>% mutate(expr=expr - S))
+            }
+            gp <- plot.add.expr(gp, .data=expr.data)
         }
         gp
     })
 }
 
-#' Add expression profiles to a plot
+#' Mutate the profile data into shape compatible with GP plot function
 #'
-#' @param gp Plot object
-#' @param dl de.lorean object
-#' @param genes Genes to plot
-#' @param color Color to use
-#' @param sample.iter Which sample to plot
-#' @param adjust.model A fitted model to adjust expression levels by
-#'
-#' @export
-#'
-plot.add.profiles <- function(gp,
-                              dl,
-                              color='black',
-                              genes=NULL,
-                              sample.iter=NULL,
-                              adjust.model=NULL,
-                              ...) {
-    if (is.null(genes)) {
-        genes <- dl$genes.high.psi
-    }
-    if (is.null(sample.iter)) {
-        sample.iter <- dl$best.sample
-    }
-    .data <- (
-        dl$predictions
-        %>% filter(sample.iter == iter)
-        %>% left_join(dl$gene.map)
-        %>% filter(gene %in% genes)
+mutate.profile.data <- function(.data) {
+    (
+        .data
+        %>% mutate(x=tau, mean=predictedmean+phi, var=predictedvar)
+        %>% select(-tau, -predictedmean, -phi, -predictedvar)
     )
-    if (! is.null(adjust.model)) {
-        print(names(.data))
-        adjustments <- (
-            .data
-            %>% group_by(t)
-            %>% summarise(tau=tau[1]))
-        print(tail(adjustments))
-        adjustments$adjustment <- predict(adjust.model,
-                                          newdata=adjustments)
-        .T <- nrow(adjustments)
-        print(adjustments$adjustment[1:(.T-1)]-adjustments$adjustment[2:.T])
-        .data <- (
-            .data
-            %>% left_join(dplyr::select(adjustments, -tau))
-            %>% mutate(predictedmean=predictedmean+adjustment))
-    }
-    (gp
-        + geom_line(alpha=.3,
-                    color=color,
-                    data=.data,
-                    aes(x=tau, y=predictedmean + phi))
-        + geom_ribbon(aes(x=tau,
-                          ymin=predictedmean+phi-2*sqrt(predictedvar),
-                          ymax=predictedmean+phi+2*sqrt(predictedvar)),
-                      data=.data,
-                      fill=color,
-                      alpha=.1))
+}
+
+
+#` Adjust the predicted mean with the predictions from the model.
+#'
+adjust.predictions <- function(.data, adjust.model) {
+    # print(names(.data))
+    adjustments <- (
+        .data
+        %>% group_by(t)
+        %>% summarise(tau=tau[1]))
+    # print(tail(adjustments))
+    adjustments$adjustment <- predict(adjust.model,
+                                        newdata=adjustments)
+    # .T <- nrow(adjustments)
+    # print(adjustments$adjustment[1:(.T-1)]-adjustments$adjustment[2:.T])
+    (
+        .data
+        %>% left_join(dplyr::select(adjustments, -tau))
+        %>% mutate(predictedmean=predictedmean+adjustment))
 }
 
 #' Add expression data to a plot
@@ -268,38 +257,14 @@ plot.add.profiles <- function(gp,
 #'
 #' @export
 #'
-plot.add.expr <- function(gp,
-                          dl,
-                          genes,
-                          sample.iter=NULL,
-                          cell.size.adj=T,
-                          ...)
+plot.add.expr <- function(gp, .data=NULL)
 {
-    if (is.null(sample.iter)) {
-        sample.iter <- dl$best.sample
-    }
-    with(dl, {
-        .data <- (
-            samples.l$tau
-            %>% filter(sample.iter == iter)
-            %>% left_join(melt(unname(stan.m),
-                          varnames=c("g", "c"),
-                          value.name="expr"))
-            %>% left_join(gene.map)
-            %>% filter(gene %in% genes))
-        if (cell.size.adj) {
-            .data <- (
-                .data
-                %>% left_join(samples.l$S)
-                %>% mutate(expr=expr - S))
-        }
-        gp + geom_point(data=.data,
-                        aes(x=modulo.period(tau),
-                            y=expr,
-                            color=capture),
-                        size=4,
-                        alpha=.7)
-    })
+    (gp + geom_point(data=.data,
+                     aes(x=tau,
+                         y=expr,
+                         color=capture),
+                     size=4,
+                     alpha=.7))
 }
 
 
