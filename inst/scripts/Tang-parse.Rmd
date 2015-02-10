@@ -1,0 +1,391 @@
+---
+title: Parse data from Tang et al. (2010)
+author: John Reid
+output: html_document
+---
+
+```{r build, echo=FALSE, eval=FALSE}
+library(devtools)
+load_all('../..')
+library(rmarkdown)
+render('Tang-parse.Rmd')
+
+```
+
+
+```{r loadLibs, echo=FALSE, message=FALSE}
+library(stringr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+
+```
+
+
+```{r config, echo=FALSE, message=FALSE}
+library(knitr)
+library(rmarkdown)
+#
+# knitr options
+#
+opts_chunk$set(
+    fig.path = 'figures/Windram-',
+    stop_on_error = TRUE,
+    fig.width = 12.5,
+    fig.height = 8)
+#
+# Widths for saving figures
+#
+text.width <- 4.79  # LaTeX width in inches
+golden.ratio <- 1.618  # Pleasing ratio
+fig.width <- text.width
+fig.height <- text.width / golden.ratio
+#
+# Stylesheet
+#
+options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
+                                               package="DeLorean"))
+font.family <- "Verdana"
+font.theme <- theme_update(text=element_text(family=font.family))
+theme_set(font.theme)
+
+```
+
+
+# RNA-seq data
+
+
+Load the RNA-seq expression data CSV.
+```{r readRNAseqCSV}
+rna.seq <- read.csv('../../data/Tang-mmc3-RefSeq.csv')
+
+```
+
+
+Parse the RNA-seq cell meta data. Which of the columns are cell names?
+```{r cellNames}
+cell.name.re <- '^([[:alpha:][:digit:]_.]+)_(A[[:digit:]]{1,2}(?:.1)?)$'
+names(rna.seq)
+tang.rna.seq.cell.meta <- (
+    as.data.frame(str_match(names(rna.seq)[37:68], cell.name.re))
+    %>% filter(! is.na(V2))
+    %>% select(cell=V1, capture=V2, cell.id=V3)
+    %>% mutate(obstime=ifelse(capture=="ICM", 0,
+                       ifelse(capture=="E4.5_Epiblast", 1,
+                       ifelse(capture=="Day3_outgrowth_Oct4_Pos", 3,
+                       ifelse(capture=="Day5_outgrowth_Oct4neg", 5,
+                       ifelse(capture=="Day5_outgrowth_Oct4_Pos", 5,
+                       ifelse(capture=="ESC", 7, NA))))))))
+sapply(tang.rna.seq.cell.meta, class)
+stopifnot(all(! is.na(tang.rna.seq.cell.meta$obstime)))
+
+```
+
+
+Extract the RNA-seq gene meta data.
+```{r geneMeta}
+tang.rna.seq.gene.meta <- rna.seq[,1:36] %>% rename(gene=RefSeqID, name=GeneID)
+sapply(tang.rna.seq.gene.meta, class)
+
+```
+
+
+Extract the RNA-seq expression data.
+```{r expr}
+tang.rna.seq <- log10(as.matrix(rna.seq[,as.character(tang.rna.seq.cell.meta$cell)]))
+rownames(tang.rna.seq) <- tang.rna.seq.gene.meta$gene
+colnames(tang.rna.seq) <- tang.rna.seq.cell.meta$cell
+dim(tang.rna.seq)
+qplot(as.vector(tang.rna.seq))
+
+```
+
+
+Check we can create a DeLorean object from the data.
+```{r checkRNAseqDL}
+dl.rna.seq <- de.lorean(tang.rna.seq,
+                        tang.rna.seq.gene.meta,
+                        tang.rna.seq.cell.meta)
+
+```
+
+
+Examine the $p$-values.
+```{r pValues}
+(ggplot(tang.rna.seq.gene.meta
+        %>% select(gene,
+                   p.value.ESC.ICM.,
+                   p.value.ESC.E4.5_Epiblast.,
+                   p.value.ICM.E4.5_Epiblast.)
+        %>% melt(variable.name="comparison", value.name="p.value")
+        %>% filter(p.value < .001),
+        aes(x=p.value+1e-110, fill=comparison))
+    + geom_histogram()
+    + scale_x_log10())
+
+```
+
+
+Make list of key genes mentioned in the paper.
+```{r keyGenes}
+tang.key.genes <- c(
+    "Adamts9",
+    "Amhr2",
+    "Bcl2l14",
+    "Bex1",
+    "Bmi1",
+    "Bmp1",
+    "Bmp15",
+    "Bmp2",
+    "Bmp4",
+    "Bmp8b",
+    "Bmpr1a",
+    "Brunol4",
+    "Brunol5",
+    "Cbx1",
+    "Cbx5",
+    "Cdh1",
+    "Cdh3",
+    "Cdh5",
+    "Cdx1",
+    "Cdx2",
+    "Clock",
+    "Crebbp",
+    "Dazl",
+    "Ddx3y",
+    "Ddx4",
+    "Dhrs3",
+    "Dnmt3a",
+    "Dnmt3b",
+    "Dnmt3l",
+    "Dppa1",
+    "Dppa3",
+    "Dppa4",
+    "Dppa5a",  # Changed from Dppa5
+    "Ehmt1",
+    "Ehmt2",
+    "Enox2",
+    "Eomes",
+    "Epha7",
+    "Eras",
+    "Esrp2",
+    "Esrrb",
+    "Fam189a1",
+    "Fbxw13",
+    "Fgf10",
+    "Fgf3",
+    "Fgfr3",
+    "Fgfr4",
+    "Fzd10",
+    "Fzd9",
+    "Gata3",
+    "Gata4",
+    "Gata5",
+    "Gata6",
+    "Gdf9",
+    "Gm364",
+    "Gsc",
+    "Hand1",
+    "Has3",
+    "Hdac11",
+    "Hdac5",
+    "Hdac6",
+    "Hdac7",
+    "Hdx",
+    "Hoxb1",
+    "Hoxb3",
+    "Hoxb5",
+    "Hoxd13",
+    "Hoxd8",
+    "Id1",
+    "Id2",
+    "Ifitm1",
+    "Ifitm3",
+    "Ilvbl",
+    "Isl1",
+    "Jak2",
+    "Kat2a",
+    "Kdm4a",
+    "Kdm4d",
+    "Kdm6b",
+    "Kdr",
+    "Khdrbs3",
+    "Kit",
+    "Kitl",
+    "Klf12",
+    "Klf17",
+    "Lhx5",
+    "Lin28",
+    "Mbd2",
+    "Mecp2",
+    "Mesdc1",
+    "Mesdc2",
+    "Mll3",
+    "Myf5",
+    "Myod1",
+    "Myof",
+    "Nanog",
+    "Nanos1",
+    "Nanos3",
+    "Ncoa3",
+    "Nes",
+    "Neurod1",
+    "Nkx2-5",
+    "Nkx6-2",
+    "Nodal",
+    "Notch1",
+    "Notch4",
+    "Nr0b1",
+    "Nr5a2",
+    "Nudt18",
+    "Onecut1",
+    "Otx1",
+    "Pax6",
+    "Pecam1",
+    "Pim1",
+    "Pim2",
+    "Pim3",
+    "Pou5f1",
+    "Pramel5",
+    "Pramel6",
+    "Pramel7",
+    "Prdm1",
+    "Prdm14",
+    "Prdm16",
+    "Prdm5",
+    "Ptbp2",
+    "Pygm",
+    "Rex2",
+    "Rhox6",
+    "Rif1",
+    "Sall4",
+    "Setdb1",
+    "Sirt2",
+    "Smad1",
+    "Smarcb1",
+    "Sox17",
+    "Sox2",
+    "Sox3",
+    "Sox7",
+    "Sox9",
+    "Suz12",  # Changed from unknown suv12
+    "Suv39h2",
+    "Suv420h2",
+    "T",
+    "Tbx2",
+    "Tbx20",
+    "Tbx3",
+    "Tcf15",
+    "Tcf3",
+    "Tet1",
+    "Tet2",
+    "Tgfbr2",
+    "Tgfbr3",
+    "Tia1",
+    "Tmem80",
+    "Tnk1",
+    "Tpbpa",
+    "Trpm3",
+    "Tspan12",
+    "Utf1",
+    "Zfp41",
+    "Zfp42",
+    "Zic3",
+    "Myc")
+length(tang.key.genes)
+found.key.gene <- (
+    data.frame(name=tang.key.genes)
+    %>% mutate(found=name %in% tang.rna.seq.gene.meta$name))
+found.key.gene %>% filter(! found)
+
+```
+
+
+# PCR data
+
+Load the PCR data CSV and fix the cell names.
+```{r readCSV}
+pcr <- read.csv('../../data/Tang-mmc2-PCR.csv')
+names(pcr)
+names(pcr) <- c(
+    "gene", "probe.id", "assay.id", "name",
+    str_c("ICM.", 1:14),
+    str_c("Day3.Oct4.plus.", 1:14),
+    str_c("Day5.Oct4.plus.", 1:9),
+    str_c("ES.", 1:14),
+    str_c("Day5.Oct4.minus.", 1:13),
+    str_c("E45.", 1:10))
+
+```
+
+
+Parse the cell names.
+```{r parseNames}
+pcr.cell.re <- '^(ICM|Day3|Day5|ES|E45).(?:(Oct4.minus|Oct4.plus).)?([[:digit:]]+)$'
+# names(pcr)
+# levels(tang.pcr.cell.meta$capture)
+tang.pcr.cell.meta <- (
+    as.data.frame(str_match(names(pcr)[5:78], pcr.cell.re))
+    %>% rename(cell=V1, capture=V2, condition=V3, cell.id=V4)
+    %>% mutate(obstime=ifelse(capture=="ICM" , 0,
+                       ifelse(capture=="E45",  1,
+                       ifelse(capture=="Day3", 3,
+                       ifelse(capture=="Day5", 5,
+                       ifelse(capture=="ES"  , 7, NA)))))))
+# tang.pcr.cell.meta
+stopifnot(all(! is.na(tang.pcr.cell.meta$obstime)))
+# names(tang.pcr.cell.meta)
+
+```
+
+
+Extract the PCR gene meta data.
+```{r pcrGeneMeta}
+tang.pcr.gene.meta <- pcr[,1:4]
+
+```
+
+
+Extract the PCR expression data.
+```{r pcrExpr}
+tang.pcr <- 40-as.matrix(pcr[,as.character(tang.pcr.cell.meta$cell)])
+rownames(tang.pcr) <- tang.pcr.gene.meta$gene
+colnames(tang.pcr) <- tang.pcr.cell.meta$cell
+class(tang.pcr)
+qplot(as.vector(tang.pcr))
+
+```
+
+
+Check we can create a DeLorean object from the data.
+```{r checkPCRseqDL}
+dl.pcr <- de.lorean(tang.pcr,
+                    tang.pcr.gene.meta,
+                    tang.pcr.cell.meta)
+
+```
+
+
+Save the data in a format suitable for DeLorean package.
+```{r save}
+save(tang.key.genes,
+     tang.rna.seq,
+     tang.rna.seq.gene.meta,
+     tang.rna.seq.cell.meta,
+     tang.pcr,
+     tang.pcr.gene.meta,
+     tang.pcr.cell.meta,
+     file='../../data/TangDeLorean.rda')
+
+```
+
+
+```{r date}
+date()
+
+```
+
+R version and packages used:
+```{r Rversion}
+sessionInfo()
+```
