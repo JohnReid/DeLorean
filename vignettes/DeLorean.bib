@@ -1,4 +1,21 @@
 
+@article{honkela_model-based_2010,
+	title = {Model-based method for transcription factor target identification with limited data},
+	volume = {107},
+	issn = {0027-8424},
+	doi = {10.1073/pnas.0914285107},
+	abstract = {We present a computational method for identifying potential targets of a transcription factor ({TF}) using wild-type gene expression time series data. For each putative target gene we fit a simple differential equation model of transcriptional regulation, and the model likelihood serves as a score to rank targets. The expression profile of the {TF} is modeled as a sample from a Gaussian process prior distribution that is integrated out using a nonparametric Bayesian procedure. This results in a parsimonious model with relatively few parameters that can be applied to short time series datasets without noticeable overfitting. We assess our method using genome-wide chromatin immunoprecipitation ({ChIP}-chip) and loss-of-function mutant expression data for two {TFs}, Twist, and Mef2, controlling mesoderm development in Drosophila. Lists of top-ranked genes identified by our method are significantly enriched for genes close to bound regions identified in the {ChIP}-chip data and for genes that are differentially expressed in loss-of-function mutants. Targets of Twist display diverse expression profiles, and in this case a model-based approach performs significantly better than scoring based on correlation with {TF} expression. Our approach is found to be comparable or superior to ranking based on mutant differential expression scores. Also, we show how integrating complementary wild-type spatial expression data can further improve target ranking performance.},
+	pages = {7793--7798},
+	number = {17},
+	journaltitle = {Proceedings of the National Academy of Sciences of the United States of America},
+	shortjournal = {Proc Natl Acad Sci U S A},
+	author = {Honkela, Antti and Girardot, Charles and Gustafson, E. Hilary and Liu, Ya-Hsin and Furlong, Eileen E. M. and Lawrence, Neil D. and Rattray, Magnus},
+	date = {2010-04-27},
+	pmid = {20385836},
+	pmcid = {2867914},
+	file = {Honkela-Model-based method for transcription factor target identification with limited data.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/I8SHM6XX/Honkela-Model-based method for transcription factor target identification with limited data.pdf:application/pdf;PubMed Central Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/2GDCSKNX/Honkela et al. - 2010 - Model-based method for transcription factor target.pdf:application/pdf}
+}
+
 @article{aijo_learning_2009,
 	title = {Learning gene regulatory networks from gene expression measurements using non-parametric molecular kinetics},
 	volume = {25},
@@ -22,6 +39,60 @@ Supplementary information: Supplementary data are available at Bioinformatics on
 	file = {Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/VSSDAT2S/Äijö and Lähdesmäki - 2009 - Learning gene regulatory networks from gene expres.pdf:application/pdf;pdf file:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/ZZFNZEJR/Äijö and Lähdesmäki - 2009 - Learning gene regulatory networks from gene expres.pdf:application/pdf;Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/IABR9S7K/2937.html:text/html}
 }
 
+@article{buganim_single-cell_2012,
+	title = {Single-Cell Expression Analyses during Cellular Reprogramming Reveal an Early Stochastic and a Late Hierarchic Phase},
+	volume = {150},
+	issn = {00928674},
+	url = {http://libsta28.lib.cam.ac.uk:2053/science/article/pii/S0092867412010215},
+	doi = {10.1016/j.cell.2012.08.023},
+	pages = {1209--1222},
+	number = {6},
+	journaltitle = {Cell},
+	author = {Buganim, Yosef and Faddah, Dina A. and Cheng, Albert W. and Itskovich, Elena and Markoulaki, Styliani and Ganz, Kibibi and Klemm, Sandy L. and van Oudenaarden, Alexander and Jaenisch, Rudolf},
+	urldate = {2012-10-18},
+	date = {2012-09},
+	file = {1-s2.0-S0092867412010215-main.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/STF3PSA6/1-s2.0-S0092867412010215-main.pdf:application/pdf;Cell - Single-Cell Expression Analyses during Cellular Reprogramming Reveal an Early Stochastic and a Late Hierarchic Phase:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/7BSPTF22/S0092867412010215.html:text/html;NIHMS404284-supplement-01.docx:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/QK2M9K4P/NIHMS404284-supplement-01.docx:application/vnd.openxmlformats-officedocument.wordprocessingml.documentapplication/zip;NIHMS404284-supplement-02.docx:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/WDNC29RT/NIHMS404284-supplement-02.docx:application/vnd.openxmlformats-officedocument.wordprocessingml.documentapplication/zip;ScienceDirect.com - Cell - Single-Cell Expression Analyses during Cellular Reprogramming Reveal an Early Stochastic and a Late Hierarchic Phase:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/9X4F4R8E/S0092867412010215.html:text/html;science.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/JV37UTHM/science.pdf:application/pdf}
+}
+
+@article{kirk_bayesian_2012,
+	title = {Bayesian correlated clustering to integrate multiple datasets},
+	volume = {28},
+	issn = {1367-4803, 1460-2059},
+	url = {http://bioinformatics.oxfordjournals.org/content/28/24/3290},
+	doi = {10.1093/bioinformatics/bts595},
+	abstract = {Motivation: The integration of multiple datasets remains a key challenge in systems biology and genomic medicine. Modern high-throughput technologies generate a broad array of different data types, providing distinct—but often complementary—information. We present a Bayesian method for the unsupervised integrative modelling of multiple datasets, which we refer to as {MDI} (Multiple Dataset Integration). {MDI} can integrate information from a wide range of different datasets and data types simultaneously (including the ability to model time series data explicitly using Gaussian processes). Each dataset is modelled using a Dirichlet-multinomial allocation ({DMA}) mixture model, with dependencies between these models captured through parameters that describe the agreement among the datasets.
+Results: Using a set of six artificially constructed time series datasets, we show that {MDI} is able to integrate a significant number of datasets simultaneously, and that it successfully captures the underlying structural similarity between the datasets. We also analyse a variety of real Saccharomyces cerevisiae datasets. In the two-dataset case, we show that {MDI}’s performance is comparable with the present state-of-the-art. We then move beyond the capabilities of current approaches and integrate gene expression, chromatin immunoprecipitation–chip and protein–protein interaction data, to identify a set of protein complexes for which genes are co-regulated during the cell cycle. Comparisons to other unsupervised data integration techniques—as well as to non-integrative approaches—demonstrate that {MDI} is competitive, while also providing information that would be difficult or impossible to extract using other methods.
+Availability: A Matlab implementation of {MDI} is available from http://www2.warwick.ac.uk/fac/sci/systemsbiology/research/software/.
+Contact: D.L.Wild@warwick.ac.uk
+Supplementary information: Supplementary data are available at Bioinformatics online.},
+	pages = {3290--3297},
+	number = {24},
+	journaltitle = {Bioinformatics},
+	shortjournal = {Bioinformatics},
+	author = {Kirk, Paul and Griffin, Jim E. and Savage, Richard S. and Ghahramani, Zoubin and Wild, David L.},
+	urldate = {2012-12-07},
+	date = {2012-01-12},
+	langid = {english},
+	file = {Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/XXWTKGNC/Kirk et al. - 2012 - Bayesian correlated clustering to integrate multip.pdf:application/pdf;Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/E7U7B7KJ/3290.html:text/html}
+}
+
+@article{shalek_single-cell_2013,
+	title = {Single-cell transcriptomics reveals bimodality in expression and splicing in immune cells},
+	volume = {advance online publication},
+	issn = {1476-4687},
+	url = {http://libsta28.lib.cam.ac.uk:2090/nature/journal/vaop/ncurrent/full/nature12172.html},
+	doi = {10.1038/nature12172},
+	abstract = {Recent molecular studies have shown that, even when derived from a seemingly homogenous population, individual cells can exhibit substantial differences in gene expression, protein levels and phenotypic output, with important functional consequences. Existing studies of cellular heterogeneity, however, have typically measured only a few pre-selected {RNAs} or proteins simultaneously, because genomic profiling methods could not be applied to single cells until very recently. Here we use single-cell {RNA} sequencing to investigate heterogeneity in the response of mouse bone-marrow-derived dendritic cells ({BMDCs}) to lipopolysaccharide. We find extensive, and previously unobserved, bimodal variation in messenger {RNA} abundance and splicing patterns, which we validate by {RNA}-fluorescence in situ hybridization for select transcripts. In particular, hundreds of key immune genes are bimodally expressed across cells, surprisingly even for genes that are very highly expressed at the population average. Moreover, splicing patterns demonstrate previously unobserved levels of heterogeneity between cells. Some of the observed bimodality can be attributed to closely related, yet distinct, known maturity states of {BMDCs}; other portions reflect differences in the usage of key regulatory circuits. For example, we identify a module of 137 highly variable, yet co-regulated, antiviral response genes. Using cells from knockout mice, we show that variability in this module may be propagated through an interferon feedback circuit, involving the transcriptional regulators Stat2 and Irf7. Our study demonstrates the power and promise of single-cell genomics in uncovering functional diversity between cells and in deciphering cell states and circuits.},
+	journaltitle = {Nature},
+	shortjournal = {Nature},
+	author = {Shalek, Alex K. and Satija, Rahul and Adiconis, Xian and Gertner, Rona S. and Gaublomme, Jellert T. and Raychowdhury, Raktima and Schwartz, Schragi and Yosef, Nir and Malboeuf, Christine and Lu, Diana and Trombetta, John T. and Gennert, Dave and Gnirke, Andreas and Goren, Alon and Hacohen, Nir and Levin, Joshua Z. and Park, Hongkun and Regev, Aviv},
+	urldate = {2013-07-03},
+	date = {2013-05-19},
+	langid = {english},
+	keywords = {Gene Expression Profiling, {RNA} sequencing, Single-cell imaging, transcriptomics},
+	file = {Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/PC7B6M2D/Shalek et al. - 2013 - Single-cell transcriptomics reveals bimodality in .pdf:application/pdf;nature12172-s1.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/RSP63SPM/nature12172-s1.pdf:application/pdf;nature12172-s1.zip:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/85RJE7XA/nature12172-s1.zip:application/zip;Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/TGUXEISD/nature12172.html:text/html}
+}
+
 @book{rasmussen_gaussian_2006,
 	location = {Cambridge, Mass.},
 	title = {Gaussian processes for machine learning},
@@ -31,6 +102,71 @@ Supplementary information: Supplementary data are available at Bioinformatics on
 	author = {Rasmussen, Carl Edward and Williams, Christopher K. I},
 	date = {2006},
 	file = {Rasmussen-GPs-for-ML.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/TV8N3JJ3/Rasmussen-GPs-for-ML.pdf:application/pdf}
+}
+
+@article{shalek_single-cell_2014,
+	title = {Single-cell {RNA}-seq reveals dynamic paracrine control of cellular variation},
+	volume = {510},
+	rights = {© 2014 Nature Publishing Group, a division of Macmillan Publishers Limited. All Rights Reserved.},
+	issn = {0028-0836},
+	url = {http://www.nature.com/nature/journal/v510/n7505/full/nature13437.html},
+	doi = {10.1038/nature13437},
+	abstract = {High-throughput single-cell transcriptomics offers an unbiased approach for understanding the extent, basis and function of gene expression variation between seemingly identical cells. Here we sequence single-cell {RNA}-seq libraries prepared from over 1,700 primary mouse bone-marrow-derived dendritic cells spanning several experimental conditions. We find substantial variation between identically stimulated dendritic cells, in both the fraction of cells detectably expressing a given messenger {RNA} and the transcript’s level within expressing cells. Distinct gene modules are characterized by different temporal heterogeneity profiles. In particular, a ‘core’ module of antiviral genes is expressed very early by a few ‘precocious’ cells in response to uniform stimulation with a pathogenic component, but is later activated in all cells. By stimulating cells individually in sealed microfluidic chambers, analysing dendritic cells from knockout mice, and modulating secretion and extracellular signalling, we show that this response is coordinated by interferon-mediated paracrine signalling from these precocious cells. Notably, preventing cell-to-cell communication also substantially reduces variability between cells in the expression of an early-induced ‘peaked’ inflammatory module, suggesting that paracrine signalling additionally represses part of the inflammatory program. Our study highlights the importance of cell-to-cell communication in controlling cellular heterogeneity and reveals general strategies that multicellular populations can use to establish complex dynamic responses.},
+	pages = {363--369},
+	number = {7505},
+	journaltitle = {Nature},
+	shortjournal = {Nature},
+	author = {Shalek, Alex K. and Satija, Rahul and Shuga, Joe and Trombetta, John J. and Gennert, Dave and Lu, Diana and Chen, Peilin and Gertner, Rona S. and Gaublomme, Jellert T. and Yosef, Nir and Schwartz, Schraga and Fowler, Brian and Weaver, Suzanne and Wang, Jing and Wang, Xiaohui and Ding, Ruihua and Raychowdhury, Raktima and Friedman, Nir and Hacohen, Nir and Park, Hongkun and May, Andrew P. and Regev, Aviv},
+	urldate = {2014-06-18},
+	date = {2014-06-19},
+	langid = {english},
+	keywords = {biotechnology, Engineering, Gene expression analysis, Gene regulation in immune cells},
+	file = {nature13437.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/KV63G92A/nature13437.pdf:application/pdf;Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/43723QT2/nature13437.html:text/html;Supplementary Information. Supplementary Notes, Supplementary Methods and Supplementary References.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/GSQVHSF5/Shalek et al. - 2014 - Single-cell RNA-seq reveals dynamic paracrine cont.pdf:application/pdf;Supplementary Table 1. This table contains a summary of single cell RNA-Seq experiments.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/TQ54UFWA/Shalek et al. - 2014 - Single-cell RNA-seq reveals dynamic paracrine cont.xls:application/vnd.ms-excel;Supplementary Table 2. This table contains sequencing metrics for single cell and population RNA-seq libraries.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/965987GX/Shalek et al. - 2014 - Single-cell RNA-seq reveals dynamic paracrine cont.xls:application/vnd.ms-excel;Supplementary Table 3. This table shows cluster assignments and GO enrichments for the 813 genes that were induced by at least two-fold (compared to unstimulated cells) at a population level at any time point during the LPS time course.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/UHB4GIAP/Shalek et al. - 2014 - Single-cell RNA-seq reveals dynamic paracrine cont.xls:application/vnd.ms-excel;Supplementary Table 4. This table contains ingenuity analysis of the genes differentially regulated between a wildtype 4 hour LPS stimulation and either the "on-chip" stimulation, an Ifnar knockout, or a Stat1 knockout.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/F7GXNXZW/Shalek et al. - 2014 - Single-cell RNA-seq reveals dynamic paracrine cont.xls:application/vnd.ms-excel}
+}
+
+@article{brennecke_accounting_2013,
+	title = {Accounting for technical noise in single-cell {RNA}-seq experiments},
+	volume = {10},
+	issn = {1548-7091},
+	url = {http://libsta28.lib.cam.ac.uk:2072/nmeth/journal/v10/n11/full/nmeth.2645.html},
+	doi = {10.1038/nmeth.2645},
+	abstract = {Single-cell {RNA}-seq can yield valuable insights about the variability within a population of seemingly homogeneous cells. We developed a quantitative statistical method to distinguish true biological variability from the high levels of technical noise in single-cell experiments. Our approach quantifies the statistical significance of observed cell-to-cell variability in expression strength on a gene-by-gene basis. We validate our approach using two independent data sets from Arabidopsis thaliana and Mus musculus.},
+	pages = {1093--1095},
+	number = {11},
+	journaltitle = {Nature Methods},
+	shortjournal = {Nat Meth},
+	author = {Brennecke, Philip and Anders, Simon and Kim, Jong Kyoung and Kołodziejczyk, Aleksandra A. and Zhang, Xiuwei and Proserpio, Valentina and Baying, Bianka and Benes, Vladimir and Teichmann, Sarah A. and Marioni, John C. and Heisler, Marcus G.},
+	urldate = {2014-08-15},
+	date = {2013-11},
+	langid = {english},
+	file = {Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/PD77AFD6/Brennecke et al. - 2013 - Accounting for technical noise in single-cell RNA-.pdf:application/pdf;Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/ZMPBZBSG/nmeth.2645.html:text/html;Supplementary Software. Accounting for technical noise in single-cell RNA-seq experiments – Supplement II. This file contains the R code used to perform the analysis described in the manuscript.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/SB66QGK4/Brennecke et al. - 2013 - Accounting for technical noise in single-cell RNA-.pdf:application/pdf;Supplementary Table 1. Estimated amounts of total RNA in single plant cells. Content of total RNA from single cells was estimated based on the 50 pg HeLa total RNA spike-in. The calculation is based on the assumption that the fraction of polyadenylated RNA is comparable between HeLa and A. thaliana input material. For detailed description refer to the Methods section.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/JD86ZZSP/Brennecke et al. - 2013 - Accounting for technical noise in single-cell RNA-.xls:application/vnd.ms-excel;Supplementary Table 2. List of highly variable genes in GL2 cells. The columns give the gene ID, the gene name, the normalized average read count, the cell with the strongest expression, and, for each cell, the log2 ratio of the cell's expression to the average.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/V9FMDGD3/Brennecke et al. - 2013 - Accounting for technical noise in single-cell RNA-.xls:application/vnd.ms-excel;Supplementary Table 3. List of highly variable genes in QC cells. Columns are the same as in Supplementary Table 2.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/3KZACJ7Z/Brennecke et al. - 2013 - Accounting for technical noise in single-cell RNA-.xls:application/vnd.ms-excel;Supplementary Table 4. List of GO categories that are significantly enriched for highly variable genes (Online Methods).:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/4IXMUMPX/Brennecke et al. - 2013 - Accounting for technical noise in single-cell RNA-.xls:application/vnd.ms-excel;Supplementary Table 5. Read counts for the 91 mouse immune cells spiked with ERCC spike-ins. Each column corresponds to a cell, each row to gene or an ERCC spike-in molecule. Mouse gene names have been replaces by randomized identifiers (column 1). The second column contains the transcript lengths used for the analysis in Supplementary Note 5. The transcript lengths are computed from Ensembl annotation by taking the union of all exons within a gene, where the exons annotated as “retained introns” and “nonsense mediated decay” are excluded.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/JXSGBJE6/Brennecke et al. - 2013 - Accounting for technical noise in single-cell RNA-.xls:application/vnd.ms-excel;Supplementary Table 6. Full list of barcoded Illumina PE adapters used for multiplexing of cDNA libraries. The set of adapters used depends on the degree of multiplexing applied to the samples. 4-plex is the lower limit for multiplexing.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/3QZJPEPG/Brennecke et al. - 2013 - Accounting for technical noise in single-cell RNA-.xls:application/vnd.ms-excel;Supplementary Table 7. List of qPCR primers used:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/83IKKU9N/Brennecke et al. - 2013 - Accounting for technical noise in single-cell RNA-.xls:application/vnd.ms-excel;Supplementary Table 8. Read counts for A. thaliana experiments. Raw number of reads mapped to each gene for all samples.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/MEDBVT8J/Brennecke et al. - 2013 - Accounting for technical noise in single-cell RNA-.xls:application/vnd.ms-excel;Supplementary Table 9. Transcript lengths for the human genome used for the analysis described in Supplementary Note 5, computed as described above, in the legend for Supplementary Table 5.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/25NUX6W2/Brennecke et al. - 2013 - Accounting for technical noise in single-cell RNA-.xls:application/vnd.ms-excel;Supplementary Text and Figures. Supplementary Figures 1–14 and Supplementary Notes 1–9:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/52U2GDXD/Brennecke et al. - 2013 - Accounting for technical noise in single-cell RNA-.pdf:application/pdf}
+}
+
+@article{pollen_low-coverage_2014,
+	title = {Low-coverage single-cell {mRNA} sequencing reveals cellular heterogeneity and activated signaling pathways in developing cerebral cortex},
+	issn = {1087-0156, 1546-1696},
+	url = {http://www.nature.com/doifinder/10.1038/nbt.2967},
+	doi = {10.1038/nbt.2967},
+	journaltitle = {Nature Biotechnology},
+	author = {Pollen, Alex A and Nowakowski, Tomasz J and Shuga, Joe and Wang, Xiaohui and Leyrat, Anne A and Lui, Jan H and Li, Nianzhen and Szpankowski, Lukasz and Fowler, Brian and Chen, Peilin and Ramalingam, Naveen and Sun, Gang and Thu, Myo and Norris, Michael and Lebofsky, Ronald and Toppani, Dominique and Kemp, Darnell W and Wong, Michael and Clerkson, Barry and Jones, Brittnee N and Wu, Shiquan and Knutsson, Lawrence and Alvarado, Beatriz and Wang, Jing and Weaver, Lesley S and May, Andrew P and Jones, Robert C and Unger, Marc A and Kriegstein, Arnold R and West, Jay A A},
+	urldate = {2014-08-18},
+	date = {2014-08-03},
+	file = {Low-coverage single-cell mRNA sequencing reveals cellular heterogeneity and activated signaling pathways in developing cerebral cortex_Pollen_West_NatureBiotech_Aug2014.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/NFMJJ2I3/Low-coverage single-cell mRNA sequencing reveals cellular heterogeneity and activated signaling pathways in developing cerebral cortex_Pollen_West_NatureBiotech_Aug2014.pdf:application/pdf;nbt.2967-S1.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/78GKSIX7/nbt.2967-S1.pdf:application/pdf}
+}
+
+@article{treutlein_reconstructing_2014,
+	title = {Reconstructing lineage hierarchies of the distal lung epithelium using single-cell {RNA}-seq},
+	volume = {509},
+	issn = {0028-0836, 1476-4687},
+	url = {http://www.nature.com/doifinder/10.1038/nature13173},
+	doi = {10.1038/nature13173},
+	pages = {371--375},
+	number = {7500},
+	journaltitle = {Nature},
+	author = {Treutlein, Barbara and Brownfield, Doug G. and Wu, Angela R. and Neff, Norma F. and Mantalas, Gary L. and Espinoza, F. Hernan and Desai, Tushar J. and Krasnow, Mark A. and Quake, Stephen R.},
+	urldate = {2014-08-18},
+	date = {2014-04-13},
+	file = {Reconstructing lineage hierarchies of the distal lung_SQuake_Nature2014.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/B3BXF79Z/Reconstructing lineage hierarchies of the distal lung_SQuake_Nature2014.pdf:application/pdf}
 }
 
 @article{mcdavid_data_2013,
@@ -75,6 +211,28 @@ Supplementary information: Supplementary data are available at Bioinformatics on
 	file = {Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/669GRJGT/Trapnell et al. - 2014 - The dynamics and regulators of cell fate decisions.pdf:application/pdf;Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/CWIS7WXG/nbt.2859.html:text/html;Supplementary Text and Figures. Supplementary Figures 1–13 and Supplementary Tables 1 and 2:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/2JDRRU4M/Trapnell et al. - 2014 - The dynamics and regulators of cell fate decisions.pdf:application/pdf}
 }
 
+@article{chung_single_2014,
+	title = {Single Cell Analysis Reveals the Stochastic Phase of Reprogramming to Pluripotency Is an Ordered Probabilistic Process},
+	volume = {9},
+	url = {http://dx.doi.org/10.1371/journal.pone.0095304},
+	doi = {10.1371/journal.pone.0095304},
+	abstract = {Despite years of research, the reprogramming of human somatic cells to pluripotency remains a slow, inefficient process, and a detailed mechanistic understanding of reprogramming remains elusive. Current models suggest reprogramming to pluripotency occurs in two-phases: a prolonged stochastic phase followed by a rapid deterministic phase. In this paradigm, the early stochastic phase is marked by the random and gradual expression of pluripotency genes and is thought to be a major rate-limiting step in the successful generation of induced Pluripotent Stem Cells ({iPSCs}). Recent evidence suggests that the epigenetic landscape of the somatic cell is gradually reset during a period known as the stochastic phase, but it is known neither how this occurs nor what rate-limiting steps control progress through the stochastic phase. A precise understanding of gene expression dynamics in the stochastic phase is required in order to answer these questions. Moreover, a precise model of this complex process will enable the measurement and mechanistic dissection of treatments that enhance the rate or efficiency of reprogramming to pluripotency. Here we use single-cell transcript profiling, {FACS} and mathematical modeling to show that the stochastic phase is an ordered probabilistic process with independent gene-specific dynamics. We also show that partially reprogrammed cells infected with {OSKM} follow two trajectories: a productive trajectory toward increasingly {ESC}-like expression profiles or an alternative trajectory leading away from both the fibroblast and {ESC} state. These two pathways are distinguished by the coordinated expression of a small group of chromatin modifiers in the productive trajectory, supporting the notion that chromatin remodeling is essential for successful reprogramming. These are the first results to show that the stochastic phase of reprogramming in human fibroblasts is an ordered, probabilistic process with gene-specific dynamics and to provide a precise mathematical framework describing the dynamics of pluripotency gene expression during reprogramming by {OSKM}.},
+	pages = {e95304},
+	number = {4},
+	journaltitle = {{PLoS} {ONE}},
+	shortjournal = {{PLoS} {ONE}},
+	author = {Chung, Kyung-Min and Kolling {IV}, Frederick W. and Gajdosik, Matthew D. and Burger, Steven and Russell, Alexander C. and Nelson, Craig E.},
+	urldate = {2014-09-04},
+	date = {2014-04-17},
+	file = {PLoS Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/99WH7XRK/Chung et al. - 2014 - Single Cell Analysis Reveals the Stochastic Phase .pdf:application/pdf;PLoS Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/2GJNXJIQ/infodoi10.1371journal.pone.html:text/html}
+}
+
+@misc{stan_development_team_stan_????,
+	title = {Stan Modeling Language (2.4.0)},
+	author = {{Stan Development Team}},
+	file = {stan-reference-2.4.0.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/6C57V7IG/stan-reference-2.4.0.pdf:application/pdf}
+}
+
 @article{mcdavid_modeling_2014,
 	title = {Modeling Bi-modality Improves Characterization of Cell Cycle on Gene Expression in Single Cells},
 	volume = {10},
@@ -91,6 +249,25 @@ Supplementary information: Supplementary data are available at Bioinformatics on
 	pmid = {25032992},
 	pmcid = {PMC4102402},
 	file = {journal.pcbi.1003696.s008.csv:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/XG4EFUIA/journal.pcbi.1003696.s008.csv:text/csv;journal.pcbi.1003696.s009.zip:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/CFMTK6EK/journal.pcbi.1003696.s009.zip:application/zip;PubMed Central Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/6J92TJVJ/McDavid et al. - 2014 - Modeling Bi-modality Improves Characterization of .pdf:application/pdf}
+}
+
+@article{islam_characterization_2011,
+	title = {Characterization of the single-cell transcriptional landscape by highly multiplex {RNA}-seq},
+	volume = {21},
+	issn = {1088-9051, 1549-5469},
+	url = {http://genome.cshlp.org/content/21/7/1160},
+	doi = {10.1101/gr.110882.110},
+	abstract = {Our understanding of the development and maintenance of tissues has been greatly aided by large-scale gene expression analysis. However, tissues are invariably complex, and expression analysis of a tissue confounds the true expression patterns of its constituent cell types. Here we describe a novel strategy to access such complex samples. Single-cell {RNA}-seq expression profiles were generated, and clustered to form a two-dimensional cell map onto which expression data were projected. The resulting cell map integrates three levels of organization: the whole population of cells, the functionally distinct subpopulations it contains, and the single cells themselves—all without need for known markers to classify cell types. The feasibility of the strategy was demonstrated by analyzing the transcriptomes of 85 single cells of two distinct types. We believe this strategy will enable the unbiased discovery and analysis of naturally occurring cell types during development, adult physiology, and disease.},
+	pages = {1160--1167},
+	number = {7},
+	journaltitle = {Genome Research},
+	shortjournal = {Genome Res.},
+	author = {Islam, Saiful and Kjällquist, Una and Moliner, Annalena and Zajac, Pawel and Fan, Jian-Bing and Lönnerberg, Peter and Linnarsson, Sten},
+	urldate = {2014-09-29},
+	date = {2011-01-07},
+	langid = {english},
+	pmid = {21543516},
+	file = {Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/M9DW9TJF/Islam et al. - 2011 - Characterization of the single-cell transcriptiona.pdf:application/pdf;Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/RNZCATEN/1160.html:text/html;Supp Information.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/RV34U3CR/Islam et al. - 2011 - Characterization of the single-cell transcriptiona.pdf:application/pdf}
 }
 
 @article{buettner_novel_2012,
@@ -158,6 +335,83 @@ Three distinct cell types are present within the 64-cell stage mouse blastocyst.
 	file = {Document S1. Four Figures, Table S3, Table S6, Supplemental Experimental Procedures, and Supplemental References.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/B7DINEPU/Guo et al. - 2010 - Resolution of Cell Fate Decisions Revealed by Sing.pdf:application/pdf;ScienceDirect Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/C78K4I3P/Guo et al. - 2010 - Resolution of Cell Fate Decisions Revealed by Sing.pdf:application/pdf;ScienceDirect Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/B24RIHHF/S1534580710001103.html:text/html;Table S1. Threshold cycle (Ct) values for the 802 transcription factors profiled in pools of embryo materials (whole embryos or dissected ICMs) using Taqman low density arrays (Applied Biosystems).:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/TTRM3AHI/Guo et al. - 2010 - Resolution of Cell Fate Decisions Revealed by Sing.xls:application/vnd.ms-excel;Table S2. Detailed information on the 48 genes analyzed at the single cell level.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/SKAVRGTP/Guo et al. - 2010 - Resolution of Cell Fate Decisions Revealed by Sing.xls:application/vnd.ms-excel;Table S4. Ct values generated by the Biomark realtime PCR system software for each of the 48 genes in all 442 individual cells collected from unlabeled embryos.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/H3QCIIN2/Guo et al. - 2010 - Resolution of Cell Fate Decisions Revealed by Sing.xls:application/vnd.ms-excel;Table S5. Ct values generated by the Biomark realtime PCR system software for each of the 48 genes in all 134 individual cells from the 16-cell to 32-cell transition after cell membrane labeling with fluorescent dye (PKH26).:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/EVVGPQZB/Guo et al. - 2010 - Resolution of Cell Fate Decisions Revealed by Sing.xls:application/vnd.ms-excel;Table S7. Ct values generated by the Biomark realtime PCR system software for the blastocyst RNA titration series to determine the background for each individual gene.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/STKXPUDB/Guo et al. - 2010 - Resolution of Cell Fate Decisions Revealed by Sing.xls:application/vnd.ms-excel}
 }
 
+@article{tipping_probabilistic_1999,
+	title = {Probabilistic Principal Component Analysis},
+	volume = {61},
+	rights = {1999 Royal Statistical Society},
+	issn = {1467-9868},
+	url = {http://onlinelibrary.wiley.com/doi/10.1111/1467-9868.00196/abstract},
+	doi = {10.1111/1467-9868.00196},
+	abstract = {Principal component analysis ({PCA}) is a ubiquitous technique for data analysis and processing, but one which is not based on a probability model. We demonstrate how the principal axes of a set of observed data vectors may be determined through maximum likelihood estimation of parameters in a latent variable model that is closely related to factor analysis. We consider the properties of the associated likelihood function, giving an {EM} algorithm for estimating the principal subspace iteratively, and discuss, with illustrative examples, the advantages conveyed by this probabilistic approach to {PCA}.},
+	pages = {611--622},
+	number = {3},
+	journaltitle = {Journal of the Royal Statistical Society: Series B (Statistical Methodology)},
+	author = {Tipping, Michael E. and Bishop, Christopher M.},
+	urldate = {2014-10-02},
+	date = {1999-01-01},
+	langid = {english},
+	keywords = {Density estimation, {EM} algorithm, Gaussian mixtures, Maximum likelihood, Principal component analysis, Probability model},
+	file = {bishop-ppca-jrss.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/I8DMFNSJ/bishop-ppca-jrss.pdf:application/pdf;Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/87V2PI3B/abstract.html:text/html}
+}
+
+@article{lawrence_probabilistic_2005,
+	title = {Probabilistic non-linear principal component analysis with Gaussian process latent variable models},
+	volume = {6},
+	url = {http://dl.acm.org/citation.cfm?id=1194904},
+	pages = {1783--1816},
+	journaltitle = {The Journal of Machine Learning Research},
+	author = {Lawrence, Neil},
+	urldate = {2014-10-03},
+	date = {2005},
+	file = {lawrence05a.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/CU6FTUVT/lawrence05a.pdf:application/pdf}
+}
+
+@article{anders_differential_2010,
+	title = {Differential expression analysis for sequence count data},
+	volume = {11},
+	rights = {2010 Anders et al},
+	issn = {1465-6906},
+	url = {http://genomebiology.com/2010/11/10/R106/abstract},
+	doi = {10.1186/gb-2010-11-10-r106},
+	abstract = {High-throughput sequencing assays such as {RNA}-Seq, {ChIP}-Seq or barcode counting provide quantitative readouts in the form of count data. To infer differential signal in such data correctly and with good statistical power, estimation of data variability throughout the dynamic range and a suitable error model are required. We propose a method based on the negative binomial distribution, with variance and mean linked by local regression and present an implementation, {DESeq}, as an R/Bioconductor package.
+{PMID}: 20979621},
+	pages = {R106},
+	number = {10},
+	journaltitle = {Genome Biology},
+	author = {Anders, Simon and Huber, Wolfgang},
+	urldate = {2014-10-20},
+	date = {2010-10-27},
+	langid = {english},
+	pmid = {20979621},
+	file = {Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/UF6TPQF9/Anders and Huber - 2010 - Differential expression analysis for sequence coun.pdf:application/pdf;gb-2010-11-10-r106-s1.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/93NB24J8/gb-2010-11-10-r106-s1.pdf:application/pdf;gb-2010-11-10-r106-s2.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/DI5BHJAC/gb-2010-11-10-r106-s2.pdf:application/pdf;gb-2010-11-10-r106-s3.tgz:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/SK2TDSXX/gb-2010-11-10-r106-s3.tgz:application/x-compressed-tar;Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/VQSBQHQ9/r106.html:text/html}
+}
+
+@article{hoffman_no-u-turn_2014,
+	title = {The No-U-Turn Sampler: Adaptively Setting Path Lengths in Hamiltonian Monte Carlo},
+	volume = {15},
+	pages = {1593--1623},
+	issue = {Apr},
+	journaltitle = {Journal of Machine Learning Research},
+	author = {Hoffman, Matthew D. and Gelman, Andrew},
+	date = {2014}
+}
+
+@article{bendall_single-cell_2014,
+	title = {Single-Cell Trajectory Detection Uncovers Progression and Regulatory Coordination in Human B Cell Development},
+	volume = {157},
+	issn = {00928674},
+	url = {http://libsta28.lib.cam.ac.uk:2088/science/article/pii/S0092867414004711?np=y},
+	doi = {10.1016/j.cell.2014.04.005},
+	pages = {714--725},
+	number = {3},
+	journaltitle = {Cell},
+	author = {Bendall, Sean C. and Davis, Kara L. and Amir, El-ad David and Tadmor, Michelle D. and Simonds, Erin F. and Chen, Tiffany J. and Shenfeld, Daniel K. and Nolan, Garry P. and Pe’er, Dana},
+	urldate = {2014-11-11},
+	date = {2014-04},
+	langid = {english},
+	file = {1-s2.0-S0092867414004711-main.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/GVHKUCMG/1-s2.0-S0092867414004711-main.pdf:application/pdf;Single-Cell Trajectory Detection Uncovers Progression and Regulatory Coordination in Human B Cell Development:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/RC7SCVGE/S0092867414004711.html:text/html}
+}
+
 @article{kouno_temporal_2013,
 	title = {Temporal dynamics and transcriptional control using single-cell gene expression analysis},
 	volume = {14},
@@ -208,7 +462,7 @@ Supplementary data are available at Bioinformatics online.},
 	date = {2014-06-15},
 	pmid = {24931974},
 	pmcid = {PMC4058923},
-	file = {PubMed Central Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/MCF3KKPZ/Äijö et al. - 2014 - Methods for time series analysis of RNA-seq data w.pdf:application/pdf}
+	file = {Lahdesmaki_123_sup_1.xlsx:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/G95J4FKB/Lahdesmaki_123_sup_1.xlsx:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;Lahdesmaki_123_sup_2.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/ZXH5MNCQ/Lahdesmaki_123_sup_2.pdf:application/pdf;PubMed Central Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/MCF3KKPZ/Äijö et al. - 2014 - Methods for time series analysis of RNA-seq data w.pdf:application/pdf}
 }
 
 @article{stegle_robust_2010,
@@ -262,8 +516,127 @@ Supplementary data are available at Bioinformatics online.},
 }
 
 @book{stan_development_team_rstan:_2014,
-	title = {{RStan}: the R interface to Stan, Version 2.5.0},
+	title = {{RStan}: the R interface to Stan, Version 2.4.0},
 	url = {http://mc-stan.org/rstan.html},
 	author = {{Stan Development Team}},
 	date = {2014}
+}
+
+@article{santos_cyclebase_2015,
+	title = {Cyclebase 3.0: a multi-organism database on cell-cycle regulation and phenotypes},
+	volume = {43},
+	issn = {0305-1048, 1362-4962},
+	url = {http://nar.oxfordjournals.org/content/43/D1/D1140},
+	doi = {10.1093/nar/gku1092},
+	shorttitle = {Cyclebase 3.0},
+	abstract = {The eukaryotic cell division cycle is a highly regulated process that consists of a complex series of events and involves thousands of proteins. Researchers have studied the regulation of the cell cycle in several organisms, employing a wide range of high-throughput technologies, such as microarray-based {mRNA} expression profiling and quantitative proteomics. Due to its complexity, the cell cycle can also fail or otherwise change in many different ways if important genes are knocked out, which has been studied in several microscopy-based knockdown screens. The data from these many large-scale efforts are not easily accessed, analyzed and combined due to their inherent heterogeneity. To address this, we have created Cyclebase—available at http://www.cyclebase.org—an online database that allows users to easily visualize and download results from genome-wide cell-cycle-related experiments. In Cyclebase version 3.0, we have updated the content of the database to reflect changes to genome annotation, added new {mRNA} and protein expression data, and integrated cell-cycle phenotype information from high-content screens and model-organism databases. The new version of Cyclebase also features a new web interface, designed around an overview figure that summarizes all the cell-cycle-related data for a gene.},
+	pages = {D1140--D1144},
+	issue = {D1},
+	journaltitle = {Nucleic Acids Research},
+	shortjournal = {Nucl. Acids Res.},
+	author = {Santos, Alberto and Wernersson, Rasmus and Jensen, Lars Juhl},
+	urldate = {2015-01-26},
+	date = {2015-01-28},
+	langid = {english},
+	pmid = {25378319},
+	file = {Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/E29WPXZR/Santos et al. - 2015 - Cyclebase 3.0 a multi-organism database on cell-c.pdf:application/pdf;Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/I7FSGWP4/D1140.html:text/html}
+}
+
+@article{geiss_direct_2008,
+	title = {Direct multiplexed measurement of gene expression with color-coded probe pairs},
+	volume = {26},
+	issn = {1087-0156},
+	url = {http://www.nature.com/doifinder/10.1038/nbt1385},
+	doi = {10.1038/nbt1385},
+	pages = {317--325},
+	number = {3},
+	journaltitle = {Nature Biotechnology},
+	author = {Geiss, Gary K and Bumgarner, Roger E and Birditt, Brian and Dahl, Timothy and Dowidar, Naeem and Dunaway, Dwayne L and Fell, H Perry and Ferree, Sean and George, Renee D and Grogan, Tammy and James, Jeffrey J and Maysuria, Malini and Mitton, Jeffrey D and Oliveri, Paola and Osborn, Jennifer L and Peng, Tao and Ratcliffe, Amber L and Webster, Philippa J and Davidson, Eric H and Hood, Leroy},
+	urldate = {2015-01-30},
+	date = {2008-03},
+	file = {nbt1385.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/3WCWKZR7/nbt1385.pdf:application/pdf}
+}
+
+@article{buettner_computational_2015,
+	title = {Computational analysis of cell-to-cell heterogeneity in single-cell {RNA}-sequencing data reveals hidden subpopulations of cells},
+	volume = {advance online publication},
+	issn = {1087-0156},
+	url = {http://libsta28.lib.cam.ac.uk:2076/nbt/journal/vaop/ncurrent/full/nbt.3102.html},
+	doi = {10.1038/nbt.3102},
+	abstract = {Recent technical developments have enabled the transcriptomes of hundreds of cells to be assayed in an unbiased manner, opening up the possibility that new subpopulations of cells can be found. However, the effects of potential confounding factors, such as the cell cycle, on the heterogeneity of gene expression and therefore on the ability to robustly identify subpopulations remain unclear. We present and validate a computational approach that uses latent variable models to account for such hidden factors. We show that our single-cell latent variable model ({scLVM}) allows the identification of otherwise undetectable subpopulations of cells that correspond to different stages during the differentiation of naive T cells into T helper 2 cells. Our approach can be used not only to identify cellular subpopulations but also to tease apart different sources of gene expression heterogeneity in single-cell transcriptomes.},
+	journaltitle = {Nature Biotechnology},
+	shortjournal = {Nat Biotech},
+	author = {Buettner, Florian and Natarajan, Kedar N. and Casale, F. Paolo and Proserpio, Valentina and Scialdone, Antonio and Theis, Fabian J. and Teichmann, Sarah A. and Marioni, John C. and Stegle, Oliver},
+	urldate = {2015-02-02},
+	date = {2015-01-19},
+	langid = {english},
+	file = {Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/PHQA7WUC/Buettner et al. - 2015 - Computational analysis of cell-to-cell heterogenei.pdf:application/pdf;Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/2VQ7PXUA/nbt.3102.html:text/html;Supplementary Data 1. Corrected and uncorrected expression values for T-cell data.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/GKHKG5HU/Buettner et al. - 2015 - Computational analysis of cell-to-cell heterogenei.xls:application/vnd.ms-excel;Supplementary Data 2. Corrected and uncorrected expression values for the newly generated mouse ESC data.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/95WFBAWB/Buettner et al. - 2015 - Computational analysis of cell-to-cell heterogenei.xls:application/vnd.ms-excel;Supplementary Table 1. List of genes annotated from cell cycle, either from GO or from CycleBase.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/RSIQ4HUT/Buettner et al. - 2015 - Computational analysis of cell-to-cell heterogenei.xls:application/vnd.ms-excel;Supplementary Table 2. List of contribution of all variance components for the T-cell data.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/KM9ZMSZH/Buettner et al. - 2015 - Computational analysis of cell-to-cell heterogenei.xls:application/vnd.ms-excel;Supplementary Table 4. List of significantly differentially expressed genes between identified cell sub clusters.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/263G7AZ9/Buettner et al. - 2015 - Computational analysis of cell-to-cell heterogenei.xls:application/vnd.ms-excel;Supplementary Table 5. Manually curated list of 122 Th2 signature genes.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/3BDMHIXM/Buettner et al. - 2015 - Computational analysis of cell-to-cell heterogenei.xls:application/vnd.ms-excel;Supplementary Table 7. List of genes with more than 5% of the variance explained by interaction between cell cycle and differentiation.:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/42EX482S/Buettner et al. - 2015 - Computational analysis of cell-to-cell heterogenei.xls:application/vnd.ms-excel;Supplementary Text and Figures. Supplementary Figures 1–22, Supplementary Tables 3, 6, 8–9 and Supplementary Notes:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/2UHWE9RQ/Buettner et al. - 2015 - Computational analysis of cell-to-cell heterogenei.pdf:application/pdf}
+}
+
+@article{fusi_joint_2012,
+	title = {Joint Modelling of Confounding Factors and Prominent Genetic Regulators Provides Increased Accuracy in Genetical Genomics Studies},
+	volume = {8},
+	url = {http://dx.doi.org/10.1371/journal.pcbi.1002330},
+	doi = {10.1371/journal.pcbi.1002330},
+	abstract = {Author Summary The computational analysis of genetical genomics studies is challenged by confounding variation that is unrelated to the genetic factors of interest. Several approaches to account for these confounding factors have been proposed, greatly increasing the sensitivity in recovering direct genetic (cis) associations between variable genetic loci and the expression levels of individual genes. Crucially, these existing techniques largely rely on the true association signals being orthogonal to the confounding variation. Here, we show that when studying indirect (trans) genetic effects, for example from master regulators, their association signals can overlap with confounding factors estimated using existing methods. This technical overlap can lead to overcorrection, erroneously explaining away true associations as confounders. To address these shortcomings, we propose {PANAMA}, a model that jointly learns hidden factors while accounting for the effect of selected genetic regulators. In applications to several studies, {PANAMA} is more accurate than existing methods in recovering the hidden confounding factors. As a result, we find an increase in the statistical power for direct (cis) and indirect (trans) associations. Most strikingly on yeast, {PANAMA} not only finds additional associations but also identifies master regulators that can be better reproduced between independent studies.},
+	pages = {e1002330},
+	number = {1},
+	journaltitle = {{PLoS} Comput Biol},
+	shortjournal = {{PLoS} Comput Biol},
+	author = {Fusi, Nicoló and Stegle, Oliver and Lawrence, Neil D.},
+	urldate = {2015-02-03},
+	date = {2012-01-05},
+	file = {PLoS Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/7NZFBQDK/Fusi et al. - 2012 - Joint Modelling of Confounding Factors and Promine.pdf:application/pdf}
+}
+
+@article{ryall_nad+-dependent_????,
+	title = {The {NAD}+-Dependent {SIRT}1 Deacetylase Translates a Metabolic Switch into Regulatory Epigenetics in Skeletal Muscle Stem Cells},
+	volume = {0},
+	issn = {1934-5909},
+	url = {http://www.cell.com/article/S1934590914005621/abstract},
+	doi = {10.1016/j.stem.2014.12.004},
+	abstract = {Stem cells undergo a shift in metabolic substrate utilization during specification and/or differentiation, a process that has been termed metabolic reprogramming. Here, we report that during the transition from quiescence to proliferation, skeletal muscle stem cells experience a metabolic switch from fatty acid oxidation to glycolysis. This reprogramming of cellular metabolism decreases intracellular {NAD}+ levels and the activity of the histone deacetylase {SIRT}1, leading to elevated H4K16 acetylation and activation of muscle gene transcription. Selective genetic ablation of the {SIRT}1 deacetylase domain in skeletal muscle results in increased H4K16 acetylation and deregulated activation of the myogenic program in {SCs}. Moreover, mice with muscle-specific inactivation of the {SIRT}1 deacetylase domain display reduced myofiber size, impaired muscle regeneration, and derepression of muscle developmental genes. Overall, these findings reveal how metabolic cues can be mechanistically translated into epigenetic modifications that regulate skeletal muscle stem cell biology.},
+	number = {0},
+	journaltitle = {Cell Stem Cell},
+	author = {Ryall, James G. and Dell’Orso, Stefania and Derfoul, Assia and Juan, Aster and Zare, Hossein and Feng, Xuesong and Clermont, Daphney and Koulnis, Miroslav and Gutierrez-Cruz, Gustavo and Fulco, Marcella and Sartorelli, Vittorio},
+	urldate = {2015-02-04},
+	pmid = {25600643},
+	file = {1-s2.0-S1934590914005621-main.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/56CF9C6T/1-s2.0-S1934590914005621-main.pdf:application/pdf;Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/HJA2DTD4/S1934-5909(14)00562-1.html:text/html}
+}
+
+@article{cantone_yeast_2009,
+	title = {A Yeast Synthetic Network for In Vivo Assessment of Reverse-Engineering and Modeling Approaches},
+	volume = {137},
+	issn = {0092-8674},
+	url = {http://www.cell.com/article/S0092867409001561/abstract},
+	doi = {10.1016/j.cell.2009.01.055},
+	abstract = {Systems biology approaches are extensively used to model and reverse engineer gene regulatory networks from experimental data. Conversely, synthetic biology allows “de novo” construction of a regulatory network to seed new functions in the cell. At present, the usefulness and predictive ability of modeling and reverse engineering cannot be assessed and compared rigorously. We built in the yeast Saccharomyces cerevisiae a synthetic network, {IRMA}, for in vivo “benchmarking” of reverse-engineering and modeling approaches. The network is composed of five genes regulating each other through a variety of regulatory interactions; it is negligibly affected by endogenous genes, and it is responsive to small molecules. We measured time series and steady-state expression data after multiple perturbations. These data were used to assess state-of-the-art modeling and reverse-engineering techniques. A semiquantitative model was able to capture and predict the behavior of the network. Reverse engineering based on differential equations and Bayesian networks correctly inferred regulatory interactions from the experimental data.},
+	pages = {172--181},
+	number = {1},
+	journaltitle = {Cell},
+	author = {Cantone, Irene and Marucci, Lucia and Iorio, Francesco and Ricci, Maria Aurelia and Belcastro, Vincenzo and Bansal, Mukesh and Santini, Stefania and di Bernardo, Mario and di Bernardo, Diego and Cosma, Maria Pia},
+	urldate = {2015-02-09},
+	date = {2009-04-03},
+	pmid = {19327819},
+	keywords = {{SYSBIO}},
+	file = {Full Text PDF:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/SMBPGDPW/Cantone et al. - 2009 - A Yeast Synthetic Network for In Vivo Assessment o.pdf:application/pdf;mmc1.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/AX55AV8T/mmc1.pdf:application/pdf;mmc2.xls:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/92HAUBH4/mmc2.xls:application/vnd.ms-excel;Snapshot:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/6AEXC8R9/S0092-8674(09)00156-1.html:text/html}
+}
+
+@article{tang_tracing_2010,
+	title = {Tracing the Derivation of Embryonic Stem Cells from the Inner Cell Mass by Single-Cell {RNA}-Seq Analysis},
+	volume = {6},
+	issn = {1934-5909},
+	url = {http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2954317/},
+	doi = {10.1016/j.stem.2010.03.015},
+	abstract = {During the transition from the inner cell mass ({ICM}) cells of blastocysts to pluripotent embryonic stem cells ({ESCs}) in vitro, a normal developmental program is replaced in cells that acquire a capacity for infinite self-renewal and pluripotency. We explored the underlying mechanism of this switch by using {RNA}-Seq transcriptome analysis at the resolution of single cells. We detected significant molecular transitions and major changes in transcript variants, which include genes for general metabolism. Furthermore, the expression of repressive epigenetic regulators increased with a concomitant decrease in gene activators that might be necessary to sustain the inherent plasticity of {ESCs}. Furthermore, we detected changes in {microRNAs} ({miRNAs}), with one set that targets early differentiation genes while another set targets pluripotency genes to maintain the unique {ESC} epigenotype. Such genetic and epigenetic events may contribute to a switch from a normal developmental program in adult cells during the formation of diseased tissues, including cancers., ► Single-cell {RNA}-Seq analysis during {ICM} to {ESC} reveals molecular switches ► Enhanced repressive epigenetic factors may sustain {ESC} epigenotype ► Changes in {miRNAs} targets differentiation and pluripotency {mRNAs} ► Transcript variants and genes for metabolism enhanced during {ESC} formation},
+	pages = {468--478},
+	number = {5},
+	journaltitle = {Cell Stem Cell},
+	shortjournal = {Cell Stem Cell},
+	author = {Tang, Fuchou and Barbacioru, Catalin and Bao, Siqin and Lee, Caroline and Nordman, Ellen and Wang, Xiaohui and Lao, Kaiqin and Surani, M. Azim},
+	urldate = {2015-02-09},
+	date = {2010-05-07},
+	pmid = {20452321},
+	pmcid = {PMC2954317},
+	file = {S1934-5909(10)00114-1.pdf:/home/john/.mozilla/firefox/d39h8gpz.default/zotero/storage/IE6U5NJ4/S1934-5909(10)00114-1.pdf:application/pdf}
 }
