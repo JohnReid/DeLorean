@@ -139,3 +139,45 @@ NULL
 #'
 NULL
 
+
+#' Tang et al. investigated the derivation of ESCs from the inner
+#' cell mass (ICM) using single cell RNA-seq and PCR. They collected
+#' expression data in several cells from ESCs, the ICM, E3.5
+#' and E4.5.
+#'
+#' @docType data
+#' @keywords datasets
+#'
+#' @name tang.key.genes
+#' @aliases tang.pcr
+#' @aliases tang.pcr.cell.meta
+#' @aliases tang.pcr.gene.meta
+#' @aliases tang.rna.seq
+#' @aliases tang.rna.seq.cell.meta
+#' @aliases tang.rna.seq.gene.meta
+#'
+#' @usage data(TangDeLorean)
+#'
+#' @format There are six objects in this data:
+#' \itemize{
+#'   \item tang.key.genes A vector of genes named in the publication.
+#'   \item tang.rna.seq A matrix of log expression values with
+#'     no missing data. Rows are named by genes and columns are
+#'     named by cells/samples.
+#'   \item tang.rna.seq.gene.meta A data frame containing meta-data
+#'     about the genes.
+#'   \item tang.rna.seq.cell.meta A data frame containing meta-data
+#'     about the cells
+#'   \item tang.pcr A matrix of log expression values with
+#'     no missing data. Rows are named by genes and columns are
+#'     named by cells/samples.
+#'   \item tang.pcr.gene.meta A data frame containing meta-data
+#'     about the genes.
+#'   \item tang.pcr.cell.meta A data frame containing meta-data
+#'     about the cells
+#' }
+#'
+#' @source \url{http://www.plantcell.org/content/24/9/3530.long}
+#'
+NULL
+

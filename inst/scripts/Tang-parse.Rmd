@@ -52,79 +52,7 @@ theme_set(font.theme)
 ```
 
 
-# RNA-seq data
-
-
-Load the RNA-seq expression data CSV.
-```{r readRNAseqCSV}
-rna.seq <- read.csv('../../data/Tang-mmc3-RefSeq.csv')
-
-```
-
-
-Parse the RNA-seq cell meta data. Which of the columns are cell names?
-```{r cellNames}
-cell.name.re <- '^([[:alpha:][:digit:]_.]+)_(A[[:digit:]]{1,2}(?:.1)?)$'
-names(rna.seq)
-tang.rna.seq.cell.meta <- (
-    as.data.frame(str_match(names(rna.seq)[37:68], cell.name.re))
-    %>% filter(! is.na(V2))
-    %>% select(cell=V1, capture=V2, cell.id=V3)
-    %>% mutate(obstime=ifelse(capture=="ICM", 0,
-                       ifelse(capture=="E4.5_Epiblast", 1,
-                       ifelse(capture=="Day3_outgrowth_Oct4_Pos", 3,
-                       ifelse(capture=="Day5_outgrowth_Oct4neg", 5,
-                       ifelse(capture=="Day5_outgrowth_Oct4_Pos", 5,
-                       ifelse(capture=="ESC", 7, NA))))))))
-sapply(tang.rna.seq.cell.meta, class)
-stopifnot(all(! is.na(tang.rna.seq.cell.meta$obstime)))
-
-```
-
-
-Extract the RNA-seq gene meta data.
-```{r geneMeta}
-tang.rna.seq.gene.meta <- rna.seq[,1:36] %>% rename(gene=RefSeqID, name=GeneID)
-sapply(tang.rna.seq.gene.meta, class)
-
-```
-
-
-Extract the RNA-seq expression data.
-```{r expr}
-tang.rna.seq <- log10(as.matrix(rna.seq[,as.character(tang.rna.seq.cell.meta$cell)]))
-rownames(tang.rna.seq) <- tang.rna.seq.gene.meta$gene
-colnames(tang.rna.seq) <- tang.rna.seq.cell.meta$cell
-dim(tang.rna.seq)
-qplot(as.vector(tang.rna.seq))
-
-```
-
-
-Check we can create a DeLorean object from the data.
-```{r checkRNAseqDL}
-dl.rna.seq <- de.lorean(tang.rna.seq,
-                        tang.rna.seq.gene.meta,
-                        tang.rna.seq.cell.meta)
-
-```
-
-
-Examine the $p$-values.
-```{r pValues}
-(ggplot(tang.rna.seq.gene.meta
-        %>% select(gene,
-                   p.value.ESC.ICM.,
-                   p.value.ESC.E4.5_Epiblast.,
-                   p.value.ICM.E4.5_Epiblast.)
-        %>% melt(variable.name="comparison", value.name="p.value")
-        %>% filter(p.value < .001),
-        aes(x=p.value+1e-110, fill=comparison))
-    + geom_histogram()
-    + scale_x_log10())
-
-```
-
+# Key genes from paper
 
 Make list of key genes mentioned in the paper.
 ```{r keyGenes}
@@ -293,10 +221,101 @@ tang.key.genes <- c(
     "Zic3",
     "Myc")
 length(tang.key.genes)
+
+```
+
+
+
+
+# RNA-seq data
+
+Load the RNA-seq expression data CSV.
+```{r readRNAseqCSV}
+rna.seq <- read.csv('../../data/Tang-mmc3-RefSeq.csv')
+
+```
+
+
+Parse the RNA-seq cell meta data. Which of the columns are cell names?
+```{r cellNames}
+cell.name.re <- '^([[:alpha:][:digit:]_.]+)_(A[[:digit:]]{1,2}(?:.1)?)$'
+names(rna.seq)
+tang.rna.seq.cell.meta <- (
+    as.data.frame(str_match(names(rna.seq)[37:68], cell.name.re))
+    %>% filter(! is.na(V2))
+    %>% select(cell=V1, capture=V2, cell.id=V3)
+    %>% mutate(obstime=ifelse(capture=="ICM", 0,
+                       ifelse(capture=="E4.5_Epiblast", 1,
+                       ifelse(capture=="Day3_outgrowth_Oct4_Pos", 3,
+                       ifelse(capture=="Day5_outgrowth_Oct4neg", 5,
+                       ifelse(capture=="Day5_outgrowth_Oct4_Pos", 5,
+                       ifelse(capture=="ESC", 7, NA))))))))
+sapply(tang.rna.seq.cell.meta, class)
+stopifnot(all(! is.na(tang.rna.seq.cell.meta$obstime)))
+
+```
+
+
+Extract the RNA-seq gene meta data.
+```{r geneMeta}
+tang.rna.seq.gene.meta <- (
+    rna.seq[,1:36]
+    %>% rename(gene=RefSeqID, name=GeneID)
+    %>% mutate(key=name %in% tang.key.genes))
+sapply(tang.rna.seq.gene.meta, class)
+
+```
+
+
+Extract the RNA-seq expression data.
+```{r expr}
+# tang.rna.seq <- as.matrix(rna.seq[,as.character(tang.rna.seq.cell.meta$cell)])
+# min(tang.rna.seq[tang.rna.seq > 0])
+cell.cols <- as.character(tang.rna.seq.cell.meta$cell)
+tang.rna.seq <- log10(1 + as.matrix(rna.seq[,cell.cols]))
+rownames(tang.rna.seq) <- tang.rna.seq.gene.meta$gene
+colnames(tang.rna.seq) <- tang.rna.seq.cell.meta$cell
+dim(tang.rna.seq)
+qplot(as.vector(tang.rna.seq))
+
+```
+
+
+Check we can create a DeLorean object from the data.
+```{r checkRNAseqDL}
+dl.rna.seq <- de.lorean(tang.rna.seq,
+                        tang.rna.seq.gene.meta,
+                        tang.rna.seq.cell.meta)
+dl.rna.seq <- estimate.hyper(
+    dl.rna.seq,
+    sigma.tau=1.5,
+    delta=.5)
+
+```
+
+
+Investigate how many of the key genes are in the data.
+```{r keyInRNA}
 found.key.gene <- (
     data.frame(name=tang.key.genes)
     %>% mutate(found=name %in% tang.rna.seq.gene.meta$name))
 found.key.gene %>% filter(! found)
+
+```
+
+
+Examine the $p$-values.
+```{r pValues}
+(ggplot(tang.rna.seq.gene.meta
+        %>% select(gene,
+                   p.value.ESC.ICM.,
+                   p.value.ESC.E4.5_Epiblast.,
+                   p.value.ICM.E4.5_Epiblast.)
+        %>% melt(variable.name="comparison", value.name="p.value")
+        %>% filter(p.value < .001),
+        aes(x=p.value+1e-110, fill=comparison))
+    + geom_histogram()
+    + scale_x_log10())
 
 ```
 
@@ -341,7 +360,9 @@ stopifnot(all(! is.na(tang.pcr.cell.meta$obstime)))
 
 Extract the PCR gene meta data.
 ```{r pcrGeneMeta}
-tang.pcr.gene.meta <- pcr[,1:4]
+tang.pcr.gene.meta <- (
+    pcr[,1:4]
+    %>% mutate(key=name %in% tang.key.genes))
 
 ```
 
@@ -362,6 +383,10 @@ Check we can create a DeLorean object from the data.
 dl.pcr <- de.lorean(tang.pcr,
                     tang.pcr.gene.meta,
                     tang.pcr.cell.meta)
+dl.pcr <- estimate.hyper(
+    dl.pcr,
+    sigma.tau=1.5,
+    delta=.5)
 
 ```
 
