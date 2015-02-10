@@ -22,7 +22,7 @@ which has this density over genes:
 Now we estimate the cell size factors. We use the median for robustness and
 examine every gene's relative expression levels in each cell
 $$
-\hat{S}_c = \text{Median}_g (x_{g,c} - \mu_g)
+\hat{S}_c = \textrm{Median}_g (x_{g,c} - \mu_g)
 $$
 We estimate the hyperparameters for the cell size factors by fitting a normal
 distribution. The estimated cell size factors have this density
