@@ -1,0 +1,427 @@
+```{r build, echo=FALSE, eval=FALSE}
+library(devtools)
+load_all('..')
+library(rmarkdown)
+render('DeLorean-McDavid.Rmd')
+
+```
+
+---
+title: DeLorean analysis of McDavid et al. cell cycle data
+author: John Reid
+bibliography: DeLorean.bib
+output: html_document
+---
+
+<!--
+%\VignetteEngine{knitr::rmarkdown}
+%\VignetteIndexEntry{DeLorean analysis of McDavid et al. cell cycle data}
+-->
+
+
+```{r config, echo=FALSE, message=FALSE}
+library(knitr)
+library(knitcitations)
+library(rmarkdown)
+#
+# knitr options
+#
+opts_chunk$set(
+    fig.path = 'figures/McDavid-',
+    stop_on_error = TRUE,
+    fig.width = 12.5,
+    fig.height = 8)
+#
+# Citations
+#
+cleanbib()
+cite_options(
+    # hyperlink = 'to.doc',
+    hyperlink = TRUE,
+    # style = 'html',
+    # citation_format = 'text',
+    citation_format = "pandoc",
+    cite.style = "numeric",
+    check.entries = TRUE)
+    # hyperlink = TRUE)
+bib <- read.bibtex("DeLorean.bib")
+if (file.exists("config.R")) {
+    source("config.R")
+}
+#
+# Widths for saving figures
+#
+text.width <- 4.79  # LaTeX width in inches
+golden.ratio <- 1.618  # Pleasing ratio
+fig.width <- text.width
+fig.height <- text.width / golden.ratio
+
+```
+
+```{r init, echo=FALSE, message=FALSE, warning=FALSE}
+# suppressMessages(loadfonts())
+library(DeLorean)
+#
+# Stylesheet
+#
+options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
+                                               package="DeLorean"))
+font.family <- "Verdana"
+font.theme <- theme_update(text=element_text(family=font.family))
+theme_set(font.theme)
+
+```
+
+
+`r citet(bib[["mcdavid_modeling_2014"]])` assayed actively cycling single
+cells in order to examine the confounding effect of the cell cycle on
+single cell expression analyses. They measured the expression of 333 genes
+in 930 cells across three cell cycle phases and three cell lines.
+
+
+# Data
+
+McDavid et al.'s data is available in the `DeLorean` R package. Not all 333
+genes are represented as several are rarely expressed.
+```{r loadLib}
+library(DeLorean)
+data(McDavidDeLorean)
+
+```
+
+Shift positively expressed genes closer to unexpressed genes to improve fit.
+```{r}
+dl <- de.lorean(
+    pmax(mcdavid.expr - .69, 0),
+    mcdavid.gene.meta,
+    mcdavid.cell.meta)
+
+```
+
+```{r child=report.file("data")}
+```
+
+
+
+# PCA analysis
+
+```{r}
+genes.high.rank <- (
+    dl$gene.meta
+    %>% filter(!is.na(cbRank), cbRank < 201)
+    %>% arrange(cbRank))
+levels(dl$cell.meta$cellline)
+cells.PC3 <- (
+    dl$cell.meta
+    %>% filter("PC3" == cellline))
+pca <- prcomp(t(mcdavid.expr[as.character(genes.high.rank$gene),
+                             as.character(cells.PC3$cell)]),
+              .scale=TRUE)
+# Sqrt of eigenvalues
+qplot(pca$sdev)
+# Percentage of variance explained
+qplot(pca$sdev**2 / sum(pca$sdev**2) * 100)
+# Get the PC scores
+pc.scores <- as.data.frame(pca$x)
+pc.scores$cell <- factor(rownames(pca$x), levels=levels(dl$cell.meta$cell))
+pc.scores <- pc.scores %>% left_join(dl$cell.meta)
+# Plot PC1 against PC2
+ggplot(pc.scores, aes(x=PC1, y=PC2, color=capture)) + geom_point()
+# Plot PC1 against PC3
+ggplot(pc.scores, aes(x=PC1, y=PC3, color=capture)) + geom_point()
+
+```
+
+# Estimate hyperparameters
+
+Examine data for empirical Bayes estimation of hyperparameters.
+```{r empiricalBayes}
+dl <- estimate.hyper(
+    dl,
+    sigma.tau=.5,
+    delta=.5)
+
+```
+
+```{r child=report.file("hyper-parameters")}
+```
+
+
+# Choose genes and cells
+
+Choose a few cells from the PC3 cell line.
+```{r filterCells}
+set.seed(1)
+max.cells <- min(getOption("DL.max.cells", 57))
+cells.PC3 <- sample(filter(mcdavid.cell.meta, "PC3" == cellline)$cell,
+                    max.cells)
+cell.filter <- function(cells) cells %in% cells.PC3
+dl <- filter.cells(dl, cell.filter)
+
+```
+
+
+Choose genes with low $p$-values from the McDavid et al.
+differential expression test.
+```{r filterGenes}
+max.genes <- min(getOption("DL.max.genes", 56))
+genes.for.stan <- sample((dl$gene.meta %>% filter(pvalue > 10))$gene,
+                         max.genes)
+gene.filter <- function(genes) genes %in% genes.for.stan
+dl <- filter.genes(dl, gene.filter)
+
+```
+
+
+Save expression data and meta data.
+```{r}
+saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
+        file='McDavid-input.rds')
+
+```
+
+
+# Compile and fit model
+
+Define and compile the model, find the best initialisation, and fit the model.
+```{r model}
+dl <- format.for.stan(dl, period=3, hold.out=3)
+dl <- compile.model.simple(dl)
+dl <- find.best.tau(dl)
+system.time(dl <- fit.model(dl, num.cores=getOption("DL.num.cores")))
+
+```
+
+
+# Examine convergence.
+
+```{r examConv}
+dl <- examine.convergence(dl)
+
+```
+
+```{r child=report.file("convergence")}
+```
+
+
+
+# Analyse posterior
+
+Examine posterior.
+```{r posterior}
+dl <- process.posterior(dl)
+dl <- analyse.noise.levels(dl)
+
+```
+
+```{r child=report.file("posterior")}
+```
+
+
+# Profiles
+
+Calculate expression profiles.
+```{r makePredictions}
+dl <- make.predictions(dl)
+```
+
+```{r child=report.file("profiles")}
+```
+
+
+# Cell size vs. pseudotime
+
+```{r}
+periodise <- function(tau, period=3) {
+    wave = floor(tau/period)
+    tau - wave * period
+}
+tau.S <- (
+    dl$samples$tau
+    %>% left_join(dl$samples$S)
+    %>% mutate(tau=periodise(tau, dl$opts$period))
+    %>% arrange(tau))
+# Copy data to beginning and end to ensure periodic loess estimate
+tau.S.lower <- tau.S %>% tail(9000) %>% mutate(tau=tau-dl$opts$period)
+tau.S.upper <- tau.S %>% head(9000) %>% mutate(tau=tau+dl$opts$period)
+tau.S <- rbind(tau.S.lower, tau.S, tau.S.upper)
+# Fit loess
+lo <- loess(S ~ tau, tau.S)
+tau.S$loess <- predict(lo, tau.S)
+# Make predictions at times used in predictedmean
+prediction.times <- (
+    dl$predictions
+    %>% filter(dl$best.sample == iter, 1 == g, 0 <= tau, tau <= dl$opts$period)
+    %>% select(t, tau))
+prediction.times$S <- predict(lo, prediction.times)
+prediction.times
+# Plot data + fit
+gp <- (ggplot(tau.S, aes(x=tau, y=S, color=capture))
+    + geom_point(alpha=.1)
+    + geom_line(aes(y=loess), color='black')
+    + scale_x_continuous(name="pseudotime")
+    + scale_y_continuous(name="cell size")
+    + scale_color_discrete(name="phase")
+    + coord_cartesian(xlim = c(0, 3))
+    + guides(colour=guide_legend(override.aes=list(alpha=1)))
+)
+print(gp)
+png('McDavid-cell-size-vs-pseudotime.png', width=fig.width, height=fig.height,
+    units='in', res=72*2)
+print(gp)
+dev.off()
+
+```
+
+# Examine peak times
+
+```{r peakTimes}
+
+# Plot cbPeaktime against best sample max predicted mean time
+# print(plot.profiles(dl, genes="CDCA8"))
+peak.distance <- Vectorize(function(peak.1, peak.2) {
+    if (peak.1 - peak.2 > .5) {
+        peak.1 <- peak.1 - 1
+    }
+    if (peak.2 - peak.1 > .5) {
+        peak.2 <- peak.2 - 1
+    }
+    abs(peak.1 - peak.2)
+})
+# peak.distance(c(.1, .2, .1, .9), c(.2, .1, .9, .1))
+calc.rms <- function(d) sqrt(sum(d))/length(d)
+calc.rmse <- function(xhat, x) calc.rms(peak.distance(xhat, x))
+dl <- within(dl, {
+    peak.vs.max <- (predictions %>% left_join(prediction.times %>% select(-tau))
+        %>% group_by(iter, g)
+        %>% summarise(predicted.peak=periodise(tau[which.max(predictedmean)]),
+                      predicted.peak.adj=periodise(tau[which.max(predictedmean+S)]))
+        %>% left_join(gene.map)
+        %>% filter(! is.na(cbPeaktime)))
+    peak.max.dist <- (
+        peak.vs.max
+        %>% group_by(iter)
+        %>% summarise(rmse=calc.rmse(cbPeaktime/100,
+                                     predicted.peak/3),
+                      rmse.adj=calc.rmse(cbPeaktime/100,
+                                         predicted.peak.adj/3)))
+})
+sample_n(dl$peak.max.dist, 15)
+gp <- (
+    ggplot(dl$peak.max.dist, aes(x=rmse, y=rmse.adj))
+    + geom_point()
+    + scale_x_continuous(name="RMSE (not adjusted)")
+    + scale_y_continuous(name="RMSE (cell size adjusted)")
+    + geom_abline(alpha=.5))
+print(gp)
+pdf('McDavid-rmse-vs-rmse-adj.pdf', width=fig.width, height=fig.height)
+print(gp)
+dev.off()
+# Test for normality
+with(dl$peak.max.dist, shapiro.test(rmse.adj))
+with(dl$peak.max.dist, shapiro.test(rmse))
+gp <- (
+    ggplot(dl$peak.max.dist, aes(x=rmse.adj))
+    + geom_density()
+    + geom_rug()
+    + scale_x_continuous(name="RMSE (cell size adjusted)"))
+pdf('McDavid-rmse-adj.pdf', width=fig.width, height=fig.height)
+print(gp)
+dev.off()
+gp <- (
+    ggplot(dl$peak.max.dist, aes(sample=rmse.adj))
+    + stat_qq())
+pdf('McDavid-rmse-adj-qq.pdf', width=fig.width, height=fig.height)
+print(gp)
+dev.off()
+# t-test for differences
+with(dl$peak.max.dist, t.test(x=rmse,
+                              y=rmse.adj,
+                              paired=TRUE,
+                              alternative="greater"))
+# Mean of both RMSEs
+mean(dl$peak.max.dist$rmse)
+mean(dl$peak.max.dist$rmse.adj)
+gp <- (
+    ggplot(dl$peak.vs.max %>% filter(dl$best.sample == iter),
+           aes(x=cbPeaktime, y=predicted.peak, label=gene))
+    + geom_point(alpha=.7, size=2)
+    + scale_x_continuous(name="CycleBase peak time")
+    + scale_y_continuous(name="estimated peak time")
+    + geom_point(aes(y=predicted.peak.adj), alpha=.7, size=2, color="blue")
+)
+print(gp)
+pdf('McDavid-peak-vs-max.pdf', width=fig.width, height=fig.height)
+print(gp)
+dev.off()
+
+```
+
+Calculate distance between peak time and capture time.
+Capture times are as defined in
+[CycleBase](http://www.cyclebase.org/About "CycleBase").
+```{r}
+expr.l <- melt(unname(dl$expr), varnames=c("g", "c"), value.name="x")
+names(expr.l)
+peaks <- (
+    expr.l
+    %>% group_by(g)
+    %>% summarise(c=c[which.max(x)])
+    %>% left_join(dl$cell.map)
+    %>% left_join(dl$gene.map))
+peak.capture.dist <- with(
+    peaks %>% filter(! is.na(cbPeaktime)),
+    calc.rmse(cbPeaktime/100,
+              (as.integer(capture) - .5) / 2))
+peak.capture.dist
+# t-test
+with(dl$peak.max.dist, t.test(x=peak.capture.dist,
+                              y=rmse.adj,
+                              alternative="greater"))
+
+# Assuming a normal distribution for the adjusted RMSE, what is
+# the likelihood of observing at least as extreme as the
+# peak capture RMSE.
+with(dl$peak.max.dist, pnorm(peak.capture.dist,
+                             mean=mean(rmse.adj),
+                             sd=sd(rmse.adj),
+                             lower.tail=F))
+gp <- (
+    ggplot(peaks %>% filter(! is.na(cbPeaktime)), aes(x=capture, y=cbPeaktime))
+    + geom_boxplot()
+    + scale_y_continuous(name="CycleBase peak time")
+    + scale_x_discrete(name="cell cycle phase")
+    + coord_flip())
+print(gp)
+pdf('McDavid-capture-peaks.pdf', width=fig.width, height=fig.height)
+print(gp)
+dev.off()
+
+```
+
+
+Plot the profiles adjusted for the cell size.
+```{r}
+load_all('..')
+gp <- plot(dl, type="profiles", cell.size.adj=F, adjust.model=lo)
+pdf('McDavid-profiles-adj.pdf', width=fig.width*2, height=fig.height*2)
+print(gp)
+dev.off()
+gp <- plot(dl, type="profiles")
+pdf('McDavid-profiles.pdf', width=fig.width*2, height=fig.height*2)
+print(gp)
+dev.off()
+
+```
+
+
+```{r echo=FALSE}
+# Save DeLorean object without fit component
+saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "McDavid.rds")
+```
+
+
+R version and packages used:
+```{r Rversion}
+sessionInfo()
+```

@@ -1,4 +1,4 @@
-```{r include=FALSE}
+```{r profilesAttach, include=FALSE}
 # Attach the DeLorean data frame to access members
 attach(dl)
 ```
@@ -7,13 +7,13 @@ attach(dl)
 
 
 We plot the expression profiles of the most temporally varying genes.
-```{r}
-plot(dl, type="best.predictions")
+```{r profiles}
+plot(dl, type="profiles")
 
 ```
 
 
-```{r include=FALSE}
+```{r profilesDetach, include=FALSE}
 # Detach the previously attached DeLorean data frame
 detach(dl)
 ```

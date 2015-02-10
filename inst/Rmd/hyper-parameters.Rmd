@@ -1,4 +1,4 @@
-```{r include=FALSE}
+```{r hyperAttach, include=FALSE}
 # Attach the DeLorean data frame to access members
 attach(dl)
 ```
@@ -102,9 +102,9 @@ $$
 \mathbb{V}_{g,t} &= \text{Var}(\{\hat{x}_{g,c}:z_{g,c} = 1, c \in \mathcal{K}_t\})
 \end{align}
 $$
-The variances have this distribution:
+The standard deviations have this distribution:
 ```{r geneWithinVar}
-(ggplot(gene.time.expr, aes(x=x.var)) + geom_density() + geom_rug())
+(ggplot(gene.time.expr, aes(x=sqrt(x.var))) + geom_density() + geom_rug())
 
 ```
 
@@ -170,7 +170,7 @@ and this density for the within time variation:
 
 ```
 
-```{r include=FALSE}
+```{r hyperDetach, include=FALSE}
 # Detach the previously attached DeLorean data frame
 detach(dl)
 ```

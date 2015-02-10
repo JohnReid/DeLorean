@@ -1,7 +1,7 @@
 ## Convergence
 
 We plot the $\hat{R}$ statistics calculated by `Stan`.
-```{r}
+```{r plotConvergence}
 plot(dl, type="convergence")
 
 ```

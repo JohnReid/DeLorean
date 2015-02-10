@@ -1,3 +1,17 @@
+*.Rmd.swo
+McDavid-*.pdf
+McDavid-*.png
+Windram-*.pdf
+profiles-adj-cell-size.png
+pseudotime-vs-obfuscated.pdf
+.nfs*
+DeLorean-McDavid.bak.html
+Rplots.pdf
+Trapnell-profiles.png
+capture-peaks.png
+cell-size-vs-pseudotime.png
+peak-adj-vs-max.png
+peak-vs-max.png
 *.rds
 config.R
 pseudotime-vs-obfuscated.png

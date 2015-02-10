@@ -183,7 +183,7 @@ filter(dl$gene.map , hgnc_symbol %in% genes.fig.all)
 filter(dl$gene.meta, hgnc_symbol %in% genes.fig.all)
 png('Trapnell-profiles.png', width=1200, height=800)
 (plot(dl,
-      type="best.predictions",
+      type="profiles",
       genes=filter(dl$gene.map, hgnc_symbol %in% genes.fig.all)$gene)
     + facet_wrap(~ hgnc_symbol + gene))
 dev.off()
