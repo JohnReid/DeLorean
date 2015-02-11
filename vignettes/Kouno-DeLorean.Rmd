@@ -5,6 +5,15 @@ bibliography: DeLorean.bib
 output: html_document
 ---
 
+```{r build, echo=FALSE, eval=FALSE}
+library(devtools)
+load_all('..')
+library(rmarkdown)
+fit.model <- TRUE
+render('Kouno-DeLorean.Rmd')
+
+```
+
 <!--
 %\VignetteEngine{knitr::rmarkdown}
 %\VignetteIndexEntry{DeLorean analysis of THP-1 human myeloid monocytic leukemia data}
@@ -40,14 +49,13 @@ bib <- read.bibtex("DeLorean.bib")
 if (file.exists("config.R")) {
     source("config.R")
 }
-
-```
-
-```{r build, echo=FALSE, eval=FALSE}
-library(devtools)
-library(rmarkdown)
-load_all('..')
-render('DeLorean-Kouno.Rmd')
+#
+# Widths for saving figures
+#
+text.width <- 4.79  # LaTeX width in inches
+golden.ratio <- 1.618  # Pleasing ratio
+fig.width <- text.width
+fig.height <- text.width / golden.ratio
 
 ```
 
@@ -59,16 +67,13 @@ library(DeLorean)
 #
 options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
                                                package="DeLorean"))
-
-```
-
-```{r}
 font.family <- "Verdana"
 font.theme <- theme_update(text=element_text(family=font.family))
 theme_set(font.theme)
 
 ```
 
+`r date()`
 
 
 `r citet(bib[["kouno_temporal_2013"]])` assayed 120 single cells at each
@@ -78,48 +83,82 @@ of 8 time points.
 # Data
 
 Kouno et al.'s data is available in the `DeLorean` R package.
-```{r loadLib}
+```{r loadLib, eval=fit.model}
 library(DeLorean)
 data(KounoDeLorean)
 
 ```
 
 
+Adjust the observed capture times to distances similar to Kouno et al.'s
+MDS plot.
+```{r adjustCaptureTimes}
+kouno.cell.meta.adj.time <- (
+    kouno.cell.meta
+    %>% mutate(obstime=ifelse(capture== "0h",  0,
+                       ifelse(capture== "1h",  6,
+                       ifelse(capture== "6h", 10,
+                       ifelse(capture=="12h", 11,
+                       ifelse(capture=="24h", 12,
+                       ifelse(capture=="48h", 13,
+                       ifelse(capture=="72h", 14,
+                       ifelse(capture=="96h", 15,
+                              NA))))))))))
+
+```
+
+Build the `DeLorean` object.
+```{r buildDL, eval=fit.model}
+dl <- de.lorean(
+    kouno.expr,
+    kouno.gene.meta,
+    kouno.cell.meta.adj.time)
+
+```
+
 This will load a 45 (genes) by 960 (cells) matrix containing the expression
 measurements.
-```{r exprDim}
-dim(kouno.expr)
+```{r exprDim, eval=fit.model}
+dim(dl)
 ```
 and two data frames of meta data for the genes and cells.
-```{r meta}
-summary(kouno.gene.meta)
-summary(kouno.cell.meta)
+```{r meta, eval=fit.model}
+sample_n(dl$gene.meta, 15)
+sample_n(dl$cell.meta, 15)
+```
+```{r child=report.file("data")}
 ```
 
 
 # Estimate hyperparameters
 
 Examine data for empirical Bayes estimation of hyperparameters.
-```{r empiricalBayes}
-dl <- de.lorean(
-    kouno.expr,
-    kouno.gene.meta,
-    kouno.cell.meta)
+```{r empiricalBayes, eval=fit.model}
 dl <- estimate.hyper(
     dl,
-    sigma.tau=12,
+    sigma.tau=3,
     delta=.5)
-# knit.report(dl, "hyper-parameters")
 
+```
+```{r child=report.file("hyper-parameters")}
 ```
 
 
 # Choose genes and cells
 
-Choose a few cells from each stage.
-```{r filterCells}
+Choose genes.
+```{r filterGenes, eval=fit.model}
 set.seed(1)
-num.at.each.stage <- 7
+max.genes <- min(getOption("Kouno.num.genes", nrow(dl$gene.meta)))
+genes.for.stan <- sample(dl$gene.meta$gene, max.genes)
+gene.filter <- function(genes) genes %in% genes.for.stan
+dl <- filter.genes(dl, gene.filter)
+
+```
+
+Choose a few cells from each stage.
+```{r filterCells, eval=fit.model}
+num.at.each.stage <- getOption("Kouno.num.each.stage", 7)
 sampled.cells <- (
     dl$cell.meta
     %>% group_by(capture)
@@ -130,25 +169,53 @@ dl <- filter.cells(dl, cell.filter)
 ```
 
 
+Save expression data and meta data.
+```{r saveInput, eval=fit.model}
+saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
+        file='Kouno-input.rds')
+
+```
+
 Format the data for Stan and fit the model.
-```{r fitModel}
+```{r fitModel, eval=fit.model}
 dl <- format.for.stan(dl)
 dl <- compile.model.simple(dl)
 dl <- find.best.tau(dl)
-system.time(dl <- fit.model(dl))
+system.time(dl <- fit.model(dl, num.cores=getOption("DL.num.cores")))
+
 ```
 
 
-Examine the model fit and plot the profiles.
-```{r examineFit}
+# Examine convergence.
+
+```{r examConv}
 dl <- examine.convergence(dl)
+```
+```{r child=report.file("convergence")}
+```
+
+
+# Analyse posterior
+
+Examine posterior.
+```{r posterior}
 dl <- process.posterior(dl)
 dl <- analyse.noise.levels(dl)
-dl <- make.predictions(dl)
-gp <- plot(dl, type="profiles")
-print(gp)
 
 ```
+```{r child=report.file("posterior")}
+```
+
+
+# Profiles
+
+Calculate expression profiles.
+```{r makePredictions}
+dl <- make.predictions(dl)
+```
+```{r child=report.file("profiles")}
+```
+
 
 
 ```{r echo=FALSE}
@@ -159,5 +226,6 @@ saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Kouno.rds")
 
 R version and packages used:
 ```{r Rversion}
+date()
 sessionInfo()
 ```
