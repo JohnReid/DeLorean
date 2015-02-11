@@ -1,0 +1,218 @@
+---
+title: Fetch Shalek et al. (2014) data
+author: John Reid
+output: html_document
+---
+
+```{r build, echo=FALSE, eval=FALSE}
+library(devtools)
+load_all('../..')
+library(rmarkdown)
+render('fetch-Shalek-2014.Rmd')
+
+```
+
+
+```{r loadLibs, echo=FALSE, message=FALSE}
+library(stringr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(GEOquery)
+
+```
+
+
+```{r config, echo=FALSE, message=FALSE}
+library(knitr)
+library(rmarkdown)
+#
+# knitr options
+#
+opts_chunk$set(
+    fig.path = 'figures/Shalek-',
+    stop_on_error = TRUE,
+    fig.width = 12.5,
+    fig.height = 8)
+#
+# Widths for saving figures
+#
+text.width <- 4.79  # LaTeX width in inches
+golden.ratio <- 1.618  # Pleasing ratio
+fig.width <- text.width
+fig.height <- text.width / golden.ratio
+#
+# Stylesheet
+#
+options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
+                                               package="DeLorean"))
+font.family <- "Verdana"
+font.theme <- theme_update(text=element_text(family=font.family))
+theme_set(font.theme)
+
+```
+
+
+
+Shalek et al. investigated mouse bone-marrow-derived dendritic cells. Two
+matrix files are available from GEO. We shall name them A and B. First we
+parse A.
+```{r parseA}
+csv.filename <- '../../data/GSE48968_allgenesTPM_GSM1189042_GSM1190902.txt.gz'
+shalek.A <- read.csv(csv.filename, sep='\t')
+cells.A <- colnames(shalek.A)
+genes.A <- rownames(shalek.A)
+class(shalek.A)
+dim(shalek.A)
+sapply(shalek.A, class)
+gp <- qplot(as.vector(as.matrix(shalek.A[sample(nrow(shalek.A), 1000),
+                                         sample(ncol(shalek.A), 100)])))
+pdf("Shalek-expr.pdf")
+print(gp + scale_x_log10())
+dev.off()
+cell.re.A <- str_c(
+    '^',
+    '(?:(IFNB|Tube|On_Chip|Ifnar1|Stat1|Tnfr)_)?',
+    '(?:(KO|Control|Stimulation)_)?',
+    '(?:(Unstimulated|LPS|PAM|PIC)_)?',
+    '(?:([[:digit:]]+)h_)?',
+    '(?:(Replicate)_)?',
+    '(?:(S[[:digit:]]+)_)?',
+    '$')
+cell.meta.A <- (
+    as.data.frame(str_match(str_c(names(shalek.A), '_'), cell.re.A))
+    %>% select(cell=V1, genetic=V2, control=V3, stimulant=V4,
+               capture=V5, replicate=V6, cell.id=V7)
+    %>% mutate(cell=factor(str_replace(cell, "_$", ""), levels=cells.A)))
+sample_n(cell.meta.A, 20)
+stopifnot(all(! is.na(cell.meta.A[,1])))
+which(is.na(cell.meta.A[,1]))
+sapply(cell.meta.A %>% select(-1), levels)
+sapply(cell.meta.A, class)
+nrow(cell.meta.A)
+# cell.meta.A %>% filter("LPS"==stimulant, "" == genetic)
+# cell.meta.A %>% filter("PIC" == stimulant, 2==capture)
+# cell.meta.A %>% filter("Stat1" == genetic)
+
+gene.meta.A <- data.frame(gene=genes.A)
+
+```
+
+
+Load supplementary table 2.
+```{r suppTable2}
+supp.table.2 <- (
+    read.csv('../../data/Shalek-2014-Supp-Table-2.csv')
+    %>% rename(cell=Experiment,
+               total=Total.Reads,
+               aligned=Aligned.Reads....Transcriptome.)
+    %>% mutate(cell.orig=cell,
+               cell.1=cell
+                      %>% str_replace("Technical_Replicate_1_", "")
+                      %>% str_replace("Technical_Replicate_2_", "Replicate_")
+                      %>% str_replace("_Unstim_", "_Unstimulated_")
+                      %>% str_replace("_rsem$", ""),
+               cell=factor(cell.1, levels=cells.A)))
+sapply(supp.table.2, class)
+dim(supp.table.2)
+sum(is.na(supp.table.2$cell))
+cell.meta.A <- cell.meta.A %>% left_join(supp.table.2 %>% select(cell, total, aligned))
+# supp.table.2 %>% filter(is.na(cell))
+
+# cell.meta.A %>% filter("LPS" == stimulant, "4" == capture, "" == genetic)
+# cell.meta.A %>% filter("On_Chip" == genetic)
+# sapply(cell.meta.A %>% select(-1), levels)
+
+```
+
+
+Investigate the cluster disruption markers
+```{r clusterDisruption}
+cluster.disrupt <- (
+    t(as.matrix(shalek.A[c('SERPINB6B', 'LYZ1'),]))
+    %>% melt(varnames=c("cell", "gene"), value.name="TPM")
+    %>% mutate(expr=log(TPM+1))
+    %>% dcast(cell ~ gene, value.var="expr")
+    %>% mutate(disrupted=LYZ1<6 | SERPINB6B>4)
+)
+class(cluster.disrupt)
+names(cluster.disrupt)
+gp <- ggplot(cluster.disrupt,
+             aes(x=SERPINB6B, y=LYZ1, color=disrupted)) + geom_point()
+pdf("Shalek-cluster-disrupt.pdf")
+print(gp)
+dev.off()
+cell.meta.A <- cell.meta.A %>% left_join(cluster.disrupt %>% select(cell, disrupted))
+
+```
+
+
+Have a look at which cells might be useful for modelling.
+```{r LPSforModeling}
+cell.meta.A %>% filter(! is.na(total),
+                       "LPS" == stimulant,
+                       "" == genetic,
+                       FALSE == disrupted,
+                       total > 1e6,
+                       "" == replicate)
+
+```
+
+
+Investigate how many reads per cell.
+```{r readsPerCell}
+colSums(shalek.A)
+```
+
+
+Check other method to retrieve data to see if there is more meta data.
+```{r useGEOquery, include=FALSE, eval=FALSE}
+geo.series <- 'GSE48968'
+geo.sample.1 <- 'GSM1189042'
+geo.sample.2 <- 'GSM1190902'
+gse <- getGEO(geo.sample.1, GSEMatrix=FALSE)
+
+```
+
+
+Now we parse B.
+```{r parseB}
+csv.filename <- '../../data/GSE48968_allgenesTPM_GSM1406531_GSM1407094.txt.gz'
+shalek.B <- read.csv(csv.filename, sep='\t')
+cell.re.B <- str_c(
+    '^',
+    '(wps|tr[1234]|gp[abc]|hero|ifnr)_',
+    '(t[[:digit:]]+)_',
+    '(S[[:digit:]]+)_rsem',
+    '$')
+names(shalek.B)
+cell.meta.B <- (
+    as.data.frame(str_match(names(shalek.B), cell.re.B))
+    %>% select(genetic=V2, t=V3, cell=V4))
+sample_n(cell.meta.B, 20)
+stopifnot(all(! is.na(cell.meta.B[,1])))
+which(is.na(cell.meta.B[,1]))
+sapply(cell.meta.B, levels)
+
+gene.meta.B <- data.frame(gene=rownames(shalek.B))
+
+```
+
+
+Save the data in a format suitable for DeLorean package.
+```{r saveData}
+shalek.A.expr <- as.matrix(shalek.A)
+shalek.A.cell.meta <- shalek.cell.meta.A
+shalek.A.gene.meta <- shalek.gene.meta.A
+save(shalek.A.expr,
+     shalek.A.gene.meta,
+     shalek.A.cell.meta,
+     file='../../data/ShalekDeLorean.rda')
+
+```
+
+
+R version and packages used:
+```{r Rversion}
+sessionInfo()
+```
