@@ -212,6 +212,11 @@ save(shalek.A.expr,
 ```
 
 
+```{r date}
+date()
+```
+
+
 R version and packages used:
 ```{r Rversion}
 sessionInfo()
