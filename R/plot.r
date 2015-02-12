@@ -279,8 +279,8 @@ plot.add.expr <- function(gp, .data=NULL)
 plot.expr.data <- function(dl, genes=NULL, num.genes=12) {
     with(dl, {
          if (is.null(genes)) {
-             num.to.sample <- min(nrow(gene.meta), num.genes * 10)
-             sample.genes <- sample(gene.meta$gene, num.to.sample)
+             num.to.sample <- min(nrow(expr), num.genes * 10)
+             sample.genes <- sample(rownames(expr), num.to.sample)
              expr.l <- (
                  expr[sample.genes,]
                  %>% melt(varnames=c("gene", "cell"), value.name="x"))
