@@ -54,9 +54,11 @@ theme_set(font.theme)
 
 
 
-Shalek et al. investigated mouse bone-marrow-derived dendritic cells. Two
-matrix files are available from GEO. We shall name them A and B. First we
-parse A.
+Shalek et al. investigated mouse bone-marrow-derived dendritic cells.
+
+
+Two matrix files are available from GEO. We shall name them A and B.
+First we parse A.
 ```{r parseA}
 csv.filename <- '../../data/GSE48968_allgenesTPM_GSM1189042_GSM1190902.txt.gz'
 shalek.A <- read.csv(csv.filename, sep='\t')
@@ -231,6 +233,42 @@ which(is.na(cell.meta.B[,1]))
 sapply(cell.meta.B, levels)
 
 gene.meta.B <- data.frame(gene=factor(genes.B, levels=genes.B))
+
+```
+
+
+Define some key genes mentioned in the paper.
+```{r keyGenes}
+shalek.key.genes <- toupper(c(
+    #
+    # Cluster I d (core antiviral module; enriched for annotated antiviral and
+    #             interferon response genes; for example, 
+    "Ifit1", "Irf7",
+    #
+    # Cluster III c (peaked inflammatory module; showing rapid,
+    # yet transient, induction under LPS; for example,
+    "Tnf", "Il1a", "Cxcl2",
+    #
+    # Cluster III d (sustained inflammatory module; exhibiting
+    # continued rise in expression under LPS; for example,
+    "Mmp14", "Marco", "Il6",
+    #
+    # Cluster III b (‘maturity’ module; containing markers of
+    # dendritic cell maturation; for example,
+    "Cd83", "Ccr7", "Ccl22",
+    #
+    # At 2 h following LPS,
+    "Ifnb1",
+    # was bimodally expressed
+    #
+    # Genes encoding key inflammatory cytokines (for example,
+    "Tnf", "Cxcl1",
+    #
+    # Figure 4: core antiviral targets.
+    "Rsad2", "Stat2"
+))
+# shalek.key.genes %in% genes.A
+stopifnot(0 == sum(! shalek.key.genes %in% genes.A))
 
 ```
 
