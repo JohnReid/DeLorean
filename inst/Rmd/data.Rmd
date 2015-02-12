@@ -12,6 +12,13 @@ qplot(as.vector(expr))
 ```
 
 
+Some randomly sampled genes varying genes.
+```{r plotGeneData}
+plot(dl, type="expr.data")
+
+```
+
+
 The cells were captured at `r length(unique(cell.meta$capture))` distinct
 time points.
 ```{r cellCaptureTimes, echo=FALSE}
