@@ -1,0 +1,227 @@
+---
+title: DeLorean analysis of Shalek et al. primary mouse bone-marrow-derived dendritic cells data
+author: John Reid
+bibliography: DeLorean.bib
+output: html_document
+---
+
+```{r build, echo=FALSE, eval=FALSE}
+library(devtools)
+load_all('..')
+library(rmarkdown)
+fit.model <- TRUE
+render('Shalek-DeLorean.Rmd')
+
+```
+
+<!--
+%\VignetteEngine{knitr::rmarkdown}
+%\VignetteIndexEntry{DeLorean analysis of Shalek et al. primary mouse bone-marrow-derived dendritic cells data}
+-->
+
+
+```{r config, echo=FALSE, message=FALSE}
+library(knitr)
+library(knitcitations)
+library(rmarkdown)
+#
+# knitr options
+#
+opts_chunk$set(
+    fig.path = 'figures/Shalek-',
+    stop_on_error = TRUE,
+    fig.width = 12.5,
+    fig.height = 8)
+#
+# Citations
+#
+cleanbib()
+cite_options(
+    # hyperlink = 'to.doc',
+    hyperlink = TRUE,
+    # style = 'html',
+    # citation_format = 'text',
+    citation_format = "pandoc",
+    cite.style = "numeric",
+    check.entries = TRUE)
+    # hyperlink = TRUE)
+bib <- read.bibtex("DeLorean.bib")
+if (file.exists("config.R")) {
+    source("config.R")
+}
+#
+# Widths for saving figures
+#
+text.width <- 4.79  # LaTeX width in inches
+golden.ratio <- 1.618  # Pleasing ratio
+fig.width <- text.width
+fig.height <- text.width / golden.ratio
+
+```
+
+```{r loadLibs, echo=FALSE, message=FALSE}
+# suppressMessages(loadfonts())
+library(DeLorean)
+#
+# Stylesheet
+#
+options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
+                                               package="DeLorean"))
+font.family <- "Verdana"
+font.theme <- theme_update(text=element_text(family=font.family))
+theme_set(font.theme)
+
+```
+
+`r date()`
+
+
+`r citet(bib[["shalek_single-cell_2014"]])`
+
+
+# Data
+
+Shalek et al.'s data is available in the `DeLorean` R package.
+```{r loadLib, eval=fit.model}
+library(DeLorean)
+data(ShalekDeLorean)
+
+```
+
+
+Build the `DeLorean` object.
+```{r buildDL, eval=fit.model}
+dl <- de.lorean(
+    shalek.A.expr,
+    shalek.A.gene.meta,
+    shalek.A.cell.meta)
+
+```
+
+
+Filter out the cells we want for the time course.
+```{r filterTimeCourse, eval=fit.model}
+time.course.cells <- (
+    dl$cell.meta
+    %>% filter(! is.na(total),
+               "" == assay,
+               "LPS" == stimulant | "" == stimulant,
+               "" == ko,
+               FALSE == disrupted,
+               total > 1e6,
+               "" == replicate))
+dl <- filter.cells(dl, function(cells) cells %in% time.course.cells$cell)
+
+```
+
+
+Only use induced genes that have been assigned to a cluster.
+```{r useInducedGenes, eval=fit.model}
+induced.genes <- dl$gene.meta %>% filter(! is.na(cluster))
+dl <- filter.genes(dl, function(genes) genes %in% induced.genes$gene)
+
+```
+```{r child=report.file("data")}
+```
+
+
+
+
+# Estimate hyperparameters
+
+Examine data for empirical Bayes estimation of hyperparameters.
+```{r empiricalBayes, eval=fit.model}
+dl <- estimate.hyper(
+    dl,
+    sigma.tau=.5,
+    delta=.5)
+
+```
+```{r child=report.file("hyper-parameters")}
+```
+
+
+# Choose genes and cells
+
+Choose genes: take those with highest variance between time points
+relative to the noise level.
+```{r filterGenes, eval=fit.model}
+max.genes <- min(getOption("Shalek.max.genes", 150))
+genes.for.stan <- (
+    dl$gene.var %>% arrange(-psi.bar) %>% head(max.genes))
+dl <- filter.genes(dl, function(genes) genes %in% genes.for.stan$gene)
+
+```
+
+Choose a few cells.
+```{r filterCells, eval=fit.model}
+set.seed(1)
+dl <- filter.cells(dl, number=getOption("Shalek.max.cells", 51))
+
+```
+
+
+Save expression data and meta data.
+```{r saveInput, eval=fit.model}
+saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
+        file='Shalek-input.rds')
+
+```
+
+Format the data for Stan and fit the model.
+```{r fitModel, eval=fit.model}
+dl <- format.for.stan(dl)
+dl <- compile.model.simple(dl)
+dl <- find.best.tau(dl)
+system.time(dl <- fit.model(dl))
+
+```
+
+
+# Examine convergence.
+
+```{r examConv}
+dl <- examine.convergence(dl)
+```
+```{r child=report.file("convergence")}
+```
+
+
+# Analyse posterior
+
+Examine posterior.
+```{r posterior}
+dl <- process.posterior(dl)
+dl <- analyse.noise.levels(dl)
+
+```
+```{r child=report.file("posterior")}
+```
+
+
+# Profiles
+
+Calculate expression profiles.
+```{r makePredictions}
+dl <- make.predictions(dl)
+```
+```{r child=report.file("profiles")}
+```
+
+
+
+```{r echo=FALSE}
+# Save DeLorean object without fit component
+saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Shalek.rds")
+```
+
+
+```{r date}
+date()
+```
+
+
+R version and packages used:
+```{r Rversion}
+sessionInfo()
+```
