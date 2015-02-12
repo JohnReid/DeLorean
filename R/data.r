@@ -177,7 +177,35 @@ NULL
 #'     about the cells
 #' }
 #'
-#' @source \url{http://www.plantcell.org/content/24/9/3530.long}
+#' @source \url{www.cell.com/article/S1934590910001141/abstract}
+#'
+NULL
+
+
+#' Shalek et al. assayed primary mouse bone-marrow-derived dendritic cells
+#' under several conditions.
+#'
+#' @docType data
+#' @keywords datasets
+#'
+#' @name shalek.A.expr
+#' @aliases shalek.A.cell.meta
+#' @aliases shalek.A.gene.meta
+#'
+#' @usage data(ShalekDeLorean)
+#'
+#' @format There are three objects in this data:
+#' \itemize{
+#'   \item shalek.A A matrix of log expression values with
+#'     no missing data. Rows are named by genes and columns are
+#'     named by cells/samples.
+#'   \item shalek.A.gene.meta A data frame containing meta-data
+#'     about the genes.
+#'   \item shalek.A.cell.meta A data frame containing meta-data
+#'     about the cells
+#' }
+#'
+#' @source \url{http://www.nature.com/nature/journal/v510/n7505/full/nature13437.html}
 #'
 NULL
 
