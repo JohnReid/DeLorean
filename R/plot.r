@@ -9,7 +9,8 @@ plot.de.lorean <- function(dl, type="profiles", ...) {
         profiles=plot.profiles(dl, ...),
         S.posteriors=plot.S.posteriors(dl, ...),
         pseudotime=plot.pseudotime(dl, ...),
-        convergence=plot.convergence(dl, ...)
+        convergence=plot.convergence(dl, ...),
+        expr.data=plot.expr.data(dl, ...)
     )
     if (is.null(result)) {
         stop('Unknown plot type')
@@ -268,4 +269,49 @@ plot.add.expr <- function(gp, .data=NULL)
 }
 
 
+#' Plot the expression data by the capture points
+#'
+#' @param dl de.lorean object
+#' @param genes Genes to plot. If NULL plots some random varying genes.
+#'
+#' @export
+#'
+plot.expr.data <- function(dl, genes=NULL, num.genes=12) {
+    with(dl, {
+         if (is.null(genes)) {
+             num.to.sample <- min(nrow(gene.meta), num.genes * 10)
+             sample.genes <- sample(gene.meta$gene, num.to.sample)
+             expr.l <- (
+                 expr[sample.genes,]
+                 %>% melt(varnames=c("gene", "cell"), value.name="x"))
+             variation <- (
+                 expr.l
+                 %>% group_by(gene)
+                 %>% summarise(var=var(x))
+                 %>% arrange(-var))
+             if (nrow(variation > num.genes)) {
+                 variation <- variation %>% head(num.genes)
+             }
+             genes <- variation$gene
+         } else {
+            expr.l <- (
+                expr[genes,]
+                %>% melt(varnames=c("gene", "cell"), value.name="x"))
+         }
+         stopifnot(all(genes %in% rownames(expr)))
+         expr.l <- (
+            expr.l
+            %>% mutate(cell=factor(cell, levels=levels(cell.meta$cell)))
+            %>% left_join(cell.meta))
+        (ggplot(expr.l %>% filter(gene %in% genes),
+                aes(x=capture, y=x))
+            #+ geom_boxplot()
+            + geom_violin()
+            + stat_summary(fun.y=mean,
+                           colour="red",
+                           aes(group=gene),
+                           geom="line")
+            + facet_wrap(~ gene))
+    })
+}
 
