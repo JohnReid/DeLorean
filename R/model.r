@@ -107,17 +107,20 @@ estimate.hyper <- function(
 #' Filter genes
 #'
 #' @param dl de.lorean object
+#' @param .filter Function that gakes a list of genes as input and returns
+#'     a vector of TRUE/FALSE
+#' @param number Number to sample if filter function not supplied.
 #'
 #' @export
 #'
-filter.genes <- function(dl, gene.filter) {
+filter.genes <- function(dl, .filter=NULL, number=NULL) {
+    if (is.null(.filter)) {
+        sampled <- sample(rownames(dl$expr), number)
+        .filter <- function(genes) genes %in% sampled
+    }
     within(dl, {
-        if( ! is.null(gene.filter) ) {
-            # .genes.filtered <- rownames(expr)[opts$gene.filter(rownames(expr))]
-            expr <- expr[gene.filter(rownames(expr)),]
-            # rownames(expr) <- .genes.filtered
-            message("Have ", nrow(expr), " genes after filtering")
-        }
+        expr <- expr[.filter(rownames(expr)),]
+        message("Have ", nrow(expr), " genes after filtering")
     })
 }
 
@@ -125,17 +128,24 @@ filter.genes <- function(dl, gene.filter) {
 #' Filter cells
 #'
 #' @param dl de.lorean object
+#' @param .filter Function that gakes a list of cells as input and returns
+#'     a vector of TRUE/FALSE
+#' @param number Number to sample if filter function not supplied.
 #'
 #' @export
 #'
-filter.cells <- function(dl, cell.filter) {
+filter.cells <- function(dl, .filter=NULL, number=NULL) {
+    if (is.null(.filter)) {
+        stopifnot(! is.null(number))
+        sampled <- sample(colnames(dl$expr), number)
+        .filter <- function(cells) cells %in% sampled
+    }
     within(dl, {
-        if( ! is.null(cell.filter) ) {
-            expr <- expr[,cell.filter(colnames(expr))]
-            message("Have ", ncol(expr), " cells after filtering")
-        }
+        expr <- expr[,.filter(colnames(expr))]
+        message("Have ", ncol(expr), " cells after filtering")
     })
 }
+
 
 #' Sample genes and cells
 #'
@@ -162,6 +172,7 @@ sample.genes.and.cells <- function(
         }
     })
 }
+
 
 #' Format for Stan
 #'
