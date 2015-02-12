@@ -128,7 +128,6 @@ sum(is.na(supp.table.2$cell))
 cell.meta.A <- (
     cell.meta.A
     %>% left_join(supp.table.2 %>% select(cell, total, aligned)))
-dim(tmp)
 dim(cell.meta.A)
 # Check which cells in table 2 have more than one match
 print(
@@ -238,7 +237,7 @@ gene.meta.B <- data.frame(gene=factor(genes.B, levels=genes.B))
 
 Save the data in a format suitable for DeLorean package.
 ```{r saveData}
-shalek.A.expr <- as.matrix(shalek.A)
+shalek.A.expr <- log(as.matrix(shalek.A)+1)
 shalek.A.cell.meta <- cell.meta.A
 shalek.A.gene.meta <- gene.meta.A
 # Test we can construct a DeLorean object
