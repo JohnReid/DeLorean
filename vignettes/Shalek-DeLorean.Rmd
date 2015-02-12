@@ -146,7 +146,7 @@ dl <- estimate.hyper(
 Choose genes: take those with highest variance between time points
 relative to the noise level.
 ```{r filterGenes, eval=fit.model}
-max.genes <- min(getOption("Shalek.max.genes", 150))
+max.genes <- min(getOption("Shalek.max.genes", 49))
 genes.for.stan <- (
     dl$gene.var %>% arrange(-psi.bar) %>% head(max.genes))
 dl <- filter.genes(dl, function(genes) genes %in% genes.for.stan$gene)
