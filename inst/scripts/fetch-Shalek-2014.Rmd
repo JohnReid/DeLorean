@@ -65,38 +65,41 @@ genes.A <- rownames(shalek.A)
 class(shalek.A)
 dim(shalek.A)
 sapply(shalek.A, class)
+gene.meta.A <- data.frame(gene=factor(genes.A, levels=genes.A))
 gp <- qplot(as.vector(as.matrix(shalek.A[sample(nrow(shalek.A), 1000),
                                          sample(ncol(shalek.A), 100)])))
 pdf("Shalek-expr.pdf")
 print(gp + scale_x_log10())
 dev.off()
+
 cell.re.A <- str_c(
     '^',
-    '(?:(IFNB|Tube|On_Chip|Ifnar1|Stat1|Tnfr)_)?',
-    '(?:(KO|Control|Stimulation)_)?',
-    '(?:(Unstimulated|LPS|PAM|PIC)_)?',
-    '(?:([[:digit:]]+)h_)?',
+    '(?:(Tube_Control|On_Chip_Stimulation)_)?',
+    '(?:(Ifnar1|Stat1|Tnfr)_KO_)?',
+    '(?:(IFNB|LPS|PAM|PIC)_)?',
+    '(?:(Unstimulated|[[:digit:]]+h)_)?',
     '(?:(Replicate)_)?',
-    '(?:(S[[:digit:]]+)_)?',
+    '(?:S([[:digit:]]+)_)?',
     '$')
 cell.meta.A <- (
     as.data.frame(str_match(str_c(names(shalek.A), '_'), cell.re.A))
-    %>% select(cell=V1, genetic=V2, control=V3, stimulant=V4,
-               capture=V5, replicate=V6, cell.id=V7)
+    %>% select(cell=V1, assay=V2, ko=V3, stimulant=V4,
+               capture=V5, replicate=V6, cell.num=V7)
     %>% mutate(cell=factor(str_replace(cell, "_$", ""), levels=cells.A),
-               obstime=as.numeric(ifelse(""==capture, "0", capture)),
-               capture=factor(capture, ordered=TRUE)))
+               cell.num=as.numeric(as.character(cell.num)),
+               capture=factor(capture,
+                              ordered=TRUE,
+                              levels=c("Unstimulated", "1h", "2h", "4h", "6h")),
+               obstime=as.numeric(ifelse("Unstimulated"==capture, "0",
+                                  str_match(capture, "[[:digit:]]+")))))
 sample_n(cell.meta.A, 20)
 stopifnot(all(! is.na(cell.meta.A[,1])))
 which(is.na(cell.meta.A[,1]))
 sapply(cell.meta.A %>% select(-1), levels)
 sapply(cell.meta.A, class)
 nrow(cell.meta.A)
-# cell.meta.A %>% filter("LPS"==stimulant, "" == genetic)
-# cell.meta.A %>% filter("PIC" == stimulant, 2==capture)
-# cell.meta.A %>% filter("Stat1" == genetic)
+# cell.meta.A %>% filter(""!=assay)
 
-gene.meta.A <- data.frame(gene=factor(genes.A, levels=genes.A))
 
 ```
 
@@ -110,23 +113,31 @@ supp.table.2 <- (
                aligned=Aligned.Reads....Transcriptome.)
     %>% mutate(cell.orig=cell,
                cell.1=cell
-                      %>% str_replace("Technical_Replicate_1_", "")
-                      %>% str_replace("Technical_Replicate_2_", "Replicate_")
+                      %>% str_replace("Technical_Replicate_1_", "Replicate_1_")
+                      %>% str_replace("Technical_Replicate_2_", "Replicate_2_")
                       %>% str_replace("_Unstim_", "_Unstimulated_")
                       %>% str_replace("_rsem$", ""),
-               cell=factor(cell.1, levels=cells.A))
-    %>% select(-cell.1))
+               cell=factor(cell.1, levels=cells.A)))
+    #%>% select(-cell.1))
 sapply(supp.table.2, class)
 dim(supp.table.2)
 sum(is.na(supp.table.2$cell))
+# Which cells failed to map
+# supp.table.2 %>% filter(is.na(cell))
+# Update cell meta data with Table 2
 cell.meta.A <- (
     cell.meta.A
     %>% left_join(supp.table.2 %>% select(cell, total, aligned)))
-# supp.table.2 %>% filter(is.na(cell))
-
-# cell.meta.A %>% filter("LPS" == stimulant, "4" == capture, "" == genetic)
-# cell.meta.A %>% filter("On_Chip" == genetic)
-# sapply(cell.meta.A %>% select(-1), levels)
+dim(tmp)
+dim(cell.meta.A)
+# Check which cells in table 2 have more than one match
+print(
+    supp.table.2
+    %>% group_by(cell)
+    %>% summarise(num=n())
+    %>% arrange(-num)
+    %>% filter(num > 1)
+)
 
 ```
 
@@ -148,7 +159,7 @@ gene.meta.A <- gene.meta.A %>% left_join(supp.table.3)
 ```
 
 
-Investigate the cluster disruption markers
+Investigate the cluster disruption markers.
 ```{r clusterDisruption}
 cluster.disrupt <- (
     t(as.matrix(shalek.A[c('SERPINB6B', 'LYZ1'),]))
@@ -172,8 +183,10 @@ cell.meta.A <- cell.meta.A %>% left_join(cluster.disrupt %>% select(cell, disrup
 Have a look at which cells might be useful for modelling.
 ```{r LPSforModeling}
 cell.meta.A %>% filter(! is.na(total),
-                       "LPS" == stimulant,
-                       "" == genetic,
+                       "" == assay,
+                       # str_detect(stimulant, "LPS|Unstimulated"),
+                       "LPS" == stimulant | "" == stimulant,
+                       "" == ko,
                        FALSE == disrupted,
                        total > 1e6,
                        "" == replicate)
@@ -212,7 +225,7 @@ cell.re.B <- str_c(
 names(shalek.B)
 cell.meta.B <- (
     as.data.frame(str_match(names(shalek.B), cell.re.B))
-    %>% select(genetic=V2, t=V3, cell=V4))
+    %>% select(ko=V2, t=V3, cell=V4))
 sample_n(cell.meta.B, 20)
 stopifnot(all(! is.na(cell.meta.B[,1])))
 which(is.na(cell.meta.B[,1]))
@@ -230,6 +243,7 @@ shalek.A.cell.meta <- cell.meta.A
 shalek.A.gene.meta <- gene.meta.A
 # Test we can construct a DeLorean object
 dl <- de.lorean(shalek.A.expr, shalek.A.gene.meta, shalek.A.cell.meta)
+# Save
 save(shalek.A.expr,
      shalek.A.gene.meta,
      shalek.A.cell.meta,
