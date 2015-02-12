@@ -134,7 +134,8 @@ Examine data for empirical Bayes estimation of hyperparameters.
 dl <- estimate.hyper(
     dl,
     sigma.tau=.5,
-    delta=.5)
+    delta=.5,
+    length.scale=1.5)
 
 ```
 ```{r child=report.file("hyper-parameters")}
@@ -146,7 +147,7 @@ dl <- estimate.hyper(
 Choose genes: take those with highest variance between time points
 relative to the noise level.
 ```{r filterGenes, eval=fit.model}
-max.genes <- min(getOption("Shalek.max.genes", 49))
+max.genes <- min(getOption("Shalek.max.genes", 59))
 genes.for.stan <- (
     dl$gene.var %>% arrange(-psi.bar) %>% head(max.genes))
 dl <- filter.genes(dl, function(genes) genes %in% genes.for.stan$gene)
