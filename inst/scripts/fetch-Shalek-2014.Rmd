@@ -83,7 +83,9 @@ cell.meta.A <- (
     as.data.frame(str_match(str_c(names(shalek.A), '_'), cell.re.A))
     %>% select(cell=V1, genetic=V2, control=V3, stimulant=V4,
                capture=V5, replicate=V6, cell.id=V7)
-    %>% mutate(cell=factor(str_replace(cell, "_$", ""), levels=cells.A)))
+    %>% mutate(cell=factor(str_replace(cell, "_$", ""), levels=cells.A),
+               obstime=as.numeric(ifelse(""==capture, "0", capture)),
+               capture=factor(capture, ordered=TRUE)))
 sample_n(cell.meta.A, 20)
 stopifnot(all(! is.na(cell.meta.A[,1])))
 which(is.na(cell.meta.A[,1]))
@@ -94,7 +96,7 @@ nrow(cell.meta.A)
 # cell.meta.A %>% filter("PIC" == stimulant, 2==capture)
 # cell.meta.A %>% filter("Stat1" == genetic)
 
-gene.meta.A <- data.frame(gene=genes.A)
+gene.meta.A <- data.frame(gene=factor(genes.A, levels=genes.A))
 
 ```
 
@@ -112,16 +114,36 @@ supp.table.2 <- (
                       %>% str_replace("Technical_Replicate_2_", "Replicate_")
                       %>% str_replace("_Unstim_", "_Unstimulated_")
                       %>% str_replace("_rsem$", ""),
-               cell=factor(cell.1, levels=cells.A)))
+               cell=factor(cell.1, levels=cells.A))
+    %>% select(-cell.1))
 sapply(supp.table.2, class)
 dim(supp.table.2)
 sum(is.na(supp.table.2$cell))
-cell.meta.A <- cell.meta.A %>% left_join(supp.table.2 %>% select(cell, total, aligned))
+cell.meta.A <- (
+    cell.meta.A
+    %>% left_join(supp.table.2 %>% select(cell, total, aligned)))
 # supp.table.2 %>% filter(is.na(cell))
 
 # cell.meta.A %>% filter("LPS" == stimulant, "4" == capture, "" == genetic)
 # cell.meta.A %>% filter("On_Chip" == genetic)
 # sapply(cell.meta.A %>% select(-1), levels)
+
+```
+
+
+Load supplementary table 3.
+```{r suppTable3}
+supp.table.3 <- (
+    read.csv('../../data/Shalek-2014-Supp-Table-3.csv')
+    %>% rename(gene=GENE,
+               cluster=CLUSTER,
+               RefSeq=REFSEQ)
+    %>% mutate(gene=factor(gene, levels=genes.A)))
+sapply(supp.table.3, class)
+dim(supp.table.3)
+sum(is.na(supp.table.3$gene))
+which(is.na(supp.table.3$gene))
+gene.meta.A <- gene.meta.A %>% left_join(supp.table.3)
 
 ```
 
@@ -179,6 +201,8 @@ Now we parse B.
 ```{r parseB}
 csv.filename <- '../../data/GSE48968_allgenesTPM_GSM1406531_GSM1407094.txt.gz'
 shalek.B <- read.csv(csv.filename, sep='\t')
+genes.B <- rownames(shalek.B)
+cells.B <- colnames(shalek.B)
 cell.re.B <- str_c(
     '^',
     '(wps|tr[1234]|gp[abc]|hero|ifnr)_',
@@ -194,7 +218,7 @@ stopifnot(all(! is.na(cell.meta.B[,1])))
 which(is.na(cell.meta.B[,1]))
 sapply(cell.meta.B, levels)
 
-gene.meta.B <- data.frame(gene=rownames(shalek.B))
+gene.meta.B <- data.frame(gene=factor(genes.B, levels=genes.B))
 
 ```
 
@@ -202,8 +226,10 @@ gene.meta.B <- data.frame(gene=rownames(shalek.B))
 Save the data in a format suitable for DeLorean package.
 ```{r saveData}
 shalek.A.expr <- as.matrix(shalek.A)
-shalek.A.cell.meta <- shalek.cell.meta.A
-shalek.A.gene.meta <- shalek.gene.meta.A
+shalek.A.cell.meta <- cell.meta.A
+shalek.A.gene.meta <- gene.meta.A
+# Test we can construct a DeLorean object
+dl <- de.lorean(shalek.A.expr, shalek.A.gene.meta, shalek.A.cell.meta)
 save(shalek.A.expr,
      shalek.A.gene.meta,
      shalek.A.cell.meta,
