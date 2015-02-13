@@ -262,7 +262,6 @@ core.antiviral <- (
 precocious <- core.antiviral %>% filter("1h" == capture) %>% head(2)
 precocious
 precocious$cell
-
 # Plot the core antiviral, the maturity, the peaked inflammation and
 # the sustained inflammation module scores against pseudotime.
 (ggplot(module.scores
@@ -271,8 +270,8 @@ precocious$cell
         aes(x=tau, y=module.score, colour=cluster))
     + stat_smooth()
     + geom_point())
-
-(ggplot(module.scores
+# Same with just core antiviral coloured by capture
+(ggplot(module.scores %>% left_join(dl$cell.meta %>% select(cell, capture))
         %>% filter(! is.na(tau),
                    cluster == "Id"),
         aes(x=tau, y=module.score, colour=capture))
