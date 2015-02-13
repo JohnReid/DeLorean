@@ -154,10 +154,18 @@ dl <- filter.genes(dl, function(genes) genes %in% genes.for.stan$gene)
 
 ```
 
-Choose a few cells.
+Choose a few cells but make sure we have the precocious cells.
 ```{r filterCells, eval=fit.model}
 set.seed(1)
-dl <- filter.cells(dl, number=getOption("Shalek.max.cells", 51))
+num.cells <- getOption("Shalek.max.cells", 51)
+sampled.cells <- sample(colnames(dl$expr), num.cells)
+if (! "LPS_1h_S51" %in% sampled.cells) {
+    sampled.cells[1] <- "LPS_1h_S51"
+}
+if (! "LPS_1h_S52" %in% sampled.cells) {
+    sampled.cells[2] <- "LPS_1h_S52"
+}
+dl <- filter.cells(dl, function(cells) cells %in% sampled.cells)
 
 ```
 
@@ -211,11 +219,67 @@ dl <- make.predictions(dl)
 
 
 
+Save DeLorean object.
 ```{r echo=FALSE}
-# Save DeLorean object without fit component
+# Remove large fit component
 saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Shalek.rds")
+# dl <- readRDS("Shalek.rds")
 ```
 
+
+```{r clusterAnalysis}
+clustered <- dl$gene.meta %>% filter(! is.na(cluster))
+clustered.expr <- shalek.A.expr[clustered$gene,time.course.cells$cell]
+# rownames(clustered.expr)
+# colnames(clustered.expr)
+melt.expr <- function(dl, expr=dl$expr) {
+    (
+        expr
+        %>% melt(varnames=c("gene", "cell"), value.name="x")
+        %>% mutate(gene=factor(gene, levels=levels(dl$gene.meta[["gene"]])),
+                   cell=factor(cell, levels=levels(dl$cell.meta[["cell"]])))
+    )
+}
+clustered.expr.l <- (
+    melt.expr(dl, clustered.expr)
+    %>% left_join(dl$gene.meta))
+names(clustered.expr.l)
+# sample_n(clustered.expr.l, 14)
+module.scores <- (
+    clustered.expr.l
+    %>% group_by(cluster, cell)
+    %>% summarise(module.score=mean(x))
+    %>% left_join(dl$samples.l$tau
+                  %>% filter(dl$best.sample == iter)
+                  %>% select(cell, tau)))
+# Find the precocious cells
+core.antiviral <- (
+    module.scores
+    %>% left_join(dl$cell.meta %>% select(cell, capture))
+    %>% filter("Id" == cluster)
+    %>% arrange(-module.score))
+(ggplot(core.antiviral, aes(x=module.score, color=capture)) + geom_density())
+precocious <- core.antiviral %>% filter("1h" == capture) %>% head(2)
+precocious
+precocious$cell
+
+# Plot the core antiviral, the maturity, the peaked inflammation and
+# the sustained inflammation module scores against pseudotime.
+(ggplot(module.scores
+        %>% filter(! is.na(tau),
+                   cluster %in% c("Id", "IIIb", "IIIc", "IIId")),
+        aes(x=tau, y=module.score, colour=cluster))
+    + stat_smooth()
+    + geom_point())
+
+(ggplot(module.scores
+        %>% filter(! is.na(tau),
+                   cluster == "Id"),
+        aes(x=tau, y=module.score, colour=capture))
+    + stat_smooth(aes(group=""))
+    + geom_point())
+
+```
 
 ```{r date}
 date()
