@@ -133,9 +133,9 @@ Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes, eval=fit.model}
 dl <- estimate.hyper(
     dl,
-    sigma.tau=.5,
+    sigma.tau=1.5,
     delta=.5,
-    length.scale=1.5)
+    length.scale=2)
 
 ```
 ```{r child=report.file("hyper-parameters")}
