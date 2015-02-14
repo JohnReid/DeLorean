@@ -148,8 +148,12 @@ Choose genes: take those with highest variance between time points
 relative to the noise level.
 ```{r filterGenes, eval=fit.model}
 max.genes <- min(getOption("Shalek.max.genes", 59))
+core.antiviral.genes <- dl$gene.meta %>% filter("Id" == cluster)
 genes.for.stan <- (
-    dl$gene.var %>% arrange(-psi.bar) %>% head(max.genes))
+    dl$gene.var
+    %>% filter(gene %in% core.antiviral.genes$gene)
+    %>% arrange(-psi.bar)
+    %>% head(max.genes))
 dl <- filter.genes(dl, function(genes) genes %in% genes.for.stan$gene)
 
 ```
@@ -277,6 +281,11 @@ precocious$cell
         aes(x=tau, y=module.score, colour=capture))
     + stat_smooth(aes(group=""))
     + geom_point())
+
+# Examine what pseudotimes the model estimated for the precocious genes
+( dl$samples.l$tau
+    %>% filter(dl$best.sample == iter,
+               cell %in% c("LPS_1h_S51", "LPS_1h_S52")))
 
 ```
 
