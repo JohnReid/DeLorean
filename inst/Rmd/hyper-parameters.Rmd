@@ -16,7 +16,6 @@ $$
 which has this density over genes:
 ```{r geneMean}
 (ggplot(gene.expr, aes(x=x.mean)) + geom_density() + geom_rug())
-
 ```
 
 Now we estimate the cell size factors. We use the median for robustness and
@@ -34,6 +33,12 @@ distribution. The estimated cell size factors have this density
                                           sd=hyper$sigma_S),
                     colour="blue", alpha=.7, linetype="dashed")
 )
+
+```
+```{r cellSizeFactorsByCapture}
+(ggplot(cell.expr %>% left_join(cell.meta),
+        aes(x=capture, y=S.hat))
+    + geom_boxplot())
 
 ```
 
