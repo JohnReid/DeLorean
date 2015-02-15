@@ -25,7 +25,7 @@ The full tau posterior for each cell.
 ### Cell sizes
 
 The posterior for the cell size factors $S_c$:
-```{r posteriorS}
+```{r posteriorS, eval=opts$estimate.phi}
 (ggplot(samples.l$S, aes(x=S))
     + geom_density()
     + geom_rug()
@@ -37,7 +37,7 @@ The posterior for the cell size factors $S_c$:
 ```
 
 The posterior for the cell size factors by cell:
-```{r sizeFactorsByCell}
+```{r sizeFactorsByCell, eval=opts$estimate.phi}
 plot(dl, type="S.posteriors")
 ```
 
@@ -45,7 +45,7 @@ plot(dl, type="S.posteriors")
 ### Gene means
 
 The posterior for the gene means $\phi_g$:
-```{r posteriorPhi}
+```{r posteriorPhi, eval=opts$estimate.phi}
 (ggplot(samples.l$phi, aes(x=phi))
     + geom_density()
     + geom_rug()
@@ -57,7 +57,7 @@ The posterior for the gene means $\phi_g$:
 ```
 
 The posterior for the gene means $\phi_g$ by gene:
-```{r posteriorPhiByGene}
+```{r posteriorPhiByGene, eval=opts$estimate.phi}
 (ggplot(samples.l$phi,
         aes(x=factor(g), y=phi))
     + geom_boxplot())

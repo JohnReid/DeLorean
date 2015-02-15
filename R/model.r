@@ -13,9 +13,24 @@ estimate.hyper <- function(
     sigma.tau = .5,
     delta = .5,
     min.sd = 1e-10,
-    length.scale = NULL
+    length.scale = NULL,
+    model.name = 'simplest-model'
 ) {
     within(dl, {
+        #
+        # Remember options that depend on the model
+        #
+        opts$model.name <- model.name
+        opts$estimate.phi <- switch(
+            opts$model.name,
+            "simple-model" = TRUE,
+            "simplest-model" = FALSE,
+            NA)
+        opts$adjust.cell.sizes <- switch(
+            opts$model.name,
+            "simple-model" = TRUE,
+            "simplest-model" = FALSE,
+            NA)
         #
         # Set up temporal hyper-parameters
         #
@@ -45,11 +60,14 @@ estimate.hyper <- function(
             %>% summarise(S.hat=median(x - x.mean))
         )
         stopifnot(! is.na(cell.expr))
-        # Adjust the expression by the cell size estimates
-        expr.l <- (expr.l
-            %>% left_join(cell.expr)
-            %>% mutate(x.hat=x - S.hat)
-        )
+        expr.l <- expr.l %>% left_join(cell.expr)
+        if (opts$adjust.cell.sizes) {
+            # Adjust the expression by the cell size estimates
+            expr.l <- expr.l %>% mutate(x.hat=x - S.hat)
+        } else {
+            # Use the raw expression values
+            expr.l <- expr.l %>% mutate(x.hat=x)
+        }
         stopifnot(! is.na(expr.l))
         # Resummarise the adjusted expression data
         gene.expr <- (expr.l
@@ -212,6 +230,11 @@ format.for.stan <- function(
             "within.time.mislabelled", "omega.hat", "psi.hat")
         ]))
         #
+        # Rename phi.hat if we are not estimating phi
+        if (! opts$estimate.phi) {
+            gene.map <- gene.map %>% rename(phi=phi.hat)
+        }
+        #
         # Calculate the map from cell indices to genes and their meta data
         cell.map <- (data.frame(c=1:.C,
                                 cell=factor(colnames(stan.m),
@@ -250,28 +273,42 @@ format.for.stan <- function(
                 period=opts$period
             )
         )
+        # If we're not estimating phi, add it to the data
+        if (! opts$estimate.phi) {
+            stan.data$phi <- gene.map$x.mean
+        }
     })
 }
 
-#' Define and compile a simple model without dropout
+#' Define and compile the model.
 #'
 #' @param dl de.lorean object
 #'
 #' @export
 #'
-compile.model.simple <- function(dl) {
-    stan.model.file <- system.file('inst/Stan/simple-model.stan',
+compile.model <- function(dl) {
+    sprintf('inst/Stan/%s.stan', dl$opts$model.name)
+    stan.model.file <- system.file(sprintf('inst/Stan/%s.stan',
+                                           dl$opts$model.name),
                                    package='DeLorean')
+    stopifnot(! is.null(stan.model.file))
+    stopifnot("" != stan.model.file)
     data.dir <- system.file('data', package='DeLorean')
-    compiled.model.file <- paste(data.dir, "simple-model.rds", sep='/')
+    compiled.model.file <- paste(data.dir,
+                                 sprintf("%s.rds", dl$opts$model.name),
+                                 sep='/')
     within(dl, {
-        if (file.exists(compiled.model.file)) {
-            # message("Loading pre-compiled model from ", compiled.model.file)
+        if (file.exists(compiled.model.file)
+            &&
+            file.info(compiled.model.file)$mtime
+                > file.info(stan.model.file)$mtime)
+        {
+            message("Loading pre-compiled model from ", compiled.model.file)
             compiled <- readRDS(compiled.model.file)
         } else {
-            # message("Compiling model")
+            message("Compiling model")
             compiled <- stan(file=stan.model.file, chains=0)
-            # message("Saving compiled model to ", compiled.model.file)
+            message("Saving compiled model to ", compiled.model.file)
             saveRDS(compiled, compiled.model.file)
         }
         # Try one iteration to check everything is OK
@@ -293,12 +330,18 @@ compile.model.simple <- function(dl) {
 make.chain.init.fn <- function(dl) {
     function() {
         with(dl$stan.data, {
-            list(S=dl$cell.map$S.hat,
-                 tau=rnorm(C, mean=time, sd=sigma_tau),
-                 phi=rnorm(G, mean=mu_phi, sd=sigma_phi),
-                 psi=rlnorm(G, meanlog=mu_psi, sdlog=sigma_psi),
-                 omega=rlnorm(G, meanlog=mu_omega, sdlog=sigma_omega)
+            init <- list(
+                S=dl$cell.map$S.hat,
+                tau=rnorm(C, mean=time, sd=sigma_tau),
+                psi=rlnorm(G, meanlog=mu_psi, sdlog=sigma_psi),
+                phi=rnorm(G, mean=mu_phi, sd=sigma_phi),
+                omega=rlnorm(G, meanlog=mu_omega, sdlog=sigma_omega)
             )
+            # If not estimating phi, don't include it.
+            if (! dl$opts$estimate.phi) {
+                init$phi <- NULL
+            }
+            init
         })
     }
 }
@@ -329,14 +372,20 @@ find.best.tau <- function(
         # Define a function that chooses tau
         init.chain.find.tau <- function() {
             with(stan.data, {
-                list(alpha=cell.map$alpha.hat,
-                     beta=rep(0, G),
-                     S=cell.map$S.hat,
-                     tau=rnorm(C, time, sd=sigma_tau),
-                     phi=gene.map$phi.hat[1:G],
-                     psi=gene.map$psi.hat[1:G],
-                     omega=gene.map$omega.hat[1:G]
+                init <- list(
+                    alpha=cell.map$alpha.hat,
+                    beta=rep(0, G),
+                    S=cell.map$S.hat,
+                    tau=rnorm(C, time, sd=sigma_tau),
+                    phi=gene.map$phi.hat[1:G],
+                    psi=gene.map$psi.hat[1:G],
+                    omega=gene.map$omega.hat[1:G]
                 )
+                # If not estimating phi, don't include it.
+                if (! dl$opts$estimate.phi) {
+                    init$phi <- NULL
+                }
+                init
             })
         }
         # Define a function that calculates log probability for random seeded tau
@@ -417,13 +466,18 @@ fit.model <- function(
 #'
 examine.convergence <- function(dl) {
     within(dl, {
+        pars <- c("tau", "psi", "S", "omega")
+        if (opts$estimate.phi) {
+            pars <- c(pars, "phi")
+        }
         summ <- monitor(fit,
                         print=FALSE,
-                        pars=c("tau", "psi", "S", "phi", "omega"))
+                        pars=pars)
         ignore.names <- str_detect(rownames(summ),
                                    "^(predictedvar|predictedmean)")
         rhat.sorted <- sort(summ[! ignore.names, "Rhat"])
         rm(summ)
+        rm(pars)
     })
 }
 
@@ -457,6 +511,10 @@ process.posterior <- function(dl) {
             predictedvar=c("g", "t"),
             logmarglike=c("g")
         )
+        if (! opts$estimate.phi) {
+            sample.dims$phi <- NULL
+            sample.dims$S <- NULL
+        }
         samples.l <- melt.samples(extract(dl$fit, permuted=TRUE),
                                   sample.dims)
         best.sample <- which.max(samples.l$lp__$lp__)
@@ -528,8 +586,10 @@ make.predictions <- function(dl) {
                             predictedmean
                             %>% left_join(predictedvar)
                             # %>% left_join(S)
-                            %>% left_join(phi)
                             %>% mutate(tau=test.input[t]))
+        if (opts$estimate.phi) {
+            predictions <- predictions %>% left_join(phi)
+        }
     })
 }
 
