@@ -379,14 +379,17 @@ find.sample.order <- function(
         K <- (
             psi * cov.fn(r, stan.data$l)
             + omega * identity.matrix(nrow(r)))
+        K.chol <- chol(K)
         # Maximise the sum of the log marginal likelihoods
         ordering.search <- function(i) {
             ordering.maximise(
-                # Calculate sum of log marginal likelihoods for each gene
+                # Calculate average of log marginal likelihoods for each gene's
+                # expression values
                 function(ordering) {
-                    sum(sapply(1:stan.data$G,
+                    mean(sapply(1:stan.data$G,
                                function(g)
-                                   gp.log.marg.like(K, dl$expr[g,ordering])))
+                                   gp.log.marg.like(dl$expr[g,ordering],
+                                                    U=K.chol))) / stan.data$C
                 },
                 # Order the cells.
                 sample(1:stan.data$C))
