@@ -197,13 +197,13 @@ plot.add.mean.and.variance <- function(gp,
 #' The log marginal likelihood. See "2.3 Varying the Hyperparameters"
 #' on page 19 of Rasmumssen and Williams' book.
 #'
-#' @param K The covariance matrix (kernel)
-#' @param y The targets
+#' @param y The targets.
+#' @param K The covariance matrix (kernel), not needed if U is provided.
+#' @param U Cholesky decomposition of K (chol(K)).
 #'
 #' @export
 #'
-gp.log.marg.like <- function(K, y) {
-    U <- chol(K)
+gp.log.marg.like <- function(y, K=NULL, U=chol(K)) {
     alpha <- backsolve(U, backsolve(U, y, transpose = TRUE))
     -(
         (t(y) %*% alpha) / 2
