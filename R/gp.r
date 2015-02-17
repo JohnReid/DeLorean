@@ -193,3 +193,21 @@ plot.add.mean.and.variance <- function(gp,
                       fill=color,
                       alpha=ribbon.alpha))
 }
+
+#' The log marginal likelihood. See "2.3 Varying the Hyperparameters"
+#' on page 19 of Rasmumssen and Williams' book.
+#'
+#' @param K The covariance matrix (kernel)
+#' @param y The targets
+#'
+#' @export
+#'
+gp.log.marg.like <- function(K, y) {
+    U <- chol(K)
+    alpha <- backsolve(U, backsolve(U, y, transpose = TRUE))
+    -(
+        (t(y) %*% alpha) / 2
+        + sum(diag(U))
+        + length(y) * log(2 * pi)
+    )
+}
