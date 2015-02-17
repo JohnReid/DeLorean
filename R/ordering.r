@@ -70,6 +70,21 @@ ordering.improve <- function(fn, ordering) {
 }
 
 
+#' Invert the ordering
+#'
+#' @param ordering The permutation (ordering) to invert.
+#'
+#' @export
+#'
+ordering.invert <- function(ordering) {
+    result <- rep(0, length(ordering))
+    for (n in 1:length(result)) {
+        result[ordering[n]] <- n
+    }
+    result
+}
+
+
 #' Test ordering score: sum every time consecutive items are in
 #' order.
 #'
