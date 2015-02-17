@@ -357,7 +357,7 @@ make.chain.init.fn <- function(dl) {
 #'
 #' @export
 #'
-find.sample.order <- function(
+find.smooth.tau <- function(
     dl,
     psi = 1,
     omega = .1,
@@ -367,32 +367,37 @@ find.sample.order <- function(
 ) {
     cov.fn <- cov.matern.32
     dl$tau.inits <- with(dl, {
-        # Our timepoints are just the integer cell indices
-        tau <- 1:(nrow(cell.map))
+        # Evenly spread tau over range of capture times
+        even.tau <- with(stan.data,
+                         seq(min(time) - sigma_tau,
+                             max(time) + sigma_tau,
+                             length=C))
         # Calculate the distances
-        r <- outer(tau, tau, FUN="-")
+        r <- outer(even.tau, even.tau, FUN="-")
         # Make periodic if necessary
         if (opts$periodic) {
-            r <- cov.periodise(r, opts$periodic)
+            r <- cov.periodise(r, opts$period)
         }
         # Use the same kernel for each gene
         K <- (
             psi * cov.fn(r, stan.data$l)
             + omega * identity.matrix(nrow(r)))
-        K.chol <- chol(K)
+        # Do Cholesky decomposition once and use in each subsequent smoothing
+        U <- chol(K)
         # Maximise the sum of the log marginal likelihoods
         ordering.search <- function(i) {
-            ordering.maximise(
+            ordering.invert(ordering.maximise(
                 # Calculate average of log marginal likelihoods for each gene's
                 # expression values
                 function(ordering) {
                     mean(sapply(1:stan.data$G,
-                               function(g)
-                                   gp.log.marg.like(dl$expr[g,ordering],
-                                                    U=K.chol))) / stan.data$C
+                                function(g) {
+                                    y <- dl$expr[g,ordering]
+                                    gp.log.marg.like(y, U=U) / stan.data$C
+                                }))
                 },
-                # Order the cells.
-                sample(1:stan.data$C))
+                # Choose a random order of cells to move
+                sample(stan.data$C)))
         }
         # Run in parallel or not?
         if (use.parallel) {
@@ -402,10 +407,6 @@ find.sample.order <- function(
         } else {
             orderings <- lapply(1:num.tau.to.keep, ordering.search)
         }
-        # Evenly spread tau over range of capture times
-        tau.unordered <- seq(min(stan.data$time),
-                             max(stan.data$time),
-                             length=stan.data$C)
         # Reverse the taus if it makes them closer to the cells'
         # capture times
         rev.if.better <- function(tau) {
@@ -422,7 +423,7 @@ find.sample.order <- function(
         lapply(orderings,
             function(ordering) {
                 init <- init.chain.sample.tau(dl)
-                init$tau <- rev.if.better(tau.unordered[ordering])
+                init$tau <- rev.if.better(even.tau[ordering])
                 init
             })
     })
