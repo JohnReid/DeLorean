@@ -334,17 +334,124 @@ make.chain.init.fn <- function(dl) {
                 S=dl$cell.map$S.hat,
                 tau=rnorm(C, mean=time, sd=sigma_tau),
                 psi=rlnorm(G, meanlog=mu_psi, sdlog=sigma_psi),
-                phi=rnorm(G, mean=mu_phi, sd=sigma_phi),
                 omega=rlnorm(G, meanlog=mu_omega, sdlog=sigma_omega)
             )
-            # If not estimating phi, don't include it.
+            # If estimating phi, include it.
             if (! dl$opts$estimate.phi) {
-                init$phi <- NULL
+                init$phi <- rnorm(G, mean=mu_phi, sd=sigma_phi)
             }
             init
         })
     }
 }
+
+
+#' Find best order of the samples assuming some smooth GP prior on the
+#' expression profiles over this ordering.
+#'
+#' @param dl de.lorean object
+#' @param use.parallel Calculate in parallel
+#' @param num.cores Number of cores to run on.
+#'          Defaults to getOption("DL.num.cores", max(detectCores()-1, 1))
+#' @param num.tau.to.keep How many initialisations to keep.
+#'
+#' @export
+#'
+find.sample.order <- function(
+    dl,
+    psi = 1,
+    omega = .1,
+    use.parallel = TRUE,
+    num.cores = getOption("DL.num.cores", max(detectCores() - 1, 1)),
+    num.tau.to.keep = num.cores
+) {
+    cov.fn <- cov.matern.32
+    dl$tau.inits <- with(dl, {
+        # Our timepoints are just the integer cell indices
+        tau <- 1:(nrow(cell.map))
+        # Calculate the distances
+        r <- outer(tau, tau, FUN="-")
+        # Make periodic if necessary
+        if (opts$periodic) {
+            r <- cov.periodise(r, opts$periodic)
+        }
+        # Use the same kernel for each gene
+        K <- (
+            psi * cov.fn(r, stan.data$l)
+            + omega * identity.matrix(nrow(r)))
+        # Maximise the sum of the log marginal likelihoods
+        ordering.search <- function(i) {
+            ordering.maximise(
+                # Calculate sum of log marginal likelihoods for each gene
+                function(ordering) {
+                    sum(sapply(1:stan.data$G,
+                               function(g)
+                                   gp.log.marg.like(K, dl$expr[g,ordering])))
+                },
+                # Order the cells.
+                sample(1:stan.data$C))
+        }
+        # Run in parallel or not?
+        if (use.parallel) {
+            orderings <- mclapply(1:num.tau.to.keep,
+                                  mc.cores=num.cores,
+                                  ordering.search)
+        } else {
+            orderings <- lapply(1:num.tau.to.keep, ordering.search)
+        }
+        # Evenly spread tau over range of capture times
+        tau.unordered <- seq(min(stan.data$time),
+                             max(stan.data$time),
+                             length=stan.data$C)
+        # Reverse the taus if it makes them closer to the cells'
+        # capture times
+        rev.if.better <- function(tau) {
+            tau.rev <- rev(tau)
+            d <- tau - dl$stan.data$time
+            d.rev <- tau.rev - dl$stan.data$time
+            if (sum(d^2) > sum(d.rev^2)) {
+                tau.rev
+            } else {
+                tau
+            }
+        }
+        # Order the taus by the best orderings
+        lapply(orderings,
+            function(ordering) {
+                init <- init.chain.sample.tau(dl)
+                init$tau <- rev.if.better(tau.unordered[ordering])
+                init
+            })
+    })
+    dl
+}
+
+
+#' Choose an initialisation by sampling tau from the prior.
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+init.chain.sample.tau <- function(dl) {
+    with(dl$stan.data, {
+        init <- list(
+            alpha=dl$cell.map$alpha.hat,
+            beta=rep(0, G),
+            S=dl$cell.map$S.hat,
+            tau=rnorm(C, time, sd=sigma_tau),
+            phi=dl$gene.map$phi.hat[1:G],
+            psi=dl$gene.map$psi.hat[1:G],
+            omega=dl$gene.map$omega.hat[1:G]
+        )
+        # If not estimating phi, don't include it.
+        if (! dl$opts$estimate.phi) {
+            init$phi <- NULL
+        }
+        init
+    })
+}
+
 
 #' Find best tau to initialise chains with by using empirical Bayes parameter
 #' estimates and sampling tau from its prior.
@@ -358,57 +465,38 @@ make.chain.init.fn <- function(dl) {
 #'
 #' @export
 #'
-find.best.tau <- function(
-    dl,
-    num.tau.candidates = 6000,
-    num.tau.to.keep = NULL,
-    use.parallel = TRUE,
-    num.cores = getOption("DL.num.cores", max(detectCores() - 1, 1))
+find.best.tau <- function(dl,
+                          num.tau.candidates = 6000,
+                          num.tau.to.keep = NULL,
+                          use.parallel = TRUE,
+                          num.cores = getOption("DL.num.cores",
+                                                max(detectCores() - 1, 1))
 ) {
     if (is.null(num.tau.to.keep)) {
         num.tau.to.keep <- num.cores
     }
     within(dl, {
-        # Define a function that chooses tau
-        init.chain.find.tau <- function() {
-            with(stan.data, {
-                init <- list(
-                    alpha=cell.map$alpha.hat,
-                    beta=rep(0, G),
-                    S=cell.map$S.hat,
-                    tau=rnorm(C, time, sd=sigma_tau),
-                    phi=gene.map$phi.hat[1:G],
-                    psi=gene.map$psi.hat[1:G],
-                    omega=gene.map$omega.hat[1:G]
-                )
-                # If not estimating phi, don't include it.
-                if (! dl$opts$estimate.phi) {
-                    init$phi <- NULL
-                }
-                init
-            })
-        }
-        # Define a function that calculates log probability for random seeded tau
-        try.tau.init <- function(i) {
-            set.seed(i)
-            pars <- init.chain.find.tau()
-            list(lp=log_prob(fit, unconstrain_pars(fit, pars)),
-                tau=pars$tau)
-        }
-        # Choose tau several times and calculate log probability
-        if (use.parallel) {
-            tau.inits <- mclapply(1:num.tau.candidates,
-                                  mc.cores=num.cores,
-                                  try.tau.init)
-        } else {
-            tau.inits <- lapply(1:num.tau.candidates, try.tau.init)
-        }
-        # qplot(sapply(tau.inits, function(init) init$lp))
-        # Which tau gave highest log probability?
-        tau.inits.order <- order(sapply(tau.inits, function(init) -init$lp))
-        # Just keep so many best tau inits
-        tau.inits <- tau.inits[tau.inits.order[1:num.tau.to.keep]]
-        rm(tau.inits.order, init.chain.find.tau, try.tau.init)
+           # Define a function that calculates log probability for random seeded tau
+           try.tau.init <- function(i) {
+               set.seed(i)
+               pars <- init.chain.sample.tau(dl)
+               list(lp=log_prob(fit, unconstrain_pars(fit, pars)),
+                    tau=pars$tau)
+           }
+           # Choose tau several times and calculate log probability
+           if (use.parallel) {
+               tau.inits <- mclapply(1:num.tau.candidates,
+                                     mc.cores=num.cores,
+                                     try.tau.init)
+           } else {
+               tau.inits <- lapply(1:num.tau.candidates, try.tau.init)
+           }
+           # qplot(sapply(tau.inits, function(init) init$lp))
+           # Which tau gave highest log probability?
+           tau.inits.order <- order(sapply(tau.inits, function(init) -init$lp))
+           # Just keep so many best tau inits
+           tau.inits <- tau.inits[tau.inits.order[1:num.tau.to.keep]]
+           rm(tau.inits.order, try.tau.init)
     })
 }
 
@@ -588,7 +676,7 @@ make.predictions <- function(dl) {
                             # %>% left_join(S)
                             %>% mutate(tau=test.input[t]))
         if (opts$estimate.phi) {
-            predictions <- predictions %>% left_join(phi)
+            predictions <- predictions %>% left_join(samples.l$phi)
         }
     })
 }
