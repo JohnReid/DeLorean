@@ -10,11 +10,12 @@ Specifically designed for single cell transcriptome experiments.
 Installation
 ------------
 
-If you do not have `devtools` installed, then install it by running::
+If you do not already have `devtools` installed, then install it by running:
 
     install.packages('devtools')
 
 Now you can install the development version of `DeLorean` with:
 
+    library(devtools)
     install_github('JohnReid/DeLorean')
 
