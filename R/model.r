@@ -359,8 +359,8 @@ make.chain.init.fn <- function(dl) {
 #'
 find.smooth.tau <- function(
     dl,
-    psi = 1,
-    omega = .1,
+    psi = mean(dl$gene.map$psi.hat),
+    omega = mean(dl$gene.map$omega.hat),
     use.parallel = TRUE,
     num.cores = getOption("DL.num.cores", max(detectCores() - 1, 1)),
     num.tau.to.keep = num.cores
@@ -384,46 +384,49 @@ find.smooth.tau <- function(
             + omega * identity.matrix(nrow(r)))
         # Do Cholesky decomposition once and use in each subsequent smoothing
         U <- chol(K)
+        # Make every gene zero mean
+        expr <- t(scale(t(dl$expr), scale=FALSE, center=TRUE))
         # Maximise the sum of the log marginal likelihoods
-        ordering.search <- function(i) {
-            ordering.invert(ordering.maximise(
+        ordering.search <- function(seed) {
+            set.seed(seed)
+            ordering <- ordering.maximise(
                 # Calculate average of log marginal likelihoods for each gene's
                 # expression values
                 function(ordering) {
                     mean(sapply(1:stan.data$G,
                                 function(g) {
-                                    y <- dl$expr[g,ordering]
+                                    y <- expr[g,ordering]
                                     gp.log.marg.like(y, U=U) / stan.data$C
                                 }))
                 },
                 # Choose a random order of cells to move
-                sample(stan.data$C)))
+                sample(stan.data$C))
+            # Reverse the ordering if it makes it correlate better with
+            # the capture times
+            capture.order <- order(stan.data$time)
+            if (cor(capture.order, ordering) >
+                cor(capture.order, rev(ordering)))
+            {
+                return(ordering)
+            } else {
+                return(rev(ordering))
+            }
         }
+        # Choose seeds
+        seeds <- sample.int(.Machine$integer.max, num.tau.to.keep)
         # Run in parallel or not?
         if (use.parallel) {
-            orderings <- mclapply(1:num.tau.to.keep,
+            orderings <- mclapply(seeds,
                                   mc.cores=num.cores,
                                   ordering.search)
         } else {
-            orderings <- lapply(1:num.tau.to.keep, ordering.search)
-        }
-        # Reverse the taus if it makes them closer to the cells'
-        # capture times
-        rev.if.better <- function(tau) {
-            tau.rev <- rev(tau)
-            d <- tau - dl$stan.data$time
-            d.rev <- tau.rev - dl$stan.data$time
-            if (sum(d^2) > sum(d.rev^2)) {
-                tau.rev
-            } else {
-                tau
-            }
+            orderings <- lapply(seeds, ordering.search)
         }
         # Order the taus by the best orderings
         lapply(orderings,
             function(ordering) {
                 init <- init.chain.sample.tau(dl)
-                init$tau <- rev.if.better(even.tau[ordering])
+                init$tau <- even.tau[ordering.invert(ordering)]
                 init
             })
     })
