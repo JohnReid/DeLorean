@@ -10,7 +10,8 @@ Specifically designed for single cell transcriptome experiments.
 Installation
 ------------
 
-If you do not already have `devtools` installed, then install it by running:
+If you do not already have [`devtools`](https://github.com/hadley/devtools)
+installed, then install it by running:
 
     install.packages('devtools')
 
