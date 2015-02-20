@@ -191,9 +191,10 @@ system.time(dl <- find.smooth.tau(dl))
 system.time(dl <- fit.model(dl))
 
 set.seed(1)
-test.dl <- find.smooth.tau(dl, psi=3, omega=1)
+test.dl <- find.smooth.tau(dl, psi=5, omega=3)
+which.tau <- 4
 times <- data.frame(c=1:test.dl$stan.data$C,
-                    tau=test.dl$tau.inits[[1]]$tau)
+                    tau=test.dl$tau.inits[[which.tau]]$tau)
 expr.l <- with(test.dl,
     expr
     %>% melt(varnames=c("gene", "cell"), value.name="x")
@@ -202,10 +203,13 @@ expr.l <- with(test.dl,
     %>% left_join(test.dl$cell.map %>% select(cell, c, capture, obstime))
     %>% left_join(times)
 )
-(ggplot(expr.l, aes(x=tau, y=x, color=capture))
+gp <- (ggplot(expr.l, aes(x=tau, y=x, color=capture))
     + geom_point()
     + geom_line(aes(color=NULL), alpha=.5)
     + facet_wrap(~ gene))
+pdf('smoothed-tau.pdf', width=10)
+print(gp)
+dev.off()
 
 ```
 
