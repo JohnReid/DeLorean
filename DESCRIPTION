@@ -7,6 +7,7 @@ Depends:
     R (>= 3.0.2),
     parallel,
     rstan (>= 2.4.0),
+    coda,
     stringr (>= 0.6.2),
     dplyr (>= 0.4.1.9000),
     reshape2 (>= 1.4),

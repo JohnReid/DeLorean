@@ -354,6 +354,7 @@ make.chain.init.fn <- function(dl) {
 #' @param num.cores Number of cores to run on.
 #'          Defaults to getOption("DL.num.cores", max(detectCores()-1, 1))
 #' @param num.tau.to.keep How many initialisations to keep.
+#' @param method Method to use "maximise" or "metropolis"
 #'
 #' @export
 #'
@@ -363,7 +364,8 @@ find.smooth.tau <- function(
     omega = mean(dl$gene.map$omega.hat),
     use.parallel = TRUE,
     num.cores = getOption("DL.num.cores", max(detectCores() - 1, 1)),
-    num.tau.to.keep = num.cores
+    num.tau.to.keep = num.cores,
+    method = "maximise"
 ) {
     cov.fn <- cov.matern.32
     dl$tau.inits <- with(dl, {
@@ -389,18 +391,28 @@ find.smooth.tau <- function(
         # Maximise the sum of the log marginal likelihoods
         ordering.search <- function(seed) {
             set.seed(seed)
-            ordering <- ordering.maximise(
-                # Calculate average of log marginal likelihoods for each gene's
-                # expression values
-                function(ordering) {
-                    mean(sapply(1:stan.data$G,
-                                function(g) {
-                                    y <- expr[g,ordering]
-                                    gp.log.marg.like(y, U=U) / stan.data$C
-                                }))
-                },
-                # Choose a random order of cells to move
-                sample(stan.data$C))
+            # Calculate average of log marginal likelihoods for each gene's
+            # expression values
+            log.likelihood <- function(ordering) {
+                mean(sapply(1:stan.data$G,
+                            function(g) {
+                                y <- expr[g,ordering]
+                                gp.log.marg.like(y, U=U) / stan.data$C
+                            }))
+            }
+            # Choose a random starting point
+            init.ordering <- sample(stan.data$C)
+            metropolis.fn <- function(ordering, log.likelihood) {
+                chain <- ordering.metropolis.hastings(
+                    ordering,
+                    log.likelihood)
+                chain[dim(chain)[1],]
+            }
+            method.fn <- switch(method,
+                                "maximise"=ordering.maximise,
+                                "metropolis"=metropolis.fn,
+                                NA)
+            ordering <- method.fn(init.ordering, log.likelihood)
             # Reverse the ordering if it makes it correlate better with
             # the capture times
             capture.order <- order(stan.data$time)
