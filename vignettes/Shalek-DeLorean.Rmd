@@ -188,7 +188,6 @@ dl <- format.for.stan(dl)
 dl <- compile.model(dl)
 # dl <- find.best.tau(dl)
 system.time(dl <- find.smooth.tau(dl))
-system.time(dl <- fit.model(dl))
 
 set.seed(1)
 test.dl <- find.smooth.tau(dl, method="metropolis", use.parallel=F)
@@ -207,6 +206,8 @@ qplot(x=times$tau, y=dl$stan.data$time)
     + geom_point()
     + geom_line(aes(color=NULL), alpha=.5)
     + facet_wrap(~ gene))
+
+system.time(dl <- fit.model(dl))
 
 ```
 
