@@ -23,6 +23,18 @@ ordering.move <- function(ordering, from, to) {
 }
 
 
+#' Randomly move one item in an ordering to another location
+#'
+#' @param ordering The ordering.
+#'
+#' @export
+#'
+ordering.random.move <- function(ordering) {
+    .sample <- sample(length(ordering), 2)
+    ordering.move(ordering, .sample[1], .sample[2])
+}
+
+
 #' Find a good ordering in the sense that some function is
 #' locally maximised.
 #'
@@ -31,7 +43,7 @@ ordering.move <- function(ordering, from, to) {
 #'
 #' @export
 #'
-ordering.maximise <- function(fn, ordering) {
+ordering.maximise <- function(ordering, fn) {
     while (TRUE) {
         ordering.new <- ordering.improve(fn, ordering)
         # If we didn't improve, then break the loop
@@ -43,6 +55,38 @@ ordering.maximise <- function(fn, ordering) {
         }
     }
     ordering
+}
+
+
+#' Metropolis-Hastings on orderings.
+#'
+#' @param init.ordering Initial ordering
+#' @param loglikelihood Log likelihood function
+#' @param proposal.fn Proposal function
+#'
+#' @export
+#'
+ordering.metropolis.hastings <- function(
+    init.ordering,
+    log.likelihood,
+    proposal.fn=ordering.random.move,
+    iterations=1000)
+{
+    chain <- array(as.integer(0), dim=c(iterations+1, length(init.ordering)))
+    chain[1,] <- init.ordering
+    last.ll <- log.likelihood(chain[1,])
+    for (i in 1:iterations) {
+        proposal <- proposal.fn(chain[i,])
+        this.ll <- log.likelihood(proposal)
+        probab <- exp(this.ll - last.ll)
+        if (runif(1) < probab) {
+            chain[i+1,] <- proposal
+            last.ll <- this.ll
+        } else {
+            chain[i+1,] <- chain[i,]
+        }
+    }
+    mcmc(chain, start=1, end=iterations)
 }
 
 

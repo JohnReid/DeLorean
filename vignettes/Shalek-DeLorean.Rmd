@@ -192,7 +192,7 @@ system.time(dl <- fit.model(dl))
 
 set.seed(1)
 which.tau <- 4
-test.dl <- find.smooth.tau(dl)
+test.dl <- find.smooth.tau(dl, method="metropolis")
 times <- data.frame(c=1:test.dl$stan.data$C,
                     tau=test.dl$tau.inits[[which.tau]]$tau)
 expr.l <- with(test.dl,
