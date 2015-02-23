@@ -452,6 +452,49 @@ find.smooth.tau <- function(
 
 
 
+#' Create a log likelihood function suitable for evaluating smooth orderings.
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+ordering.log.likelihood.fn <- function(
+    dl,
+    psi = mean(dl$gene.map$psi.hat),
+    omega = mean(dl$gene.map$omega.hat),
+    cov.fn = cov.matern.32)
+{
+    with(dl, {
+        # Evenly spread tau over range of capture times
+        even.tau <- with(stan.data,
+                         seq(min(time) - sigma_tau,
+                             max(time) + sigma_tau,
+                             length=C))
+        # Calculate the distances
+        r <- outer(even.tau, even.tau, FUN="-")
+        # Make periodic if necessary
+        if (opts$periodic) {
+            r <- cov.periodise(r, opts$period)
+        }
+        # Use the same kernel for each gene
+        K <- (
+            psi * cov.fn(r, stan.data$l)
+            + omega * identity.matrix(nrow(r)))
+        # Do Cholesky decomposition once and use in each subsequent smoothing
+        U <- chol(K)
+        # Make every gene zero mean
+        expr.centre <- t(scale(t(dl$expr), scale=FALSE, center=TRUE))
+        function(ordering) {
+            sum(sapply(1:stan.data$G,
+                        function(g) {
+                            y <- expr[g,ordering]
+                            gp.log.marg.like(y, U=U)
+                        }))
+        }
+    })
+}
+
+
 #' Test ordering Metropolis-Hastings sampler.
 #'
 #' @param dl de.lorean object

@@ -1,0 +1,154 @@
+---
+title: Test tau smoothing algorithms
+author: John Reid
+output: html_document
+---
+
+```{r build, echo=FALSE, eval=FALSE}
+library(devtools)
+load_all('../..')
+library(rmarkdown)
+render('test-smooth-tau.Rmd')
+
+```
+
+
+```{r loadLibs, echo=FALSE, message=FALSE}
+library(stringr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(DeLorean)
+
+```
+
+
+```{r config, echo=FALSE, message=FALSE}
+library(knitr)
+library(rmarkdown)
+#
+# knitr options
+#
+opts_chunk$set(
+    fig.path = 'figures/smooth-',
+    stop_on_error = TRUE,
+    fig.width = 12.5,
+    fig.height = 8)
+#
+# Widths for saving figures
+#
+text.width <- 4.79  # LaTeX width in inches
+golden.ratio <- 1.618  # Pleasing ratio
+fig.width <- text.width
+fig.height <- text.width / golden.ratio
+#
+# Stylesheet
+#
+options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
+                                               package="DeLorean"))
+font.family <- "Verdana"
+font.theme <- theme_update(text=element_text(family=font.family))
+theme_set(font.theme)
+
+```
+
+
+
+Load test data and create log likelihood ordering smoothing function.
+```{r load.test.data}
+library(devtools)
+load_all('../..')
+test.dl <- readRDS(file='test-dl.rds')
+# test.dl <- readRDS(file='Shalek-input.rds')
+# test.dl <- format.for.stan(test.dl)
+ll.fn <- ordering.log.likelihood.fn(test.dl)
+
+```
+
+
+Try some random samples to see what log likelihoods they have.
+```{r randomSamples}
+random.lls <- function(num.samples=1000) {
+    sapply(1:num.samples, function(i) ll.fn(sample(test.dl$stan.data$C)))
+}
+lls.random <- data.frame(stats="random", ll=random.lls())
+
+```
+
+
+Maximise some random samples to see what log likelihoods they have.
+```{r maximiseRandomSamples}
+maximise.lls <- function(num.samples=10) {
+    sapply(1:num.samples,
+           function(i) ll.fn(ordering.maximise(sample(test.dl$stan.data$C),
+                                               ll.fn)))
+}
+lls.maximised <- data.frame(stats="maximised", ll=maximise.lls())
+
+```
+
+
+Try a Metropolis-Hastings run.
+```{r mh-run}
+init.ordering <- sample(test.dl$stan.data$C)
+mh.run <- ordering.metropolis.hastings(
+    init.ordering,
+    ll.fn,
+    proposal.fn=ordering.random.block.move,
+    iterations=1000,
+    thin=25)
+lls.mh <- data.frame(stats="Metropolis", ll=mh.run$log.likelihoods)
+
+```
+
+
+Random projections.
+```{r randomProj}
+expr.center <- t(scale(t(test.dl$expr), scale=FALSE, center=TRUE))
+expr.moments <- rbind(expr.center, expr.center^2)
+unit.vector <- function(G) {
+    u <- runif(G)
+    u <- u / sqrt(sum(u^2))
+}
+random.projection.lls <- function(suff.stats, num.projs=1000) {
+    sapply(1:num.projs,
+           function(i) ll.fn(order(unit.vector(nrow(suff.stats))
+                                   %*% suff.stats)))
+}
+maximise.random.projection.lls <- function(suff.stats, num.projs=50) {
+    sapply(1:num.projs,
+           function(i) ll.fn(ordering.maximise(order(unit.vector(nrow(suff.stats)) %*% suff.stats), ll.fn)))
+}
+lls.random.projs <- rbind(
+    data.frame(stats="RP.uncentred", ll=random.projection.lls(test.dl$expr)),
+    data.frame(stats="RP.centred", ll=random.projection.lls(expr.center)),
+    data.frame(stats="RP.maximised", ll=maximise.random.projection.lls(expr.center)),
+    data.frame(stats="RP.moments", ll=random.projection.lls(expr.moments)))
+
+```
+
+
+Plot the distributions of log likelihoods of the orderings from the
+different methods.
+```{r plotLLs}
+(ggplot(lls.random
+        %>% rbind(lls.maximised)
+        %>% rbind(lls.mh)
+        %>% rbind(lls.random.projs)
+        %>% filter("RP.maximised" != stats,
+                   "maximised" != stats),
+        aes(x=ll, color=stats))
+    + geom_density())
+
+```
+
+
+```{r date}
+date()
+```
+
+
+R version and packages used:
+```{r Rversion}
+sessionInfo()
+```
