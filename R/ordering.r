@@ -23,6 +23,47 @@ ordering.move <- function(ordering, from, to) {
 }
 
 
+#' Move a block in an ordering and shift the other items.
+#'
+#' @param ordering The ordering.
+#' @param from The start index of the block to move.
+#' @param width The width of the block to move.
+#' @param to The index it should be moved to.
+#' @param reverse Reverse the block?
+#'
+#' @export
+#'
+ordering.block.move <- function(ordering, from, width, to, reverse=FALSE) {
+    if (from == to & ! reverse) {
+        # Do nothing
+        return(ordering)
+    }
+    # Length of whole ordering
+    N <- length(ordering)
+    # Check parameters
+    stopifnot(width >= 1)
+    stopifnot(from + width - 1 <= N)
+    stopifnot(to + width - 1 <= N)
+    # Block
+    block <- ordering[from:(from+width-1)]
+    if (reverse) {
+        block <- rev(block)
+    }
+    # Move the other block
+    if (from < to) {
+        other.block <- ordering[(from+width):(to+width-1)]
+        ordering[from:(to-1)] <- other.block
+    } else if (from > to) {
+        other.block <- ordering[to:(from-1)]
+        ordering[(to+width):(from+width-1)] <- other.block
+    }
+    stopifnot(length(other.block) == abs(from-to))
+    # Move the target block
+    ordering[to:(to+width-1)] <- block
+    ordering
+}
+
+
 #' Randomly move one item in an ordering to another location
 #'
 #' @param ordering The ordering.
@@ -32,6 +73,20 @@ ordering.move <- function(ordering, from, to) {
 ordering.random.move <- function(ordering) {
     .sample <- sample(length(ordering), 2)
     ordering.move(ordering, .sample[1], .sample[2])
+}
+
+
+#' Randomly move a block in an ordering to another location
+#'
+#' @param ordering The ordering.
+#'
+#' @export
+#'
+ordering.random.block.move <- function(ordering, max.width=4) {
+    width <- sample(max.width, 1)
+    .sample <- sample(length(ordering) - width + 1, 2)
+    reverse <- runif(1) > .5
+    ordering.block.move(ordering, .sample[1], width, .sample[2], reverse)
 }
 
 
@@ -60,33 +115,54 @@ ordering.maximise <- function(ordering, fn) {
 
 #' Metropolis-Hastings on orderings.
 #'
-#' @param init.ordering Initial ordering
+#' @param ordering Initial ordering
 #' @param loglikelihood Log likelihood function
 #' @param proposal.fn Proposal function
 #'
 #' @export
 #'
 ordering.metropolis.hastings <- function(
-    init.ordering,
+    ordering,
     log.likelihood,
     proposal.fn=ordering.random.move,
-    iterations=1000)
+    iterations=1000,
+    thin=1)
 {
-    chain <- array(as.integer(0), dim=c(iterations+1, length(init.ordering)))
-    chain[1,] <- init.ordering
-    last.ll <- log.likelihood(chain[1,])
+    # Number of samples including initial
+    num.samples <- floor(iterations/thin)+1
+    # Create and initialise containers to store chain and likelihoods
+    chain <- array(as.integer(0), dim=c(num.samples, length(ordering)))
+    lls <- rep(0, num.samples)
+    chain[1,] <- ordering
+    last.ll <- lls[1] <- log.likelihood(ordering)
+    # Set up counters and indices
+    accepted <- 0
+    sample.idx <- 1
+    # Calculate random numbers all at once
+    probs <- runif(iterations)
+    # For each iteration
     for (i in 1:iterations) {
-        proposal <- proposal.fn(chain[i,])
+        # Get a new proposal state
+        proposal <- proposal.fn(ordering)
         this.ll <- log.likelihood(proposal)
-        probab <- exp(this.ll - last.ll)
-        if (runif(1) < probab) {
-            chain[i+1,] <- proposal
+        # Accept/reject step
+        if (probs[i] < exp(this.ll - last.ll)) {
+            accepted <- accepted + 1
+            ordering <- proposal
             last.ll <- this.ll
-        } else {
-            chain[i+1,] <- chain[i,]
+        }
+        # Thin: only keep some samples
+        if (0 == i %% thin) {
+            sample.idx <- sample.idx + 1
+            chain[sample.idx,] <- ordering
+            lls[sample.idx] <- this.ll
         }
     }
-    mcmc(chain, start=1, end=iterations)
+    stopifnot(sample.idx == num.samples)
+    # Return all state as a list
+    list(chain = mcmc(chain, start=1, end=iterations, thin=thin),
+         log.likelihoods = lls,
+         acceptance.rate = accepted / iterations)
 }
 
 

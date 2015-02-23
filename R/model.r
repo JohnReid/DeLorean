@@ -365,7 +365,8 @@ find.smooth.tau <- function(
     use.parallel = TRUE,
     num.cores = getOption("DL.num.cores", max(detectCores() - 1, 1)),
     num.tau.to.keep = num.cores,
-    method = "maximise"
+    method = "metropolis",
+    ...
 ) {
     cov.fn <- cov.matern.32
     dl$tau.inits <- with(dl, {
@@ -402,17 +403,21 @@ find.smooth.tau <- function(
             }
             # Choose a random starting point
             init.ordering <- sample(stan.data$C)
-            metropolis.fn <- function(ordering, log.likelihood) {
-                chain <- ordering.metropolis.hastings(
+            metropolis.fn <- function(ordering, log.likelihood, ...) {
+                mh.run <- ordering.metropolis.hastings(
                     ordering,
-                    log.likelihood)
-                chain[dim(chain)[1],]
+                    log.likelihood,
+                    proposal.fn=ordering.random.block.move,
+                    ...)
+                best.sample <- which.max(mh.run$log.likelihoods)
+                result <- window(mh.run$chain, best.sample, best.sample)
+                mh.run$chain[best.sample,]
             }
             method.fn <- switch(method,
                                 "maximise"=ordering.maximise,
                                 "metropolis"=metropolis.fn,
                                 NA)
-            ordering <- method.fn(init.ordering, log.likelihood)
+            ordering <- method.fn(init.ordering, log.likelihood, ...)
             # Reverse the ordering if it makes it correlate better with
             # the capture times
             capture.order <- order(stan.data$time)
@@ -443,6 +448,82 @@ find.smooth.tau <- function(
             })
     })
     dl
+}
+
+
+
+#' Test ordering Metropolis-Hastings sampler.
+#'
+#' @param dl de.lorean object
+#' @param use.parallel Calculate in parallel
+#' @param num.cores Number of cores to run on.
+#'          Defaults to getOption("DL.num.cores", max(detectCores()-1, 1))
+#'
+#' @export
+#'
+test.mh <- function(
+    dl,
+    psi = mean(dl$gene.map$psi.hat),
+    omega = mean(dl$gene.map$omega.hat),
+    use.parallel = TRUE,
+    num.cores = getOption("DL.num.cores", max(detectCores() - 1, 1)),
+    iterations = 1000,
+    thin = 15
+) {
+    cov.fn <- cov.matern.32
+    dl$tau.inits <- with(dl, {
+        # Evenly spread tau over range of capture times
+        even.tau <- with(stan.data,
+                         seq(min(time) - sigma_tau,
+                             max(time) + sigma_tau,
+                             length=C))
+        # Calculate the distances
+        r <- outer(even.tau, even.tau, FUN="-")
+        # Make periodic if necessary
+        if (opts$periodic) {
+            r <- cov.periodise(r, opts$period)
+        }
+        # Use the same kernel for each gene
+        K <- (
+            psi * cov.fn(r, stan.data$l)
+            + omega * identity.matrix(nrow(r)))
+        # Do Cholesky decomposition once and use in each subsequent smoothing
+        U <- chol(K)
+        # Make every gene zero mean
+        expr <- t(scale(t(dl$expr), scale=FALSE, center=TRUE))
+        # Maximise the sum of the log marginal likelihoods
+        ordering.search <- function(seed) {
+            set.seed(seed)
+            # Calculate average of log marginal likelihoods for each gene's
+            # expression values
+            log.likelihood <- function(ordering) {
+                sum(sapply(1:stan.data$G,
+                           function(g) {
+                               y <- expr[g,ordering]
+                               gp.log.marg.like(y, U=U)
+                           }))
+            }
+            # Choose a random starting point
+            init.ordering <- sample(stan.data$C)
+            mh.run <- ordering.metropolis.hastings(
+                init.ordering,
+                log.likelihood,
+                proposal.fn=ordering.random.block.move,
+                iterations=iterations,
+                thin=thin)
+        }
+        # Choose seeds
+        seeds <- sample.int(.Machine$integer.max, num.cores)
+        # Run in parallel or not?
+        if (use.parallel) {
+            orderings <- mclapply(seeds,
+                                  mc.cores=num.cores,
+                                  ordering.search)
+        } else {
+            orderings <- lapply(seeds, ordering.search)
+        }
+        orderings
+    })
 }
 
 
