@@ -107,7 +107,9 @@ Random projections.
 expr.center <- t(scale(t(test.dl$expr), scale=FALSE, center=TRUE))
 expr.moments <- rbind(expr.center, expr.center^2)
 unit.vector <- function(G) {
-    u <- runif(G)
+    #u <- runif(G)
+    u <- rnorm(G)
+    #u <- runif(G) - .5
     u <- u / sqrt(sum(u^2))
 }
 random.projection.lls <- function(suff.stats, num.projs=1000) {
