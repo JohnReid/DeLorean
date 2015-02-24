@@ -337,12 +337,20 @@ make.chain.init.fn <- function(dl) {
                 omega=rlnorm(G, meanlog=mu_omega, sdlog=sigma_omega)
             )
             # If estimating phi, include it.
-            if (! dl$opts$estimate.phi) {
+            if (dl$opts$estimate.phi) {
                 init$phi <- rnorm(G, mean=mu_phi, sd=sigma_phi)
             }
             init
         })
     }
+}
+
+
+even.tau.spread <- function(dl) {
+    with(dl$stan.data,
+         seq(min(time) - sigma_tau,
+             max(time) + sigma_tau,
+             length=C))
 }
 
 
@@ -364,43 +372,16 @@ find.smooth.tau <- function(
     omega = mean(dl$gene.map$omega.hat),
     use.parallel = TRUE,
     num.cores = getOption("DL.num.cores", max(detectCores() - 1, 1)),
+    num.tau.to.try = num.cores,
     num.tau.to.keep = num.cores,
     method = "metropolis",
     ...
 ) {
-    cov.fn <- cov.matern.32
+    log.likelihood <- ordering.log.likelihood.fn(dl)
     dl$tau.inits <- with(dl, {
-        # Evenly spread tau over range of capture times
-        even.tau <- with(stan.data,
-                         seq(min(time) - sigma_tau,
-                             max(time) + sigma_tau,
-                             length=C))
-        # Calculate the distances
-        r <- outer(even.tau, even.tau, FUN="-")
-        # Make periodic if necessary
-        if (opts$periodic) {
-            r <- cov.periodise(r, opts$period)
-        }
-        # Use the same kernel for each gene
-        K <- (
-            psi * cov.fn(r, stan.data$l)
-            + omega * identity.matrix(nrow(r)))
-        # Do Cholesky decomposition once and use in each subsequent smoothing
-        U <- chol(K)
-        # Make every gene zero mean
-        expr <- t(scale(t(dl$expr), scale=FALSE, center=TRUE))
         # Maximise the sum of the log marginal likelihoods
         ordering.search <- function(seed) {
             set.seed(seed)
-            # Calculate average of log marginal likelihoods for each gene's
-            # expression values
-            log.likelihood <- function(ordering) {
-                mean(sapply(1:stan.data$G,
-                            function(g) {
-                                y <- expr[g,ordering]
-                                gp.log.marg.like(y, U=U) / stan.data$C
-                            }))
-            }
             # Choose a random starting point
             init.ordering <- sample(stan.data$C)
             metropolis.fn <- function(ordering, log.likelihood, ...) {
@@ -430,7 +411,7 @@ find.smooth.tau <- function(
             }
         }
         # Choose seeds
-        seeds <- sample.int(.Machine$integer.max, num.tau.to.keep)
+        seeds <- sample.int(.Machine$integer.max, num.tau.to.try)
         # Run in parallel or not?
         if (use.parallel) {
             orderings <- mclapply(seeds,
@@ -440,58 +421,17 @@ find.smooth.tau <- function(
             orderings <- lapply(seeds, ordering.search)
         }
         # Order the taus by the best orderings
-        lapply(orderings,
-            function(ordering) {
-                init <- init.chain.sample.tau(dl)
-                init$tau <- even.tau[ordering.invert(ordering)]
-                init
-            })
+        lls <- sapply(orderings, function(o) -log.likelihood(o))
+        best.order <- order(lls)
+        # Make the complete chain initialisation with the tau.
+        lapply(orderings[best.order[1:num.tau.to.keep]],
+               function(ordering) {
+                   init <- init.chain.sample.tau(dl)
+                   init$tau <- even.tau.spread(dl)[ordering.invert(ordering)]
+                   init
+               })
     })
     dl
-}
-
-
-
-#' Create a log likelihood function suitable for evaluating smooth orderings.
-#'
-#' @param dl de.lorean object
-#'
-#' @export
-#'
-ordering.log.likelihood.fn <- function(
-    dl,
-    psi = mean(dl$gene.map$psi.hat),
-    omega = mean(dl$gene.map$omega.hat),
-    cov.fn = cov.matern.32)
-{
-    with(dl, {
-        # Evenly spread tau over range of capture times
-        even.tau <- with(stan.data,
-                         seq(min(time) - sigma_tau,
-                             max(time) + sigma_tau,
-                             length=C))
-        # Calculate the distances
-        r <- outer(even.tau, even.tau, FUN="-")
-        # Make periodic if necessary
-        if (opts$periodic) {
-            r <- cov.periodise(r, opts$period)
-        }
-        # Use the same kernel for each gene
-        K <- (
-            psi * cov.fn(r, stan.data$l)
-            + omega * identity.matrix(nrow(r)))
-        # Do Cholesky decomposition once and use in each subsequent smoothing
-        U <- chol(K)
-        # Make every gene zero mean
-        expr.centre <- t(scale(t(dl$expr), scale=FALSE, center=TRUE))
-        function(ordering) {
-            sum(sapply(1:stan.data$G,
-                        function(g) {
-                            y <- expr[g,ordering]
-                            gp.log.marg.like(y, U=U)
-                        }))
-        }
-    })
 }
 
 
@@ -513,39 +453,11 @@ test.mh <- function(
     iterations = 1000,
     thin = 15
 ) {
-    cov.fn <- cov.matern.32
+    log.likelihood <- ordering.log.likelihood.fn(dl)
     dl$tau.inits <- with(dl, {
-        # Evenly spread tau over range of capture times
-        even.tau <- with(stan.data,
-                         seq(min(time) - sigma_tau,
-                             max(time) + sigma_tau,
-                             length=C))
-        # Calculate the distances
-        r <- outer(even.tau, even.tau, FUN="-")
-        # Make periodic if necessary
-        if (opts$periodic) {
-            r <- cov.periodise(r, opts$period)
-        }
-        # Use the same kernel for each gene
-        K <- (
-            psi * cov.fn(r, stan.data$l)
-            + omega * identity.matrix(nrow(r)))
-        # Do Cholesky decomposition once and use in each subsequent smoothing
-        U <- chol(K)
-        # Make every gene zero mean
-        expr <- t(scale(t(dl$expr), scale=FALSE, center=TRUE))
         # Maximise the sum of the log marginal likelihoods
         ordering.search <- function(seed) {
             set.seed(seed)
-            # Calculate average of log marginal likelihoods for each gene's
-            # expression values
-            log.likelihood <- function(ordering) {
-                sum(sapply(1:stan.data$G,
-                           function(g) {
-                               y <- expr[g,ordering]
-                               gp.log.marg.like(y, U=U)
-                           }))
-            }
             # Choose a random starting point
             init.ordering <- sample(stan.data$C)
             mh.run <- ordering.metropolis.hastings(
@@ -566,6 +478,46 @@ test.mh <- function(
             orderings <- lapply(seeds, ordering.search)
         }
         orderings
+    })
+}
+
+
+#' Create a log likelihood function suitable for evaluating smooth orderings.
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+ordering.log.likelihood.fn <- function(
+    dl,
+    psi = mean(dl$gene.map$psi.hat),
+    omega = mean(dl$gene.map$omega.hat),
+    cov.fn = cov.matern.32)
+{
+    with(dl, {
+        # Evenly spread tau over range of capture times
+        even.tau <- even.tau.spread(dl)
+        # Calculate the distances
+        r <- outer(even.tau, even.tau, FUN="-")
+        # Make periodic if necessary
+        if (opts$periodic) {
+            r <- cov.periodise(r, opts$period)
+        }
+        # Use the same kernel for each gene
+        K <- (
+            psi * cov.fn(r, stan.data$l)
+            + omega * identity.matrix(nrow(r)))
+        # Do Cholesky decomposition once and use in each subsequent smoothing
+        U <- chol(K)
+        # Make every gene zero mean
+        expr.centre <- t(scale(t(dl$expr), scale=FALSE, center=TRUE))
+        function(ordering) {
+            sum(sapply(1:stan.data$G,
+                        function(g) {
+                            y <- expr[g,ordering]
+                            gp.log.marg.like(y, U=U)
+                        }))
+        }
     })
 }
 
@@ -663,7 +615,6 @@ fit.model <- function(
     thin = 50)
 {
     init.chain.good.tau <- function(chain_id) {
-        # print(chain_id)
         #
         # Create random parameters
         pars <- make.chain.init.fn(dl)()
