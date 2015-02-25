@@ -1,3 +1,28 @@
+#' Check that it is a valid ordering
+#'
+#' @param ordering The ordering.
+#'
+#' @export
+#'
+ordering.is.valid <- function(ordering, full.check=FALSE) {
+    if (! is.integer(ordering)
+        || any(ordering <= 0)
+        || any(ordering > length(ordering)))
+    {
+        return(FALSE)
+    }
+    # Check we have every item in the ordering
+    if (full.check) {
+        a <- rep(FALSE, length(ordering))
+        a[ordering] <- TRUE
+        if (! all(a)) {
+            return(FALSE)
+        }
+    }
+    return(TRUE)
+}
+
+
 #' Move one item in an ordering and shift the other items.
 #'
 #' @param ordering The ordering.
@@ -60,6 +85,7 @@ ordering.block.move <- function(ordering, from, width, to, reverse=FALSE) {
     stopifnot(length(other.block) == abs(from-to))
     # Move the target block
     ordering[to:(to+width-1)] <- block
+    stopifnot(ordering.is.valid(ordering))
     ordering
 }
 
