@@ -422,7 +422,6 @@ find.smooth.tau <- function(
         # Order the taus by the best orderings
         lls <- sapply(orderings, function(o) -log.likelihood(o))
         best.order <- order(lls)
-        print(lls[best.order])
         # Make the complete chain initialisation with the tau.
         lapply(orderings[best.order[1:num.tau.to.keep]],
                function(ordering) {
@@ -515,8 +514,6 @@ ordering.log.likelihood.fn <- function(
         function(o) {
             sum(sapply(1:stan.data$G,
                        function(g) {
-                           if (g > nrow(expr.centre)) print(g)
-                           if (any(o > ncol(expr.centre))) print(o)
                            gp.log.marg.like(expr.centre[g,o], U=U)
                        }))
         }

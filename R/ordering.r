@@ -186,7 +186,7 @@ ordering.metropolis.hastings <- function(
     }
     stopifnot(sample.idx == num.samples)
     # Return all state as a list
-    list(chain = mcmc(chain, start=1, end=iterations, thin=thin),
+    list(chain = mcmc(chain, start=1, end=iterations+1, thin=thin),
          log.likelihoods = lls,
          acceptance.rate = accepted / iterations)
 }
