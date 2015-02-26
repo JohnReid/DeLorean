@@ -9,20 +9,21 @@ NULL
 #' @export
 #'
 de.lorean <- function(expr, gene.meta, cell.meta) {
-    stopifnot("gene" %in% names(gene.meta))
-    stopifnot(is.factor(gene.meta$gene))
-    stopifnot("cell" %in% names(cell.meta))
-    stopifnot("capture" %in% names(cell.meta))
-    stopifnot("obstime" %in% names(cell.meta))
-    stopifnot(is.factor(cell.meta$cell))
-    stopifnot(is.factor(cell.meta$capture))
-    stopifnot(is.numeric(cell.meta$obstime))
-    stopifnot(nrow(expr) == nrow(gene.meta))
-    stopifnot(ncol(expr) == nrow(cell.meta))
-    stopifnot(! is.null(rownames(expr)))
-    stopifnot(! is.null(colnames(expr)))
-    stopifnot(all(rownames(expr) == gene.meta$gene))
-    stopifnot(all(colnames(expr) == cell.meta$cell))
+    stopifnot(
+        "gene" %in% names(gene.meta),
+        is.factor(gene.meta$gene),
+        "cell" %in% names(cell.meta),
+        "capture" %in% names(cell.meta),
+        "obstime" %in% names(cell.meta),
+        is.factor(cell.meta$cell),
+        is.factor(cell.meta$capture),
+        is.numeric(cell.meta$obstime),
+        nrow(expr) == nrow(gene.meta),
+        ncol(expr) == nrow(cell.meta),
+        ! is.null(rownames(expr)),
+        ! is.null(colnames(expr)),
+        all(rownames(expr) == gene.meta$gene),
+        all(colnames(expr) == cell.meta$cell))
     result <- list(
         expr = expr,
         gene.meta = gene.meta,
