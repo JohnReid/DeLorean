@@ -125,6 +125,7 @@ ordering.random.block.move <- function(ordering, max.width=4) {
 #' @export
 #'
 ordering.maximise <- function(ordering, fn) {
+    stopifnot(! is.null(ordering))
     while (TRUE) {
         ordering.new <- ordering.improve(fn, ordering)
         # If we didn't improve, then break the loop
@@ -135,6 +136,7 @@ ordering.maximise <- function(ordering, fn) {
             message('Improved ordering: f(ordering) = ', fn(ordering))
         }
     }
+    stopifnot(! is.null(ordering))
     ordering
 }
 
