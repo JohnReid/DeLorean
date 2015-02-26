@@ -147,7 +147,7 @@ different methods.
         %>% rbind(lls.random.projs)
         %>% filter("RP.maximised" != stats,
                    "maximised" != stats),
-        aes(x=ll, y=stats))
+        aes(y=ll, x=stats))
     + geom_boxplot())
 
 ```
