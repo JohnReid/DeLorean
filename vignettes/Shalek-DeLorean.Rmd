@@ -115,6 +115,16 @@ dl <- filter.cells(dl, function(cells) cells %in% time.course.cells$cell)
 ```
 
 
+Re-level the cells by their capture time. This improves the ordering in later
+plots.
+```{r relevelCells}
+dl$cell.meta$cell <- factor(
+    dl$cell.meta$cell,
+    levels=(shalek.A.cell.meta %>% arrange(capture))$cell)
+
+```
+
+
 Only use induced genes that have been assigned to a cluster.
 ```{r useInducedGenes, eval=fit.model}
 induced.genes <- dl$gene.meta %>% filter(! is.na(cluster))
@@ -186,7 +196,7 @@ saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
 Format the data for Stan and fit the model.
 ```{r fitModel, eval=fit.model}
 dl <- format.for.stan(dl)
-system.time(dl <- find.smooth.tau(dl, num.tau.to.try=detectCores()*8))
+system.time(dl <- find.smooth.tau(dl, num.tau.to.try=detectCores()*2))
 # system.time(dl <- find.smooth.tau(dl, num.cores=3, num.tau.to.try=8))
 # system.time(dl <- find.smooth.tau(dl, num.tau.to.try=45))
 dl <- compile.model(dl)
