@@ -1,0 +1,157 @@
+---
+title: Investigate random projections for tree structures.
+author: John Reid
+output: html_document
+---
+
+```{r build, echo=FALSE, eval=FALSE}
+library(devtools)
+load_all('../..')
+library(rmarkdown)
+render('Guo-rand-proj.Rmd')
+
+```
+
+
+```{r loadLibs, echo=FALSE, message=FALSE}
+library(stringr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(DeLorean)
+
+```
+
+
+```{r config, echo=FALSE, message=FALSE}
+library(knitr)
+library(rmarkdown)
+#
+# knitr options
+#
+opts_chunk$set(
+    fig.path = 'figures/Guo-rand-',
+    stop_on_error = TRUE,
+    fig.width = 12.5,
+    fig.height = 8)
+#
+# Widths for saving figures
+#
+text.width <- 4.79  # LaTeX width in inches
+golden.ratio <- 1.618  # Pleasing ratio
+fig.width <- text.width
+fig.height <- text.width / golden.ratio
+#
+# Stylesheet
+#
+options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
+                                               package="DeLorean"))
+font.family <- "Verdana"
+font.theme <- theme_update(text=element_text(family=font.family))
+theme_set(font.theme)
+
+```
+
+
+
+Load test data.
+```{r load.test.data}
+data(GuoDeLorean)
+guo.expr.centred <- t(scale(t(guo.expr), scale=FALSE, center=TRUE))
+guo.cell.meta <- (
+    guo.cell.meta
+    %>% mutate(cell.type=ifelse(is.na(cell.type), "NA", cell.type)))
+
+```
+
+
+Try some random projections.
+```{r projectRandomly}
+sample.unit.vector <- function(D) {
+    u <- runif(D)
+    u <- u / sqrt(sum(u^2))
+}
+sample.random.projection <- function(D, k) {
+    t(sapply(1:k, function(k) sample.unit.vector(D)))
+}
+rp <- sample.random.projection(48, 2)
+guo.rp <- (
+    as.data.frame(t(rp %*% guo.expr.centred))
+    %>% rename(RP.1=V1, RP.2=V2))
+guo.rp$cell <- factor(rownames(guo.rp), levels=levels(guo.cell.meta$cell))
+dim(guo.rp)
+sapply(guo.rp, class)
+sample_n(guo.rp, 15)
+(ggplot(guo.rp %>% left_join(guo.cell.meta),
+        aes(x=RP.1, y=RP.2, color=capture, shape=cell.type))
+    + geom_point())
+
+```
+
+How about ICA?
+```{r ICA}
+library(fastICA)
+ic <- fastICA(t(guo.expr.centred), n.comp=2)
+dim(ic$K)
+dim(guo.expr.centred)
+guo.ic <- (
+    as.data.frame(t(guo.expr.centred) %*% ic$K)
+    %>% rename(IC.1=V1, IC.2=V2))
+guo.ic$cell <- factor(rownames(guo.ic), levels=levels(guo.cell.meta$cell))
+dim(guo.ic)
+class(guo.ic)
+names(guo.ic)
+gp <- (
+    ggplot(guo.ic %>% left_join(guo.cell.meta),
+           aes(x=IC.1, y=IC.2, color=capture, shape=cell.type))
+    + geom_point())
+print(gp)
+pdf(file="Guo-ICA.pdf")
+print(gp)
+dev.off()
+
+library(scatterplot3d)
+.colors <- c("orange", "brown", "cyan", "green", "blue", "purple", "pink")
+with(guo.ic %>% left_join(guo.cell.meta), {
+   scatterplot3d(IC.3, IC.1, IC.2,
+                 color=.colors[capture], pch=19, # filled blue circles
+                 type="h",             # lines to the horizontal plane
+                 main="3-D Scatterplot Example 2",
+                 xlab="IC.1",
+                 ylab="IC.2",
+                 zlab="IC.3")
+})
+
+```
+
+
+```{r gramSchmidt}
+library(pracma)
+install.packages("pracma")
+u <- c(3, 1, 1)
+gs <- gramSchmidt(matrix(c(u, 1,0,0, 0,1,0), 3, 3))
+gs$Q
+sum(gs$Q[,1]^2)
+sum(gs$Q[,2]^2)
+sum(gs$Q[,3]^2)
+gs$Q[,1] %*% u
+gs$Q[,2] %*% u
+gs$Q[,3] %*% u
+with(gs, Q %*% R)
+# Check u is orthogonal to projection of random vector from 2D subspace
+v <- unit.vector(2)
+(gs$Q[,2:3] %*% v)
+t(gs$Q[,2:3] %*% v) %*% u
+
+```
+
+
+```{r date}
+date()
+```
+
+
+R version and packages used:
+```{r Rversion}
+sessionInfo()
+```
