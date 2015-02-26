@@ -16,7 +16,8 @@ plot(dl, type="pseudotime")
 The full tau posterior for each cell.
 ```{r tauPosterior}
 (
-    ggplot(samples.l$tau, aes(x=cell, y=tau, color=capture))
+    ggplot(samples.l$tau %>% arrange(capture),
+           aes(x=cell, y=tau, color=capture))
     + geom_boxplot()
     + coord_flip()
 )
@@ -58,9 +59,10 @@ The posterior for the gene means $\phi_g$:
 
 The posterior for the gene means $\phi_g$ by gene:
 ```{r posteriorPhiByGene, eval=opts$estimate.phi}
-(ggplot(samples.l$phi,
-        aes(x=factor(g), y=phi))
-    + geom_boxplot())
+(ggplot(samples.l$phi %>% left_join(gene.map),
+        aes(x=gene, y=phi))
+    + geom_boxplot()
+    + coord_flip())
 ```
 
 ### Between time variation
@@ -82,7 +84,8 @@ Temporal variation by gene:
 (ggplot(noise.levels,
         aes(x=gene, y=log(psi), fill=gene %in% genes.high.psi),
         environment=environment())
-    + geom_boxplot())
+    + geom_boxplot()
+    + coord_flip())
 ```
 
 ### Within time variation
@@ -104,7 +107,8 @@ Within time variation by gene:
 (ggplot(noise.levels,
         aes(x=gene, y=log(omega), fill=gene %in% genes.high.psi),
         environment=environment())
-    + geom_boxplot())
+    + geom_boxplot()
+    + coord_flip())
 ```
 
 
