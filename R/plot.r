@@ -93,13 +93,16 @@ plot.convergence <- function(dl) {
 #'
 plot.S.posteriors <- function(dl) {
     with(dl, {
-        gp <- (ggplot(samples.l$S %>% left_join(cell.map),
+        gp <- (ggplot(samples.l$S
+                      %>% left_join(cell.map)
+                      %>% arrange(capture),
                       aes(x=factor(cell,
                                    levels=arrange(cell.map, capture)$cell),
                           y=S,
                           color=capture),
                       environment=environment())
             + geom_boxplot()
+            + coord_flip()
         )
     })
 }
