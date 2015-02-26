@@ -88,20 +88,6 @@ lls.maximised <- data.frame(stats="maximised", ll=maximise.lls())
 ```
 
 
-Try a Metropolis-Hastings run.
-```{r mh-run}
-init.ordering <- sample(test.dl$stan.data$C)
-mh.run <- ordering.metropolis.hastings(
-    init.ordering,
-    ll.fn,
-    proposal.fn=ordering.random.block.move,
-    iterations=1000,
-    thin=25)
-lls.mh <- data.frame(stats="Metropolis", ll=mh.run$log.likelihoods)
-
-```
-
-
 Random projections.
 ```{r randomProj}
 expr.center <- t(scale(t(test.dl$expr), scale=FALSE, center=TRUE))
@@ -112,10 +98,11 @@ unit.vector <- function(G) {
     #u <- runif(G) - .5
     u <- u / sqrt(sum(u^2))
 }
+random.proj <- function(suff.stats) {
+    order(unit.vector(nrow(suff.stats)) %*% suff.stats)
+}
 random.projection.lls <- function(suff.stats, num.projs=1000) {
-    sapply(1:num.projs,
-           function(i) ll.fn(order(unit.vector(nrow(suff.stats))
-                                   %*% suff.stats)))
+    sapply(1:num.projs, function(i) ll.fn(random.proj(suff.stats)))
 }
 maximise.random.projection.lls <- function(suff.stats, num.projs=50) {
     sapply(1:num.projs,
@@ -130,6 +117,27 @@ lls.random.projs <- rbind(
 ```
 
 
+Try a Metropolis-Hastings run.
+```{r mh-run}
+mh.run <- ordering.metropolis.hastings(
+    sample(test.dl$stan.data$C),
+    ll.fn,
+    proposal.fn=ordering.random.block.move,
+    iterations=1000,
+    thin=25)
+mh.run.init.RP <- ordering.metropolis.hastings(
+    random.proj(expr.center),
+    ll.fn,
+    proposal.fn=ordering.random.block.move,
+    iterations=1000,
+    thin=25)
+lls.mh <- rbind(
+    data.frame(stats="Metropolis", ll=mh.run$log.likelihoods),
+    data.frame(stats="MH-init-RP", ll=mh.run.init.RP$log.likelihoods))
+
+```
+
+
 Plot the distributions of log likelihoods of the orderings from the
 different methods.
 ```{r plotLLs}
@@ -139,8 +147,8 @@ different methods.
         %>% rbind(lls.random.projs)
         %>% filter("RP.maximised" != stats,
                    "maximised" != stats),
-        aes(x=ll, color=stats))
-    + geom_density())
+        aes(x=ll, y=stats))
+    + geom_boxplot())
 
 ```
 
