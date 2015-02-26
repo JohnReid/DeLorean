@@ -91,6 +91,7 @@ lls.maximised <- data.frame(stats="maximised", ll=maximise.lls())
 Random projections.
 ```{r randomProj}
 expr.center <- t(scale(t(test.dl$expr), scale=FALSE, center=TRUE))
+expr.scale <- t(scale(t(test.dl$expr), scale=TRUE, center=TRUE))
 expr.moments <- rbind(expr.center, expr.center^2)
 unit.vector <- function(G) {
     #u <- runif(G)
@@ -111,6 +112,7 @@ maximise.random.projection.lls <- function(suff.stats, num.projs=50) {
 lls.random.projs <- rbind(
     data.frame(stats="RP.uncentred", ll=random.projection.lls(test.dl$expr)),
     data.frame(stats="RP.centred", ll=random.projection.lls(expr.center)),
+    data.frame(stats="RP.scaled", ll=random.projection.lls(expr.scale)),
     data.frame(stats="RP.maximised", ll=maximise.random.projection.lls(expr.center)),
     data.frame(stats="RP.moments", ll=random.projection.lls(expr.moments)))
 
