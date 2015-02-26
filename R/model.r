@@ -382,8 +382,10 @@ find.smooth.tau <- function(
         # Maximise the sum of the log marginal likelihoods
         ordering.search <- function(seed) {
             set.seed(seed)
-            # Choose a random starting point
-            init.ordering <- sample(stan.data$C)
+            # Choose a starting point by random projection
+            expr.centre <- t(scale(t(expr), center=T, scale=F))
+            init.ordering <- order(rnorm(nrow(expr.centre)) %*% expr.centre)
+            # init.ordering <- sample(stan.data$C)
             metropolis.fn <- function(ordering, log.likelihood, ...) {
                 mh.run <- ordering.metropolis.hastings(
                     ordering,
@@ -391,6 +393,7 @@ find.smooth.tau <- function(
                     proposal.fn=ordering.random.block.move,
                     ...)
                 best.sample <- which.max(mh.run$log.likelihoods)
+                #ordering.maximise(mh.run$chain[best.sample,], log.likelihood)
                 mh.run$chain[best.sample,]
             }
             method.fn <- switch(method,
@@ -398,16 +401,16 @@ find.smooth.tau <- function(
                                 "metropolis"=metropolis.fn,
                                 NA)
             ordering <- method.fn(init.ordering, log.likelihood, ...)
+            stopifnot(! is.null(ordering))
             # Reverse the ordering if it makes it correlate better with
             # the capture times
             capture.order <- order(stan.data$time)
-            if (cor(capture.order, ordering) >
+            if (cor(capture.order, ordering) <
                 cor(capture.order, rev(ordering)))
             {
-                return(ordering)
-            } else {
-                return(rev(ordering))
+                ordering <- rev(ordering)
             }
+            ordering
         }
         # Choose seeds
         seeds <- sample.int(.Machine$integer.max, num.tau.to.try)
@@ -512,10 +515,28 @@ ordering.log.likelihood.fn <- function(
         expr.centre <- t(scale(t(dl$expr), scale=FALSE, center=TRUE))
         # Return the function that is the log likelihood of the ordering
         function(o) {
-            sum(sapply(1:stan.data$G,
-                       function(g) {
-                           gp.log.marg.like(expr.centre[g,o], U=U)
-                       }))
+            stopifnot(! is.null(o))
+            tryCatch({
+                sum(sapply(1:stan.data$G,
+                           function(g) {
+                               gp.log.marg.like(expr.centre[g,o], U=U)
+                           }))
+            },
+            warning=function(condition) {
+                message(
+                    "WARNING: log.likelihood\n\t",
+                    condition,
+                    "\n",
+                    o)
+                warning(condition)
+            }, error = function(condition) {
+                message(
+                    "ERROR: log.likelihood\n\t",
+                    condition,
+                    "\n\tOrdering: ",
+                    o)
+                stop(condition)
+            })
         }
     })
 }
