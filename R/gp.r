@@ -194,6 +194,7 @@ plot.add.mean.and.variance <- function(gp,
                       alpha=ribbon.alpha))
 }
 
+
 #' The log marginal likelihood. See "2.3 Varying the Hyperparameters"
 #' on page 19 of Rasmumssen and Williams' book.
 #'
@@ -210,4 +211,73 @@ gp.log.marg.like <- function(y, K=NULL, U=chol(K)) {
         + sum(diag(U))
         + length(y) * log(2 * pi)
     )
+}
+
+
+#' Predictive mean, variance and log marginal likelihood of a GP.
+#' See "2.3 Varying the Hyperparameters"
+#' on page 19 of Rasmumssen and Williams' book.
+#'
+#' @param y The targets.
+#' @param K The covariance matrix (kernel), not needed if U is provided.
+#' @param U Cholesky decomposition of K (chol(K)).
+#'
+#' @export
+#'
+gp.predict <- function(y, K=NULL, Kstar, Kstarstar, U=chol(K)) {
+    alpha <- backsolve(U, backsolve(U, y, transpose = TRUE))
+    v <- backsolve(U, Kstar, transpose = TRUE)
+    list(
+        mu = t(Kstar) %*% alpha,  # fstar
+        Sigma = Kstarstar - t(v) %*% v,  # Vstar
+        logpy = -(
+            (t(y) %*% alpha) / 2
+            + sum(diag(U))
+            + length(y) * log(2 * pi)
+        )
+    )
+}
+
+
+#` Convert the output of gp.predict() into a data.frame.
+#'
+#' @param predictions The predictions
+#'
+#' @export
+#'
+gp.predictions.df <- function(predictions) {
+    with(predictions, data.frame(mu=mu,
+                                 Sigma=diag(Sigma),
+                                 idx=1:length(mu)))
+}
+
+#' Condition a Guassian on another.
+#' See Eqn. A.6
+#' on page 200 of Rasmumssen and Williams' book.
+#'
+#' @param y y
+#' @param mu.x mu_x
+#' @param mu.y mu_y
+#' @param A Var(X)
+#' @param B Var(Y)
+#' @param C Cov(X, Y)
+#'
+#' @export
+#'
+gaussian.condition <- function(
+    y,
+    .A,
+    .B,
+    .C,
+    mu.x=rep(0, nrow(.A)),
+    mu.y=rep(0, nrow(.B)),
+    U=chol(.B))
+{
+    alpha <- backsolve(U, t(.C))
+    print(dim(alpha))
+    print(dim(.C))
+    print(dim(alpha %*% .C))
+    print(dim(.A))
+    list(mu = mu.x + as.vector((y - mu.y) %*% alpha),
+         Sigma = .A - .C %*% alpha)
 }
