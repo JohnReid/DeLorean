@@ -55,6 +55,9 @@ text.width <- 4.79  # LaTeX width in inches
 golden.ratio <- 1.618  # Pleasing ratio
 fig.width <- text.width
 fig.height <- text.width / golden.ratio
+html5 <- list(width=1300, height=700)  # in pixels
+html5$ratio <- with(html5, width / height)
+slide.fig.width <- 7
 
 ```
 
@@ -190,7 +193,6 @@ dl <- process.posterior(dl)
 dl <- analyse.noise.levels(dl)
 
 ```
-
 ```{r child=report.file("posterior")}
 ```
 
@@ -201,7 +203,6 @@ Calculate expression profiles.
 ```{r makePredictions}
 dl <- make.predictions(dl)
 ```
-
 ```{r child=report.file("profiles")}
 ```
 
@@ -210,35 +211,45 @@ dl <- make.predictions(dl)
 
 Did `DeLorean` learn the obfuscated pseudotime?
 ```{r pseudotime}
-gp <- with(dl, {
+gp.pseudo <- with(dl, {
     (ggplot(samples.l$tau %>% filter(iter == best.sample),
                     aes(x=tau, y=obstime.orig, color=capture),
                     environment=environment())
         + geom_point()
+        # + scale_x_continuous(name="pseudotime")
+        # + scale_y_continuous(name="capture time")
+        # + scale_color_discrete(name="low-resolution\ngroup")
+        + scale_y_continuous(name="true capture time")
         + scale_x_continuous(name="pseudotime")
-        + scale_y_continuous(name="capture time")
-        + scale_color_discrete(name="low-resolution\ngroup")
+        + scale_color_discrete(name="model\ncapture\ntime")
     )
 })
-print(gp)
+print(gp.pseudo)
 # png('pseudotime-vs-obfuscated.png')
-pdf('Windram-pseudotime-vs-obfuscated.pdf', width=fig.width, height=fig.height)
-print(gp)
-dev.off()
+ggsave('Windram-pseudotime-vs-obfuscated.png', gp.pseudo,
+       width=slide.fig.width, height=slide.fig.width / html5$ratio,
+       dpi=300, units="in")
 # Save profiles as well
-pdf('Windram-profiles.pdf', width=2*fig.width, height=2*fig.height)
-plot(dl, type="profiles")
-dev.off()
+ggsave('Windram-Rhat.png', plot(dl, type="convergence"),
+       width=slide.fig.width, height=slide.fig.width / html5$ratio,
+       dpi=300, units="in")
+# Save profiles as well
+ggsave('Windram-profiles.png', plot(dl, type="profiles"),
+       width=slide.fig.width * 2, height=slide.fig.width * 2/ html5$ratio,
+       dpi=150, units="in")
 # Save tau posterior
-pdf('Windram-tau-posterior.pdf', width=2*fig.width, height=2*fig.height)
-(ggplot(dl$samples.l$tau, aes(x=capture.orig, y=tau, color=capture))
+gp.tau.posterior <- (
+    ggplot(dl$samples.l$tau, aes(x=capture.orig, y=tau, color=capture))
     + geom_boxplot()
     # + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+    # + theme_gray(base_size=24)
     + scale_x_discrete(name="true capture time")
     + scale_y_continuous(name="pseudotime")
     + scale_color_discrete(name="model\ncapture\ntime")
     + coord_flip())
-dev.off()
+ggsave('Windram-tau-posterior.png', gp.tau.posterior,
+       width=slide.fig.width, height=slide.fig.width / html5$ratio,
+       dpi=300, units="in")
 
 ```
 
@@ -252,13 +263,16 @@ posterior.cor <- (
     %>% summarise(pseudotime.capture.cor=cor(tau, obstime.orig))
 )
 mean(posterior.cor$pseudotime.capture.cor)
-gp <- (ggplot(posterior.cor, aes(x=pseudotime.capture.cor))
+gp.post.cor <- (ggplot(posterior.cor, aes(x=pseudotime.capture.cor))
     + geom_histogram()
     + scale_x_continuous(name="correlation"))
-print(gp)
+print(gp.post.cor)
 pdf('Windram-posterior-cor.pdf', width=fig.width, height=fig.height)
-print(gp)
+print(gp.post.cor)
 dev.off()
+ggsave('Windram-posterior-cor.png', gp.post.cor,
+       width=slide.fig.width / 2, height=slide.fig.width / 2 / html5$ratio,
+       dpi=300, units="in")
 
 ```
 
@@ -267,7 +281,7 @@ The correlation between the obfuscated capture time with the pseudotime of
 the best sample.
 ```{r}
 with(dl$samples.l$tau %>% filter(iter == dl$best.sample),
-     cor(tau, obstime.orig))
+     cor(tau, obstime.orig, method="spearman"))
 
 ```
 
@@ -278,6 +292,19 @@ saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Windram.rds")
 
 ```
 
+```{r savePlots}
+plots <- with(dl, list(
+    tau.posterior = (
+        ggplot(samples.l$tau %>% arrange(capture),
+            aes(x=cell, y=tau, color=capture))
+        + geom_boxplot()
+        + coord_flip()
+    ),
+    profiles = plot(dl, type="profiles")
+))
+saveRDS(plots, "Windram-plots.rds")
+
+```
 
 R version and packages used:
 ```{r Rversion}
