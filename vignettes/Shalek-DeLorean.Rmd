@@ -159,7 +159,7 @@ dl <- estimate.hyper(
 Choose genes: take those with highest variance between time points
 relative to the noise level.
 ```{r filterGenes, eval=fit.model}
-max.genes <- min(getOption("Shalek.max.genes", 37))
+max.genes <- min(getOption("Shalek.max.genes", 74))
 shalek.key.genes <- unique(toupper(c(
     #
     # Cluster I d (core antiviral module; enriched for annotated antiviral and
@@ -188,8 +188,8 @@ shalek.key.genes <- unique(toupper(c(
     # Figure 4: core antiviral targets.
     "Rsad2", "Stat2"
 )))
-# clusters <- c("Id", "IIIb", "IIIc", "IIId")
-clusters <- c("Id")
+clusters <- c("Id", "IIIb", "IIIc", "IIId")
+# clusters <- c("Id")
 genes.for.stan <- (
     dl$gene.var
     %>% left_join(dl$gene.meta)
@@ -206,7 +206,7 @@ qplot(genes.for.stan$cluster)
 Choose a few cells but make sure we have the precocious cells.
 ```{r filterCells, eval=fit.model}
 set.seed(1)
-num.cells <- getOption("Shalek.max.cells", 51)
+num.cells <- getOption("Shalek.max.cells", 75)
 sampled.cells <- sample(colnames(dl$expr), num.cells)
 if (! "LPS_1h_S51" %in% sampled.cells) {
     sampled.cells[1] <- "LPS_1h_S51"
@@ -418,8 +418,9 @@ $$
 held.out.genes <- with(dl, gene.var
                            %>% left_join(gene.meta)
                            %>% filter(! gene %in% gene.map$gene)
-                           # %>% filter(! gene %in% gene.map$gene, cluster == "Id")
-                           %>% arrange(-psi.bar))
+                           %>% filter(cluster != "Id")
+                           %>% arrange(-psi.bar)
+                           %>% head(getOption('Shalek.held.out', 100)))
 best.sample <- with(dl,
     samples.l$tau %>% filter(best.sample == iter)
     %>% left_join(samples.l$S %>% filter(best.sample == iter)))
@@ -441,7 +442,7 @@ evaluate.held.out <- function(dl, best.sample, held.out) {
         gp.log.marg.like(held.out.expr, K.tau),
         gp.log.marg.like(held.out.expr, K.capture))
 }
-marg.lls <- sapply(head(held.out.genes, 200)$gene,
+marg.lls <- sapply(held.out.genes$gene,
                    Curry(evaluate.held.out,
                          dl=dl,
                          best.sample=best.sample))
@@ -450,9 +451,12 @@ held.out.genes$marg.LL.capture <- marg.lls[2,]
 held.out.gp <- (
     ggplot(held.out.genes, aes(x=marg.LL.tau, y=marg.LL.capture, color=psi.bar))
     + geom_point()
-    + scale_colour_gradient2(midpoint=mean(held.out.genes$psi.bar))
+    + scale_colour_gradient(high="red")
     + geom_abline(intercept=0, slope=1))
+print(held.out.gp)
 ggsave('Shalek-held-out.png', held.out.gp)
+with(held.out.genes, t.test(marg.LL.tau, marg.LL.capture,
+                            paired=TRUE, alternative="greater"))
 
 ```
 
