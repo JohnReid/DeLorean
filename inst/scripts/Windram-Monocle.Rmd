@@ -105,10 +105,14 @@ cds <- orderCells(cds, reverse=F)
 
 Plot the spanning tree.
 ```{r}
-p <- plot_spanning_tree(cds, color_by="capture")
-print(p)
+gp.mst <- plot_spanning_tree(cds, color_by="capture")
+print(gp.mst)
 pdf('Windram-Monocle-order.pdf', width=fig.width, height=fig.height)
-print(p)
+print(gp.mst)
+dev.off()
+png('Windram-Monocle-order.png', width=fig.width, height=fig.height,
+    units="in", res=300)
+print(gp.mst)
 dev.off()
 
 ```
@@ -127,16 +131,20 @@ dev.off()
 Plot pseudotime against true capture time.
 ```{r}
 .data <- as(phenoData(cds), "data.frame")
-p <- (
+gp.monocle.pseudo <- (
     ggplot(.data,
            aes(x=Pseudotime,
                y=obstime.orig))
     + geom_point()
     + scale_x_continuous(name="pseudotime")
     + scale_y_continuous(name="capture time"))
-print(p)
+print(gp.monocle.pseudo)
 pdf('Windram-Monocle-compare.pdf', width=fig.width, height=fig.height)
-print(p)
+print(gp.monocle.pseudo)
+dev.off()
+png('Windram-Monocle-compare.png', width=fig.width, height=fig.height,
+    units="in", res=300)
+print(gp.monocle.pseudo)
 dev.off()
 # What is the correlation?
 with(.data, cor(obstime.orig, Pseudotime))
