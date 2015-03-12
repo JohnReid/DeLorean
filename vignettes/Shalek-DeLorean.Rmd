@@ -447,10 +447,12 @@ marg.lls <- sapply(held.out.genes$gene,
                          best.sample=best.sample))
 held.out.genes$marg.LL.tau <- marg.lls[1,]
 held.out.genes$marg.LL.capture <- marg.lls[2,]
-(
+held.out.gp <- (
     ggplot(held.out.genes, aes(x=marg.LL.tau, y=marg.LL.capture, color=psi.bar))
     + geom_point()
+    + scale_colour_gradient2(midpoint=mean(held.out.genes$psi.bar))
     + geom_abline(intercept=0, slope=1))
+ggsave('Shalek-held-out.png', held.out.gp)
 
 ```
 
