@@ -417,8 +417,8 @@ $$
 ```{r heldOutGenes}
 held.out.genes <- with(dl, gene.var
                            %>% left_join(gene.meta)
-                           %>% filter(! gene %in% gene.map$gene,
-                                      cluster == "Id")
+                           %>% filter(! gene %in% gene.map$gene)
+                           # %>% filter(! gene %in% gene.map$gene, cluster == "Id")
                            %>% arrange(-psi.bar))
 best.sample <- with(dl,
     samples.l$tau %>% filter(best.sample == iter)
@@ -441,7 +441,7 @@ evaluate.held.out <- function(dl, best.sample, held.out) {
         gp.log.marg.like(held.out.expr, K.tau),
         gp.log.marg.like(held.out.expr, K.capture))
 }
-marg.lls <- sapply(held.out.genes$gene,
+marg.lls <- sapply(head(held.out.genes, 200)$gene,
                    Curry(evaluate.held.out,
                          dl=dl,
                          best.sample=best.sample))
