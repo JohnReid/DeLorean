@@ -317,6 +317,11 @@ print(gp)
 pdf('McDavid-rmse-vs-rmse-adj.pdf', width=fig.width, height=fig.height)
 print(gp)
 dev.off()
+png('McDavid-rmse-vs-rmse-adj.png', width=fig.width*1.75, height=fig.height*1.5,
+    units="in", res=200)
+print(gp)
+dev.off()
+
 # Test for normality
 with(dl$peak.max.dist, shapiro.test(rmse.adj))
 with(dl$peak.max.dist, shapiro.test(rmse))
@@ -352,6 +357,10 @@ gp <- (
 )
 print(gp)
 pdf('McDavid-peak-vs-max.pdf', width=fig.width, height=fig.height)
+print(gp)
+dev.off()
+png('McDavid-peak-vs-max.png', width=fig.width*1.75, height=fig.height*1.5,
+    units="in", res=200)
 print(gp)
 dev.off()
 
@@ -396,6 +405,10 @@ print(gp)
 pdf('McDavid-capture-peaks.pdf', width=fig.width, height=fig.height)
 print(gp)
 dev.off()
+png('McDavid-capture-peaks.png', width=fig.width*3.5, height=fig.height*3,
+    units="in", res=100)
+print(gp)
+dev.off()
 
 ```
 
@@ -407,8 +420,13 @@ gp <- plot(dl, type="profiles", cell.size.adj=F, adjust.model=lo)
 pdf('McDavid-profiles-adj.pdf', width=fig.width*2, height=fig.height*2)
 print(gp)
 dev.off()
-gp <- plot(dl, type="profiles")
+gp <- plot(dl, type="profiles") + scale_x_continuous(name='Pseudotime',
+                                                     limits=c(0, 3))
 pdf('McDavid-profiles.pdf', width=fig.width*2, height=fig.height*2)
+print(gp)
+dev.off()
+png('McDavid-profiles.png', width=fig.width*3.5, height=fig.height*3,
+    units="in", res=100)
 print(gp)
 dev.off()
 
