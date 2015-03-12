@@ -9,6 +9,7 @@ output: html_document
 library(devtools)
 load_all('..')
 library(rmarkdown)
+fit.model <- FALSE
 fit.model <- TRUE
 render('Shalek-DeLorean.Rmd')
 
@@ -76,12 +77,11 @@ theme_set(font.theme)
 `r date()`
 
 
-`r citet(bib[["shalek_single-cell_2014"]])`
-
 
 # Data
 
-Shalek et al.'s data is available in the `DeLorean` R package.
+Shalek et al.'s data `r citet(bib[["shalek_single-cell_2014"]])`
+is available in the `DeLorean` R package.
 ```{r loadLib, eval=fit.model}
 library(DeLorean)
 data(ShalekDeLorean)
@@ -143,9 +143,9 @@ Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes, eval=fit.model}
 dl <- estimate.hyper(
     dl,
-    sigma.tau=1.5,
+    sigma.tau=2,
     delta=.5,
-    length.scale=4,
+    length.scale=5,
     model.name='simple-model')
 
 ```
@@ -158,14 +158,47 @@ dl <- estimate.hyper(
 Choose genes: take those with highest variance between time points
 relative to the noise level.
 ```{r filterGenes, eval=fit.model}
-max.genes <- min(getOption("Shalek.max.genes", 59))
-core.antiviral.genes <- dl$gene.meta %>% filter("Id" == cluster)
+max.genes <- min(getOption("Shalek.max.genes", 37))
+shalek.key.genes <- unique(toupper(c(
+    #
+    # Cluster I d (core antiviral module; enriched for annotated antiviral and
+    #             interferon response genes; for example,-
+    "Ifit1", "Irf7",
+    #
+    # Cluster III c (peaked inflammatory module; showing rapid,
+    # yet transient, induction under LPS; for example,
+    "Tnf", "Il1a", "Cxcl2",
+    #
+    # Cluster III d (sustained inflammatory module; exhibiting
+    # continued rise in expression under LPS; for example,
+    "Mmp14", "Marco", "Il6",
+    #
+    # Cluster III b (‘maturity’ module; containing markers of
+    # dendritic cell maturation; for example,
+    "Cd83", "Ccr7", "Ccl22",
+    #
+    # At 2 h following LPS,
+    "Ifnb1",
+    # was bimodally expressed
+    #
+    # Genes encoding key inflammatory cytokines (for example,
+    "Tnf", "Cxcl1",
+    #
+    # Figure 4: core antiviral targets.
+    "Rsad2", "Stat2"
+)))
+# clusters <- c("Id", "IIIb", "IIIc", "IIId")
+clusters <- c("Id")
 genes.for.stan <- (
     dl$gene.var
-    %>% filter(gene %in% core.antiviral.genes$gene)
-    %>% arrange(-psi.bar)
+    %>% left_join(dl$gene.meta)
+    %>% mutate(key=gene %in% shalek.key.genes)
+    %>% filter(cluster %in% clusters)
+    %>% arrange(- psi.bar + omega.bar)
     %>% head(max.genes))
 dl <- filter.genes(dl, function(genes) genes %in% genes.for.stan$gene)
+# How many come from each cluster?
+qplot(genes.for.stan$cluster)
 
 ```
 
@@ -307,10 +340,11 @@ core.antiviral <- (
     %>% left_join(dl$cell.meta %>% select(cell, capture))
     %>% filter("Id" == cluster)
     %>% arrange(-module.score))
-(ggplot(core.antiviral, aes(x=module.score, color=capture)) + geom_density())
 precocious <- core.antiviral %>% filter("1h" == capture) %>% head(2)
 precocious
 precocious$cell
+module.scores <- module.scores %>% mutate(precocious=cell %in% precocious$cell)
+(ggplot(core.antiviral, aes(x=module.score, color=capture)) + geom_density())
 # Plot the core antiviral, the maturity, the peaked inflammation and
 # the sustained inflammation module scores against pseudotime.
 (ggplot(module.scores
@@ -320,19 +354,46 @@ precocious$cell
     + stat_smooth()
     + geom_point())
 # Same with just core antiviral coloured by capture
-(ggplot(module.scores %>% left_join(dl$cell.meta %>% select(cell, capture))
+(ggplot(module.scores
+        %>% left_join(dl$cell.meta %>% select(cell, capture))
         %>% filter(! is.na(tau),
                    cluster == "Id"),
-        aes(x=tau, y=module.score, colour=capture))
+        aes(x=tau, y=module.score, colour=capture, shape=precocious))
     + stat_smooth(aes(group=""))
     + geom_point())
 
 # Examine what pseudotimes the model estimated for the precocious genes
 ( dl$samples.l$tau
     %>% filter(dl$best.sample == iter,
-               cell %in% c("LPS_1h_S51", "LPS_1h_S52")))
+               cell %in% precocious$cell))
 
 ```
+
+
+```{r checkPrecocious}
+S51.dists <- with(
+    dl,
+    melt(expr - expr[,"LPS_1h_S51"], varnames=c("gene", "cell"))
+    %>% mutate(gene=factor(gene, levels=levels(gene.map$gene)))
+    %>% mutate(cell=factor(cell, levels=levels(cell.map$cell)))
+    %>% left_join(gene.map)
+    %>% left_join(cell.map))
+names(S51.dists)
+# bad.genes <- c(51, 53, 73)
+bad.genes <- c()
+dl$gene.map[bad.genes,]
+gp <- (
+    ggplot(S51.dists %>% filter(! g %in% bad.genes),
+           aes(x=g, y=c, fill=value))
+    + geom_tile()
+    + scale_fill_gradient2()
+)
+png('S51-dists.png', width=960, height=960)
+print(gp)
+dev.off()
+
+```
+
 
 ```{r date}
 date()
