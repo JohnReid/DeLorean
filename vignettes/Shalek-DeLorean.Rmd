@@ -415,41 +415,21 @@ $$
     \Sigma_t(c_1, c_2) = \Sigma_t(r=|\kappa_{c_1} - \kappa_{c_2}|)
 $$
 ```{r heldOutGenes}
+load_all('..')
 held.out.genes <- with(dl, gene.var
                            %>% left_join(gene.meta)
                            %>% filter(! gene %in% gene.map$gene)
                            %>% filter(cluster != "Id")
                            %>% arrange(-psi.bar)
                            %>% head(getOption('Shalek.held.out', 100)))
-best.sample <- with(dl,
-    samples.l$tau %>% filter(best.sample == iter)
-    %>% left_join(samples.l$S %>% filter(best.sample == iter)))
-held.out <- held.out.genes$gene[1]
-#' Calculate covariance over pseudotimes and capture times
-calc.K <- Curry(cov.calc.gene,
-                dl,
-                include.test=F,
-                psi=dl$stan.data$mu_psi,
-                omega=dl$stan.data$mu_omega)
-K.tau <- calc.K(use.capture=FALSE)
-K.capture <- calc.K(use.capture=TRUE)
-#' Evaluate the held out gene under the GP model using pseudotimes
-#' and a model without.
-#'
-evaluate.held.out <- function(dl, best.sample, held.out) {
-    held.out.expr <- shalek.A.expr[held.out, dl$cell.map$cell] + best.sample$S
-    c(
-        gp.log.marg.like(held.out.expr, K.tau),
-        gp.log.marg.like(held.out.expr, K.capture))
-}
-marg.lls <- sapply(held.out.genes$gene,
-                   Curry(evaluate.held.out,
-                         dl=dl,
-                         best.sample=best.sample))
+marg.lls <- fit.held.out(dl, held.out.genes$gene, shalek.A.expr)
 held.out.genes$marg.LL.tau <- marg.lls[1,]
 held.out.genes$marg.LL.capture <- marg.lls[2,]
 held.out.gp <- (
-    ggplot(held.out.genes, aes(x=marg.LL.tau, y=marg.LL.capture, color=psi.bar))
+    ggplot(held.out.genes,
+           aes(x=marg.LL.tau,
+               y=marg.LL.capture,
+               color=psi.bar))
     + geom_point()
     + scale_colour_gradient(high="red")
     + geom_abline(intercept=0, slope=1))
