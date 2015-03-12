@@ -760,6 +760,7 @@ analyse.noise.levels <- function(dl, num.high.psi=25) {
     })
 }
 
+
 #' Get the sampled parameter for the gene
 #'
 #' @param dl de.lorean object
@@ -775,6 +776,7 @@ sampled.gene.param <- function(dl, gene.idx, param, sample.iter=NULL) {
         filter(samples.l[[param]], gene.idx == g, sample.iter == iter)[[param]]
     })
 }
+
 
 #' Make predictions
 #'
@@ -794,4 +796,3 @@ make.predictions <- function(dl) {
         }
     })
 }
-
