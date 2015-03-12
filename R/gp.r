@@ -50,21 +50,28 @@ cov.calc.dists <- function(tau.1, tau.2=NULL, period=NULL) {
 #'
 #' @export
 #'
-cov.calc.dl.dists <- function(dl, sample.iter=NULL) {
+cov.calc.dl.dists <- function(dl,
+                              sample.iter=dl$best.sample,
+                              use.capture=FALSE,
+                              include.test=TRUE) {
+    stopifnot(!(include.test && use.capture))
     with(dl, {
-        if (is.null(sample.iter)) {
-            sample.iter <- best.sample
-        }
-        tau <- (
-            samples.l$tau
-            %>% filter(sample.iter == iter)  # Filter correct iteration
-            %>% arrange(c)  # Sort by cell
-        )$tau
-        timepoints <- c(tau, test.input)
-        if (opts$periodic) {
-            cov.calc.dists(timepoints, opts$period)
+        if (use.capture) {
+            tau <- dl$cell.map$obstime
         } else {
-            cov.calc.dists(timepoints)
+            tau <- (
+                samples.l$tau
+                %>% filter(sample.iter == iter)  # Filter correct iteration
+                %>% arrange(c)  # Sort by cell
+            )$tau
+        }
+        if (include.test) {
+            tau <- c(tau, test.input)
+        }
+        if (opts$periodic) {
+            cov.calc.dists(tau, opts$period)
+        } else {
+            cov.calc.dists(tau)
         }
     })
 }
@@ -76,22 +83,27 @@ cov.calc.dl.dists <- function(dl, sample.iter=NULL) {
 #' @param gene.idx Gene index
 #' @param cov.fn Covariance function (defaults to cov.matern.32)
 #' @param sample.iter Iteration to use (defaults to best.sample)
+#' @param psi Temporal variation
+#' @param psi Noise
 #'
 #' @export
 #'
-cov.calc.gene <- function(dl, gene.idx, cov.fn=NULL, sample.iter=NULL) {
-    if (is.null(cov.fn)) {
-        cov.fn <- cov.matern.32
-    }
+cov.calc.gene <- function(dl,
+                          gene.idx,
+                          cov.fn=cov.matern.32,
+                          sample.iter=dl$best.sample,
+                          use.capture=FALSE,
+                          include.test=TRUE,
+                          psi = sampled.gene.param(dl, gene.idx, "psi"  , sample.iter),
+                          omega=sampled.gene.param(dl, gene.idx, "omega", sample.iter))
+{
     with(dl, {
-        if (is.null(sample.iter)) {
-            sample.iter <- best.sample
-        }
-        r <- cov.calc.dl.dists(dl, sample.iter)
-        psi   <- sampled.gene.param(dl, gene.idx, "psi"  , sample.iter)
-        omega <- sampled.gene.param(dl, gene.idx, "omega", sample.iter)
+        r <- cov.calc.dl.dists(dl,
+                               sample.iter=sample.iter,
+                               use.capture=use.capture,
+                               include.test=include.test)
         (
-            psi * cov.fn(r, length.scale)  # Structure
+            psi * cov.fn(r, stan.data$l)  # Structure
             + omega * identity.matrix(nrow(r))  # Noise
         )
     })

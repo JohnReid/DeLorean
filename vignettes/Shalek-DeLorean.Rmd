@@ -25,6 +25,7 @@ render('Shalek-DeLorean.Rmd')
 library(knitr)
 library(knitcitations)
 library(rmarkdown)
+library(functional)
 #
 # knitr options
 #
@@ -394,6 +395,64 @@ dev.off()
 
 ```
 
+
+Evaluate the held out genes that weren't used to fit the model. We fit GPs
+to the data with two covariance functions. We use the same covariance
+structure as the model.
+$$
+    \Sigma(c_1, c_2) = \mu_\bar{\psi} + \Sigma_t(c_1, c_2) + \mu_\bar{\omega}
+$$
+In one case we use the pseudotimes from the best sample for $\Sigma_t$. The
+marginal likelihood from this model is a proxy for how well the pseudotimes
+smooth the expression values.
+$$
+    \Sigma_t(c_1, c_2) = \Sigma_t(r=|\tau_{c_1} - \tau_{c_2}|)
+$$
+in the other case, we use the cell capture times. The marginal likelihood
+for this model is a proxy for how well the expression values are smoothed
+by the capture times.
+$$
+    \Sigma_t(c_1, c_2) = \Sigma_t(r=|\kappa_{c_1} - \kappa_{c_2}|)
+$$
+```{r heldOutGenes}
+held.out.genes <- with(dl, gene.var
+                           %>% left_join(gene.meta)
+                           %>% filter(! gene %in% gene.map$gene,
+                                      cluster == "Id")
+                           %>% arrange(-psi.bar))
+best.sample <- with(dl,
+    samples.l$tau %>% filter(best.sample == iter)
+    %>% left_join(samples.l$S %>% filter(best.sample == iter)))
+held.out <- held.out.genes$gene[1]
+#' Calculate covariance over pseudotimes and capture times
+calc.K <- Curry(cov.calc.gene,
+                dl,
+                include.test=F,
+                psi=dl$stan.data$mu_psi,
+                omega=dl$stan.data$mu_omega)
+K.tau <- calc.K(use.capture=FALSE)
+K.capture <- calc.K(use.capture=TRUE)
+#' Evaluate the held out gene under the GP model using pseudotimes
+#' and a model without.
+#'
+evaluate.held.out <- function(dl, best.sample, held.out) {
+    held.out.expr <- shalek.A.expr[held.out, dl$cell.map$cell] + best.sample$S
+    c(
+        gp.log.marg.like(held.out.expr, K.tau),
+        gp.log.marg.like(held.out.expr, K.capture))
+}
+marg.lls <- sapply(held.out.genes$gene,
+                   Curry(evaluate.held.out,
+                         dl=dl,
+                         best.sample=best.sample))
+held.out.genes$marg.LL.tau <- marg.lls[1,]
+held.out.genes$marg.LL.capture <- marg.lls[2,]
+(
+    ggplot(held.out.genes, aes(x=marg.LL.tau, y=marg.LL.capture, color=psi.bar))
+    + geom_point()
+    + geom_abline(intercept=0, slope=1))
+
+```
 
 ```{r date}
 date()
