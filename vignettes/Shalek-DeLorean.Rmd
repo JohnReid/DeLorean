@@ -400,7 +400,7 @@ Evaluate the held out genes that weren't used to fit the model. We fit GPs
 to the data with two covariance functions. We use the same covariance
 structure as the model.
 $$
-    \Sigma(c_1, c_2) = \mu_\bar{\psi} + \Sigma_t(c_1, c_2) + \mu_\bar{\omega}
+    \Sigma(c_1, c_2) = \mu_\bar{\psi} \Sigma_t(c_1, c_2) + \mu_\bar{\omega}
 $$
 In one case we use the pseudotimes from the best sample for $\Sigma_t$. The
 marginal likelihood from this model is a proxy for how well the pseudotimes
