@@ -3,6 +3,15 @@
 attach(dl)
 ```
 
+## Hyperparameters
+
+$$ \begin{eqnarray*}
+\sigma_\tau = `r stan.data$sigma_tau`
+\delta = `r opts$delta`
+l = `r stan.data$l`
+\end{eqnarray*} $$
+
+
 ## Estimation of cell size factors: $S_c$
 
 The cell size factors represent the relative amount of biological material in

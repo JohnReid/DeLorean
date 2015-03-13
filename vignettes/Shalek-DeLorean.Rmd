@@ -144,10 +144,10 @@ Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes, eval=fit.model}
 dl <- estimate.hyper(
     dl,
-    sigma.tau=2,
-    delta=.5,
-    length.scale=5,
-    model.name='simple-model')
+    sigma.tau=getOption("Shalek.sigma.tau", 2),
+    delta=getOption("Shalek.delta", .8),
+    length.scale=getOption("Shalek.length.scale", 5),
+    model.name=getOption("Shalek.model", 'simple-model'))
 
 ```
 ```{r child=report.file("hyper-parameters")}
@@ -159,7 +159,7 @@ dl <- estimate.hyper(
 Choose genes: take those with highest variance between time points
 relative to the noise level.
 ```{r filterGenes, eval=fit.model}
-max.genes <- min(getOption("Shalek.max.genes", 74))
+max.genes <- min(getOption("Shalek.max.genes", 13))
 shalek.key.genes <- unique(toupper(c(
     #
     # Cluster I d (core antiviral module; enriched for annotated antiviral and
@@ -206,7 +206,7 @@ qplot(genes.for.stan$cluster)
 Choose a few cells but make sure we have the precocious cells.
 ```{r filterCells, eval=fit.model}
 set.seed(1)
-num.cells <- getOption("Shalek.max.cells", 75)
+num.cells <- getOption("Shalek.max.cells", 12)
 sampled.cells <- sample(colnames(dl$expr), num.cells)
 if (! "LPS_1h_S51" %in% sampled.cells) {
     sampled.cells[1] <- "LPS_1h_S51"
