@@ -439,6 +439,27 @@ with(held.out.genes, t.test(marg.LL.tau, marg.LL.capture,
 
 ```
 
+
+```r checkSampleVar, echo=FALSE, eval=FALSE}
+# Check calculations are correct for expected sample variance from a
+# Gaussian
+library(matrixcalc)
+library(MASS)
+S <- toeplitz((10:1)/10)
+set.seed(11)
+R <- rWishart(1, 20, S)
+Sigma <- R[,,1]
+is.positive.definite(Sigma)
+x <- mvrnorm(n=1e6, mu=rep(0, 10), Sigma=Sigma)
+dim(x)
+x.centre <- t(scale(t(x), scale=F, center=T))
+x2 <- x.centre ** 2
+mean(rowSums(x2)/10)
+mean(diag(Sigma)) - mean(as.vector(Sigma))
+
+```
+
+
 ```{r date}
 date()
 ```
