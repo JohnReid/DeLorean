@@ -822,8 +822,8 @@ fit.held.out <- function(dl, held.out.genes, expr.held.out)
         calc.K <- Curry(cov.calc.gene,
                         dl,
                         include.test=F,
-                        psi=stan.data$mu_psi,
-                        omega=stan.data$mu_omega)
+                        psi=exp(stan.data$mu_psi),
+                        omega=exp(stan.data$mu_omega))
         K.tau <- calc.K(use.capture=FALSE)
         K.capture <- calc.K(use.capture=TRUE)
         #' Evaluate the held out gene under the GP model using pseudotimes

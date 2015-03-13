@@ -3,12 +3,12 @@
 attach(dl)
 ```
 
-## Hyperparameters
+## Fixed hyperparameters
 
 $$ \begin{eqnarray*}
-\sigma_\tau = `r stan.data$sigma_tau`
-\delta = `r opts$delta`
-l = `r stan.data$l`
+\sigma_\tau &=& `r opts$sigma.tau` \\
+\delta &=& `r opts$delta` \\
+l &=& `r hyper$l` \\
 \end{eqnarray*} $$
 
 

@@ -415,7 +415,6 @@ $$
     \Sigma_t(c_1, c_2) = \Sigma_t(r=|\kappa_{c_1} - \kappa_{c_2}|)
 $$
 ```{r heldOutGenes}
-load_all('..')
 held.out.genes <- with(dl, gene.var
                            %>% left_join(gene.meta)
                            %>% filter(! gene %in% gene.map$gene)
