@@ -796,3 +796,49 @@ make.predictions <- function(dl) {
         }
     })
 }
+
+#' Fit held out genes
+#'
+#' @param dl de.lorean object
+#' @param held.out.genes The held out genes
+#' @param expr.held.out The expression matrix including the held out genes
+#'
+#' @export
+#'
+fit.held.out <- function(dl, held.out.genes, expr.held.out)
+{
+    with(dl, {
+        cell.posterior <- (
+            samples.l$tau
+            %>% filter(best.sample == iter)
+            %>% left_join(samples.l$S
+                          %>% filter(best.sample == iter)))
+        # print(expr.held.out[held.out.genes,])
+        # print(expr.held.out[,cell.map$cell])
+        expr.held.out <- expr.held.out[as.character(held.out.genes),
+                                       as.character(cell.map$cell)]
+        expr.adj <- t(t(expr.held.out) + cell.posterior$S)
+        #' Calculate covariance over pseudotimes and capture times
+        calc.K <- Curry(cov.calc.gene,
+                        dl,
+                        include.test=F,
+                        psi=stan.data$mu_psi,
+                        omega=stan.data$mu_omega)
+        K.tau <- calc.K(use.capture=FALSE)
+        K.capture <- calc.K(use.capture=TRUE)
+        #' Evaluate the held out gene under the GP model using pseudotimes
+        #' and a model without.
+        #'
+        evaluate.held.out <- function(dl, cell.posterior, held.out) {
+            held.out.expr <- expr.adj[as.character(held.out),]
+            c(
+                gp.log.marg.like(held.out.expr, K.tau),
+                gp.log.marg.like(held.out.expr, K.capture))
+        }
+        sapply(held.out.genes,
+               Curry(evaluate.held.out,
+                     dl=dl,
+                     cell.posterior=cell.posterior))
+    })
+}
+
