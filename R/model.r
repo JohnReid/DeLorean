@@ -16,7 +16,7 @@ estimate.hyper <- function(
     length.scale = NULL,
     model.name = 'simplest-model'
 ) {
-    within(dl, {
+    dl <- within(dl, {
         #
         # Remember options that depend on the model
         #
@@ -38,6 +38,14 @@ estimate.hyper <- function(
         opts$sigma.tau <- sigma.tau
         time.range <- range(cell.meta$obstime)
         time.width <- time.range[2] - time.range[1]
+        if (is.null(length.scale)) {
+            opts$length.scale <- time.width / 2
+        } else {
+            opts$length.scale <- length.scale
+        }
+        # message("Length scale: ", opts$length.scale)
+    })
+    within(dl, {
         #
         # First melt expression data into long format
         #
@@ -102,18 +110,16 @@ estimate.hyper <- function(
         )
         stopifnot(! is.na(gene.var))
         stopifnot(nrow(gene.var) > 0)  # Must have some rows left
-        if (is.null(length.scale)) {
-            length.scale <- time.width / 2
-        }
         #
         # Work out the variance that would be expected from
         # a sample from the GP using a sample of tau from the prior
         #
         psi.hat.mean <- mean(gene.var$psi.hat)
         omega.hat.mean <- mean(gene.var$omega.hat)
+        # message("Sampled tau: ", tau.sample.prior)
         K <- cov.calc.gene(dl,
-                           tau=rnorm(nrow(cell.map),
-                                     mean=cell.map$obstime,
+                           tau=rnorm(nrow(cell.meta),
+                                     mean=cell.meta$obstime,
                                      sd=sigma.tau),
                            include.test=FALSE,
                            psi=psi.hat.mean,
@@ -138,9 +144,10 @@ estimate.hyper <- function(
             mu_omega=mean(log(lambda * gene.var$omega.hat), na.rm=TRUE),
             sigma_omega=sd(log(lambda * gene.var$omega.hat), na.rm=TRUE),
             sigma_tau=opts$sigma.tau,
-            l=length.scale
+            l=opts$length.scale
         )
-        rm(expr.l)  # No longer needed
+        # No longer needed
+        rm(expr.l, K, psi.hat.mean, omega.hat.mean, exp.sample.var)
     })
 }
 

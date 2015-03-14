@@ -111,7 +111,7 @@ cov.calc.gene <- function(dl,
                                tau=tau,
                                include.test=include.test)
         (
-            psi * cov.fn(r, stan.data$l)  # Structure
+            psi * cov.fn(r, opts$length.scale)  # Structure
             + omega * identity.matrix(nrow(r))  # Noise
         )
     })
