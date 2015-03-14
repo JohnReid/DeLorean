@@ -459,6 +459,19 @@ mean(diag(Sigma)) - mean(as.vector(Sigma))
 
 ```
 
+```{r tauPosterior}
+gp <- (
+    ggplot(dl$samples.l$tau,
+            aes(x=tau.offset, color=capture))
+    + geom_density()
+    + geom_rug(alpha=.01)
+    + stat_function(fun=Curry(dnorm, sd=dl$stan.data$sigma_tau),
+                    linetype=2,
+                    color="black")
+)
+ggsave('Shalek-tau-offset.png', gp)
+
+```
 
 ```{r date}
 date()
