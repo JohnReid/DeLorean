@@ -105,15 +105,38 @@ estimate.hyper <- function(
         if (is.null(length.scale)) {
             length.scale <- time.width / 2
         }
+        #
+        # Work out the variance that would be expected from
+        # a sample from the GP using a sample of tau from the prior
+        #
+        psi.hat.mean <- mean(gene.var$psi.hat)
+        omega.hat.mean <- mean(gene.var$omega.hat)
+        K <- cov.calc.gene(dl,
+                           tau=rnorm(nrow(cell.map),
+                                     mean=cell.map$obstime,
+                                     sd=sigma.tau),
+                           include.test=FALSE,
+                           psi=psi.hat.mean,
+                           omega=omega.hat.mean)
+        exp.sample.var <- expected.sample.var(K)
+        #
+        # Rescale the GP variances so the expected variances match
+        #
+        message("Expected sample variance: ", exp.sample.var)
+        message("Psi hat mean            : ", psi.hat.mean)
+        message("Omega hat mean          : ", omega.hat.mean)
+        message("Psi + omega hat mean    : ", psi.hat.mean + omega.hat.mean)
+        lambda <- (psi.hat.mean + omega.hat.mean) / exp.sample.var
+        message("Lambda                  : ", lambda)
         hyper <- list(
             mu_S=mean(cell.expr$S.hat),
             sigma_S=sd(cell.expr$S.hat),
             mu_phi=mean(gene.expr$phi.hat),
             sigma_phi=sd(gene.expr$phi.hat),
-            mu_psi=mean(log(gene.var$psi.hat), na.rm=TRUE),
-            sigma_psi=sd(log(gene.var$psi.hat), na.rm=TRUE),
-            mu_omega=mean(log(gene.var$omega.hat), na.rm=TRUE),
-            sigma_omega=sd(log(gene.var$omega.hat), na.rm=TRUE),
+            mu_psi=mean(log(lambda * gene.var$psi.hat), na.rm=TRUE),
+            sigma_psi=sd(log(lambda * gene.var$psi.hat), na.rm=TRUE),
+            mu_omega=mean(log(lambda * gene.var$omega.hat), na.rm=TRUE),
+            sigma_omega=sd(log(lambda * gene.var$omega.hat), na.rm=TRUE),
             sigma_tau=opts$sigma.tau,
             l=length.scale
         )
@@ -824,8 +847,8 @@ fit.held.out <- function(dl, held.out.genes, expr.held.out)
                         include.test=F,
                         psi=exp(stan.data$mu_psi),
                         omega=exp(stan.data$mu_omega))
-        K.tau <- calc.K(use.capture=FALSE)
-        K.capture <- calc.K(use.capture=TRUE)
+        K.tau <- calc.K()
+        K.capture <- calc.K(tau="capture")
         #' Evaluate the held out gene under the GP model using pseudotimes
         #' and a model without.
         #'

@@ -145,7 +145,7 @@ Examine data for empirical Bayes estimation of hyperparameters.
 dl <- estimate.hyper(
     dl,
     sigma.tau=getOption("Shalek.sigma.tau", 2),
-    delta=getOption("Shalek.delta", .8),
+    delta=getOption("Shalek.delta", .5),
     length.scale=getOption("Shalek.length.scale", 5),
     model.name=getOption("Shalek.model", 'simple-model'))
 
@@ -253,7 +253,7 @@ dl <- compile.model(dl)
     # %>% melt(varnames=c("gene", "cell"), value.name="x")
     # %>% mutate(gene=factor(gene, levels=levels(gene.meta$gene)),
                # cell=factor(cell, levels=levels(cell.meta$cell)))
-    # %>% left_join(test.dl$cell.map %>% select(cell, c, capture, obstime))
+    # %>% left_join(test.dl$cell.map %>% dplyr::select(cell, c, capture, obstime))
     # %>% left_join(times)
 # )
 # # qplot(x=times$tau, y=dl$stan.data$time)
@@ -334,11 +334,11 @@ module.scores <- (
     %>% summarise(module.score=mean(x))
     %>% left_join(dl$samples.l$tau
                   %>% filter(dl$best.sample == iter)
-                  %>% select(cell, tau)))
+                  %>% dplyr::select(cell, tau)))
 # Find the precocious cells
 core.antiviral <- (
     module.scores
-    %>% left_join(dl$cell.meta %>% select(cell, capture))
+    %>% left_join(dl$cell.meta %>% dplyr::select(cell, capture))
     %>% filter("Id" == cluster)
     %>% arrange(-module.score))
 precocious <- core.antiviral %>% filter("1h" == capture) %>% head(2)
@@ -356,7 +356,7 @@ module.scores <- module.scores %>% mutate(precocious=cell %in% precocious$cell)
     + geom_point())
 # Same with just core antiviral coloured by capture
 (ggplot(module.scores
-        %>% left_join(dl$cell.meta %>% select(cell, capture))
+        %>% left_join(dl$cell.meta %>% dplyr::select(cell, capture))
         %>% filter(! is.na(tau),
                    cluster == "Id"),
         aes(x=tau, y=module.score, colour=capture, shape=precocious))
@@ -440,7 +440,7 @@ with(held.out.genes, t.test(marg.LL.tau, marg.LL.capture,
 ```
 
 
-```r checkSampleVar, echo=FALSE, eval=FALSE}
+```{r checkSampleVar, echo=FALSE, eval=FALSE}
 # Check calculations are correct for expected sample variance from a
 # Gaussian
 library(matrixcalc)
@@ -459,7 +459,7 @@ mean(diag(Sigma)) - mean(as.vector(Sigma))
 
 ```
 
-```{r tauPosterior}
+```{r tauPosteriorOffset}
 gp <- (
     ggplot(dl$samples.l$tau,
             aes(x=tau.offset, color=capture))
@@ -472,6 +472,22 @@ gp <- (
 ggsave('Shalek-tau-offset.png', gp)
 
 ```
+
+
+Look at expected sample variance given different parameters.
+```{r expSampleVar}
+lambda <- 3
+K <- cov.calc.gene(dl,
+                   include.test=F,
+                   tau="capture",
+                   psi=lambda * exp(dl$stan.data$mu_psi),
+                   omega=lambda * exp(dl$stan.data$mu_omega))
+expected.sample.var <- function(K) mean(diag(K)) - mean(K)
+expected.sample.var(K)
+exp(dl$stan.data$mu_psi) + exp(dl$stan.data$mu_omega)
+
+```
+
 
 ```{r date}
 date()

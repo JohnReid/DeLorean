@@ -42,6 +42,23 @@ cov.calc.dists <- function(tau.1, tau.2=NULL, period=NULL) {
     r
 }
 
+
+#' Retrieve the estimated tau for the given sample.
+#'
+#' @param dl de.lorean object
+#' @param sample.iter Which sample to use, defaults to best sample
+#'
+#' @export
+#'
+tau.for.sample <- function(dl, sample.iter=dl$best.sample) {
+    (
+        dl$samples.l$tau
+        %>% filter(sample.iter == iter)  # Filter correct iteration
+        %>% arrange(c)  # Sort by cell
+    )$tau
+}
+
+
 #' Calculate distances over estimated pseudotimes and
 #' test inputs.
 #'
@@ -51,24 +68,17 @@ cov.calc.dists <- function(tau.1, tau.2=NULL, period=NULL) {
 #' @export
 #'
 cov.calc.dl.dists <- function(dl,
-                              sample.iter=dl$best.sample,
-                              use.capture=FALSE,
+                              tau=tau.for.sample(dl),
                               include.test=TRUE) {
     stopifnot(!(include.test && use.capture))
     with(dl, {
-        if (use.capture) {
+        if (length(tau) == 1 && "capture" == tau) {
             tau <- dl$cell.map$obstime
-        } else {
-            tau <- (
-                samples.l$tau
-                %>% filter(sample.iter == iter)  # Filter correct iteration
-                %>% arrange(c)  # Sort by cell
-            )$tau
         }
         if (include.test) {
             tau <- c(tau, test.input)
         }
-        if (opts$periodic) {
+        if (exists('periodic', opts) && opts$periodic) {
             cov.calc.dists(tau, opts$period)
         } else {
             cov.calc.dists(tau)
@@ -91,16 +101,14 @@ cov.calc.dl.dists <- function(dl,
 cov.calc.gene <- function(dl,
                           gene.idx,
                           cov.fn=cov.matern.32,
-                          sample.iter=dl$best.sample,
-                          use.capture=FALSE,
+                          tau=tau.for.sample(dl),
                           include.test=TRUE,
                           psi = sampled.gene.param(dl, gene.idx, "psi"  , sample.iter),
                           omega=sampled.gene.param(dl, gene.idx, "omega", sample.iter))
 {
     with(dl, {
         r <- cov.calc.dl.dists(dl,
-                               sample.iter=sample.iter,
-                               use.capture=use.capture,
+                               tau=tau,
                                include.test=include.test)
         (
             psi * cov.fn(r, stan.data$l)  # Structure
@@ -122,16 +130,13 @@ cov.calc.gene <- function(dl,
 cov.calc.gene.conditioned <- function(dl,
                                       gene.idx,
                                       cov.fn=NULL,
-                                      sample.iter=NULL)
+                                      tau=tau.for.sample(dl))
 {
     if (is.null(cov.fn)) {
         cov.fn <- cov.matern.32
     }
     with(dl, {
-        if (is.null(sample.iter)) {
-            sample.iter <- best.sample
-        }
-        Sigma <- cov.calc.gene(dl, gene.idx, cov.fn, sample.iter)
+        Sigma <- cov.calc.gene(dl, gene.idx, cov.fn, tau=tau)
         num.cells <- nrow(dl$cell.map)
         # From Appendix A.2 of Rasmussen/Williams GP book
         slice.obsd <- 1:num.cells
@@ -154,13 +159,13 @@ cov.calc.gene.conditioned <- function(dl,
 #'
 cov.all.genes.conditioned <- function(dl,
                                       cov.fn=NULL,
-                                      sample.iter=NULL)
+                                      tau=tau.for.sample(dl))
 {
     vapply(1:nrow(dl$gene.map),
            function(gene.idx) cov.calc.gene.conditioned(dl,
                                                         gene.idx,
                                                         cov.fn,
-                                                        sample.iter),
+                                                        tau=tau),
            FUN.VALUE=matrix(0,
                             nrow=length(dl$test.input),
                             ncol=length(dl$test.input)))
@@ -293,3 +298,11 @@ gaussian.condition <- function(
     list(mu = mu.x + as.vector((y - mu.y) %*% alpha),
          Sigma = .A - .C %*% alpha)
 }
+
+#' The expected sample variance of a Guassian with the given covariance.
+#'
+#' @param K Covariance
+#'
+#' @export
+#'
+expected.sample.var <- function(K) mean(diag(K)) - mean(K)

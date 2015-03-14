@@ -227,7 +227,7 @@ mutate.profile.data <- function(.data) {
     (
         .data
         %>% mutate(x=tau, mean=predictedmean+phi, var=predictedvar)
-        %>% select(-tau, -predictedmean, -phi, -predictedvar)
+        %>% dplyr::select(-tau, -predictedmean, -phi, -predictedvar)
     )
 }
 
