@@ -797,11 +797,11 @@ analyse.noise.levels <- function(dl, num.high.psi=25) {
 #' @param param Parameter
 #' @param sample.iter Iteration to use (defaults to best.sample)
 #'
-sampled.gene.param <- function(dl, gene.idx, param, sample.iter=NULL) {
+sampled.gene.param <- function(dl,
+                               gene.idx,
+                               param,
+                               sample.iter=dl$best.sample) {
     with(dl, {
-        if (is.null(sample.iter)) {
-            sample.iter <- best.sample
-        }
         filter(samples.l[[param]], gene.idx == g, sample.iter == iter)[[param]]
     })
 }

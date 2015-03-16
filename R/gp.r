@@ -103,8 +103,8 @@ cov.calc.gene <- function(dl,
                           cov.fn=cov.matern.32,
                           tau=tau.for.sample(dl),
                           include.test=TRUE,
-                          psi = sampled.gene.param(dl, gene.idx, "psi"  , sample.iter),
-                          omega=sampled.gene.param(dl, gene.idx, "omega", sample.iter))
+                          psi = sampled.gene.param(dl, gene.idx, "psi"),
+                          omega=sampled.gene.param(dl, gene.idx, "omega"))
 {
     with(dl, {
         r <- cov.calc.dl.dists(dl,
