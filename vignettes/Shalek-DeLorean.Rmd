@@ -2,15 +2,19 @@
 title: DeLorean analysis of Shalek et al. primary mouse bone-marrow-derived dendritic cells data
 author: John Reid
 bibliography: DeLorean.bib
-output: html_document
+output:
+  html_document:
+    toc: true
+    fig_caption: true
+    css: foghorn.css
 ---
 
 ```{r build, echo=FALSE, eval=FALSE}
 library(devtools)
 load_all('..')
 library(rmarkdown)
-fit.model <- FALSE
-fit.model <- TRUE
+# fit.model <- FALSE
+# fit.model <- TRUE
 render('Shalek-DeLorean.Rmd')
 
 ```

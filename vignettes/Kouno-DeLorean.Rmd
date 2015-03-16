@@ -2,7 +2,11 @@
 title: DeLorean analysis of Kouno et al. THP-1 human myeloid monocytic leukemia data
 author: John Reid
 bibliography: DeLorean.bib
-output: html_document
+output:
+  html_document:
+    toc: true
+    fig_caption: true
+    css: foghorn.css
 ---
 
 ```{r build, echo=FALSE, eval=FALSE}

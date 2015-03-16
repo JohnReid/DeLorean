@@ -10,7 +10,11 @@ render('DeLorean-McDavid.Rmd')
 title: DeLorean analysis of McDavid et al. cell cycle data
 author: John Reid
 bibliography: DeLorean.bib
-output: html_document
+output:
+  html_document:
+    toc: true
+    fig_caption: true
+    css: foghorn.css
 ---
 
 <!--
