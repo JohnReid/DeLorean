@@ -53,7 +53,7 @@ distribution. The estimated cell size factors have this density
 
 
 
-### Estimation of expression variation: $\phi_g$, $\psi_g$, $\omega_g$
+## Estimation of expression variation: $\phi_g$, $\psi_g$, $\omega_g$
 
 Given the estimated cell size factors, we can adjust our gene
 measurements, accounting for the different cell sizes
