@@ -3,7 +3,6 @@
 #' @param dl de.lorean object
 #' @param sigma.tau Noise s.d. in temporal dimension
 #' @param delta Proportion of within time variance to relabel as between time
-#' @param min.sd Minimum s.d. used for drop-out effects (to avoid s.d. of 0 when no drop outs)
 #' @param length.scale Length scale for stationary GP covariance function
 #'
 #' @export
@@ -12,7 +11,6 @@ estimate.hyper <- function(
     dl,
     sigma.tau = .5,
     delta = .5,
-    min.sd = 1e-10,
     length.scale = NULL,
     model.name = 'simplest-model'
 ) {
@@ -103,7 +101,7 @@ estimate.hyper <- function(
             %>% group_by(gene)
             %>% summarise(omega.bar=mean(x.var, na.rm=TRUE),
                           psi.bar=var(x.mean, na.rm=TRUE))
-            %>% filter(! is.na(psi.bar))
+            %>% filter(! is.na(psi.bar), omega.bar > 0 | psi.bar > 0)
             %>% mutate(within.time.mislabelled = opts$delta * omega.bar,
                        omega.hat = omega.bar - within.time.mislabelled,
                        psi.hat = psi.bar + within.time.mislabelled)
@@ -292,7 +290,6 @@ format.for.stan <- function(
                 time=cell.map$obstime,
                 expr=stan.m,
                 # Held out parameters
-                heldout_phi=filter(gene.map, g > .G)$phi.hat,
                 heldout_psi=filter(gene.map, g > .G)$psi.hat,
                 heldout_omega=filter(gene.map, g > .G)$omega.hat,
                 # Generated quantities
@@ -306,6 +303,7 @@ format.for.stan <- function(
         # If we're not estimating phi, add it to the data
         if (! opts$estimate.phi) {
             stan.data$phi <- gene.map$x.mean
+            stan.data$heldout_phi <- filter(gene.map, g > .G)$phi.hat
         }
     })
 }
@@ -317,7 +315,6 @@ format.for.stan <- function(
 #' @export
 #'
 compile.model <- function(dl) {
-    sprintf('inst/Stan/%s.stan', dl$opts$model.name)
     stan.model.file <- system.file(sprintf('inst/Stan/%s.stan',
                                            dl$opts$model.name),
                                    package='DeLorean')
@@ -342,6 +339,7 @@ compile.model <- function(dl) {
             saveRDS(compiled, compiled.model.file)
         }
         # Try one iteration to check everything is OK
+        message("Trying iteration")
         fit <- stan(fit=compiled,
                     data=stan.data,
                     init=make.chain.init.fn(dl),
@@ -360,6 +358,7 @@ compile.model <- function(dl) {
 make.chain.init.fn <- function(dl) {
     function() {
         with(dl$stan.data, {
+            message("Creating initialisation")
             init <- list(
                 S=dl$cell.map$S.hat,
                 tau=rnorm(C, mean=time, sd=sigma_tau),
