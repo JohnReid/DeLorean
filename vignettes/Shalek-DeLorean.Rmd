@@ -418,7 +418,8 @@ $$
 held.out.genes <- with(dl, gene.var
                            %>% left_join(gene.meta)
                            %>% filter(! gene %in% gene.map$gene)
-                           %>% filter(cluster != "Id")
+                           %>% filter(cluster %in% clusters)
+                           # %>% filter(cluster != "Id")
                            %>% arrange(-psi.bar)
                            %>% head(getOption('Shalek.held.out', 100)))
 marg.lls <- fit.held.out(dl, held.out.genes$gene, shalek.A.expr)
