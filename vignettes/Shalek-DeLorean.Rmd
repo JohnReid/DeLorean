@@ -146,16 +146,12 @@ dl <- filter.genes(dl, function(genes) genes %in% induced.genes$gene)
 
 Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes, eval=fit.model}
-# load_all('..')
 dl <- estimate.hyper(
     dl,
     sigma.tau=getOption("Shalek.sigma.tau", 2),
     delta=getOption("Shalek.delta", .5),
     length.scale=getOption("Shalek.length.scale", 5),
     model.name=getOption("Shalek.model", 'simple-model'))
-# dl$gene.var %>% arrange(psi.hat)
-dl$gene.var %>% arrange(omega.hat)
-# stopifnot(FALSE)
 
 ```
 ```{r child=report.file("hyper-parameters")}
