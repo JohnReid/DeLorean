@@ -6,6 +6,7 @@ Description: Estimates pseudotimes for single cell expression data
 Depends:
     R (>= 3.0.2),
     parallel,
+    functional,
     rstan (>= 2.4.0),
     coda,
     stringr (>= 0.6.2),
