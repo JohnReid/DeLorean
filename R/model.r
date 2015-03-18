@@ -127,7 +127,7 @@ estimate.hyper <- function(
         colnames(K.psi) <- rownames(K.psi) <- cells$cell
         # The overall expected sample variance from the tau covariance
         V.psi <- expected.sample.var(K.psi)
-        message('V.psi: ', V.psi)
+        # message('V.psi: ', V.psi)
         # The expected sample variance within each capture time
         var.capture <- (
             cells
@@ -135,8 +135,8 @@ estimate.hyper <- function(
             %>% summarise(exp.sample.var=expected.sample.var(K.psi[as.character(cell),as.character(cell)]),
                           num.capture=n()))
         V.omega <- with(var.capture, weighted.mean(exp.sample.var, num.capture))
-        message('V.omega: ', V.omega)
-        message('V ratio: ', (V.psi - V.omega) / V.omega)
+        # message('V.omega: ', V.omega)
+        # message('V ratio: ', (V.psi - V.omega) / V.omega)
         gene.var <- (
             gene.var
             %>% mutate(data.ratio=Psi/Omega,
@@ -158,7 +158,7 @@ estimate.hyper <- function(
         )
         stopifnot(all(! sapply(hyper, is.na)))
         # No longer needed
-        # rm(expr.l)
+        rm(expr.l, V.omega, var.capture, V.psi, K.psi, r, cells)
     })
 }
 
@@ -353,7 +353,7 @@ compile.model <- function(dl) {
             saveRDS(compiled, compiled.model.file)
         }
         # Try one iteration to check everything is OK
-        message("Trying iteration")
+        # message("Trying iteration")
         fit <- stan(fit=compiled,
                     data=stan.data,
                     init=make.chain.init.fn(dl),
@@ -372,7 +372,7 @@ compile.model <- function(dl) {
 make.chain.init.fn <- function(dl) {
     function() {
         with(dl$stan.data, {
-            message("Creating initialisation")
+            # message("Creating initialisation")
             init <- list(
                 S=dl$cell.map$S.hat,
                 tau=rnorm(C, mean=time, sd=sigma_tau),
