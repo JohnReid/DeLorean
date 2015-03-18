@@ -70,7 +70,6 @@ tau.for.sample <- function(dl, sample.iter=dl$best.sample) {
 cov.calc.dl.dists <- function(dl,
                               tau=tau.for.sample(dl),
                               include.test=TRUE) {
-    stopifnot(!(include.test && use.capture))
     with(dl, {
         if (length(tau) == 1 && "capture" == tau) {
             tau <- dl$cell.map$obstime
@@ -299,7 +298,7 @@ gaussian.condition <- function(
          Sigma = .A - .C %*% alpha)
 }
 
-#' The expected sample variance of a Guassian with the given covariance.
+#' The expected sample variance of a Gaussian with the given covariance.
 #'
 #' @param K Covariance
 #'
