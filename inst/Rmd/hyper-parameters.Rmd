@@ -146,10 +146,11 @@ $$
 Gene variation between and within time:
 ```{r geneVarBetweenWithin}
 (ggplot(gene.var,
-        aes(x=omega.bar,
-            y=psi.bar))
+        aes(x=sqrt(Omega),
+            y=sqrt(Psi)))
     + geom_point(alpha=.5)
     + geom_rug(alpha=.05)
+    + geom_abline(intercept=0, slope=1, linetype="dashed", alpha=.7)
 )
 
 ```

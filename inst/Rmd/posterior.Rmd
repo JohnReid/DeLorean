@@ -5,7 +5,7 @@ attach(dl)
 
 ## Posterior
 
-### Psuedotime
+### Pseudotime
 
 The estimated pseudotime from the best sample against the observed
 capture time.
@@ -21,6 +21,12 @@ The full tau posterior for each cell.
     + geom_boxplot()
     + coord_flip()
 )
+```
+
+The posterior of the pseudotime offsets relative to the capture times.
+We also show the prior on the offset.
+```{r tauPosteriorOffset}
+plot(dl, type="tau.offsets")
 ```
 
 ### Cell sizes
@@ -82,11 +88,12 @@ The posterior for the between time variation $\psi_g$:
 Temporal variation by gene:
 ```{r temporalVariation}
 (ggplot(noise.levels,
-        aes(x=gene, y=log(psi), fill=gene %in% genes.high.psi),
+        aes(x=gene, y=sqrt(psi), fill=gene %in% genes.high.psi),
         environment=environment())
     + geom_boxplot()
     + coord_flip())
 ```
+
 
 ### Within time variation
 
@@ -105,7 +112,7 @@ The posterior for the within time variation $\omega_g$:
 Within time variation by gene:
 ```{r measurementNoise}
 (ggplot(noise.levels,
-        aes(x=gene, y=log(omega), fill=gene %in% genes.high.psi),
+        aes(x=gene, y=sqrt(omega), fill=gene %in% genes.high.psi),
         environment=environment())
     + geom_boxplot()
     + coord_flip())
@@ -117,16 +124,19 @@ Within time variation by gene:
 The within time variation compared to the temporal variation:
 ```{r noiseScatter}
 (ggplot(noise.levels,
-        aes(x=psi, y=omega, color=gene %in% genes.high.psi),
-        environment=environment()) + geom_point())
+        aes(x=sqrt(psi), y=sqrt(omega), color=gene %in% genes.high.psi),
+        environment=environment())
+    + geom_point()
+    + geom_abline(intercept=0, slope=1, linetype="dashed", alpha=.7))
 ```
 
 Within time variation against temporal variation by gene:
 ```{r measurementNoiseByGene}
 (ggplot(gene.noise.levels,
-        aes(x=psi, y=omega, color=gene %in% genes.high.psi),
+        aes(x=sqrt(psi), y=sqrt(omega), color=gene %in% genes.high.psi),
         environment=environment())
-    + geom_point())
+    + geom_point()
+    + geom_abline(intercept=0, slope=1, linetype="dashed", alpha=.7))
 ```
 
 
