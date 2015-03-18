@@ -147,7 +147,7 @@ png('Windram-Monocle-compare.png', width=fig.width, height=fig.height,
 print(gp.monocle.pseudo)
 dev.off()
 # What is the correlation?
-with(.data, cor(obstime.orig, Pseudotime))
+with(.data, cor(obstime.orig, Pseudotime, method="spearman"))
 
 ```
 
