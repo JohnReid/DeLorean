@@ -111,7 +111,7 @@ Select genes by variance.
 ```{r chooseGenes}
 max.genes <- 151
 genes.high.var <- (dl$gene.var
-                   %>% arrange(-psi.bar)
+                   %>% arrange(-Psi)
                    %>% head(max.genes))$gene
 gene.filter <- function(genes) genes %in% genes.high.var
 dl <- filter.genes(dl, gene.filter)
