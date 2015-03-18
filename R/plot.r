@@ -10,7 +10,8 @@ plot.de.lorean <- function(dl, type="profiles", ...) {
         S.posteriors=plot.S.posteriors(dl, ...),
         pseudotime=plot.pseudotime(dl, ...),
         convergence=plot.convergence(dl, ...),
-        expr.data=plot.expr.data(dl, ...)
+        expr.data=plot.expr.data(dl, ...),
+        tau.offsets=plot.tau.offsets(dl, ...)
     )
     if (is.null(result)) {
         stop('Unknown plot type')
@@ -63,6 +64,25 @@ plot.pseudotime <- function(dl) {
         )
     })
 }
+
+
+#' Plot the tau offsets.
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+plot.tau.offsets <- function(dl, rug.alpha=.3) {
+    with(dl,
+         ggplot(samples.l$tau, aes(x=tau.offset, color=capture))
+         + geom_density()
+         + geom_rug(alpha=rug.alpha)
+         + stat_function(fun=Curry(dnorm, sd=hyper$sigma_tau),
+                         linetype='dashed',
+                         color="black")
+    )
+}
+
 
 #' Plot the Rhat convergence statistics. examine.convergence must be called
 #' before this plot can be made.
