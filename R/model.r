@@ -86,12 +86,13 @@ estimate.hyper <- function(
         )
         stopifnot(! is.na(gene.expr))
         stopifnot(nrow(gene.expr) > 0)  # Must have some rows left
-        # Examine the variation within genes and times
+        # Examine the variation within and between times for each gene
         gene.time.expr <- (expr.l
             %>% left_join(cell.meta)
             %>% group_by(gene, capture)
             %>% summarise(x.mean=mean(x.hat),
-                          x.var=var(x.hat))
+                          x.var=mean((x.hat-mean(x.hat))**2),
+                          num.capture=n())
             %>% filter(! is.na(x.var))
         )
         stopifnot(! is.na(gene.time.expr))
@@ -99,12 +100,10 @@ estimate.hyper <- function(
         # Decomposition of variance within and between time.
         gene.var <- (gene.time.expr
             %>% group_by(gene)
-            %>% summarise(omega.bar=mean(x.var, na.rm=TRUE),
-                          psi.bar=var(x.mean, na.rm=TRUE))
-            %>% filter(! is.na(psi.bar), omega.bar > 0 | psi.bar > 0)
-            %>% mutate(within.time.mislabelled = opts$delta * omega.bar,
-                       omega.hat = omega.bar - within.time.mislabelled,
-                       psi.hat = psi.bar + within.time.mislabelled)
+            %>% summarise(Omega=weighted.mean(x.var, num.capture, na.rm=TRUE),
+                          Psi=weighted.mean((x.mean-mean(x.mean))**2,
+                                            num.capture, na.rm=TRUE))
+            %>% filter(! is.na(Psi), Omega > 0 | Psi > 0)
         )
         stopifnot(! is.na(gene.var))
         stopifnot(nrow(gene.var) > 0)  # Must have some rows left
@@ -112,40 +111,54 @@ estimate.hyper <- function(
         # Work out the variance that would be expected from
         # a sample from the GP using a sample of tau from the prior
         #
-        psi.hat.mean <- mean(gene.var$psi.hat)
-        omega.hat.mean <- mean(gene.var$omega.hat)
-        # message("Sampled tau: ", tau.sample.prior)
-        K <- cov.calc.gene(dl,
-                           tau=rnorm(nrow(cell.meta),
-                                     mean=cell.meta$obstime,
-                                     sd=sigma.tau),
-                           include.test=FALSE,
-                           psi=psi.hat.mean,
-                           omega=omega.hat.mean)
-        exp.sample.var <- expected.sample.var(K)
-        #
-        # Rescale the GP variances so the expected variances match
-        #
-        message("Expected sample variance: ", exp.sample.var)
-        message("Psi hat mean            : ", psi.hat.mean)
-        message("Omega hat mean          : ", omega.hat.mean)
-        message("Psi + omega hat mean    : ", psi.hat.mean + omega.hat.mean)
-        lambda <- (psi.hat.mean + omega.hat.mean) / exp.sample.var
-        message("Lambda                  : ", lambda)
+        # First, which cells are we using?
+        cells <- (
+            cell.meta
+            # Select cells in use
+            %>% filter(cell %in% colnames(expr))
+            # Sample tau from prior
+            %>% mutate(tau.sample=rnorm(n(), mean=obstime, sd=sigma.tau)))
+        # Calculate the distance matrix
+        r <- cov.calc.dl.dists(dl,
+                               tau=cells$tau.sample,
+                               include.test=FALSE)
+        # Calculate the covariance over the pseudotimes
+        K.psi <- cov.matern.32(r, opts$length.scale)
+        colnames(K.psi) <- rownames(K.psi) <- cells$cell
+        # The overall expected sample variance from the tau covariance
+        V.psi <- expected.sample.var(K.psi)
+        message('V.psi: ', V.psi)
+        # The expected sample variance within each capture time
+        var.capture <- (
+            cells
+            %>% group_by(capture)
+            %>% summarise(exp.sample.var=expected.sample.var(K.psi[as.character(cell),as.character(cell)]),
+                          num.capture=n()))
+        V.omega <- with(var.capture, weighted.mean(exp.sample.var, num.capture))
+        message('V.omega: ', V.omega)
+        message('V ratio: ', (V.psi - V.omega) / V.omega)
+        gene.var <- (
+            gene.var
+            %>% mutate(data.ratio=Psi/Omega,
+                       data.sum=Psi+Omega,
+                       psi.hat=Psi/(V.psi-V.omega),
+                       omega.est=Omega-Psi*V.omega/(V.psi-V.omega),
+                       omega.hat=pmax(opts$delta*V.omega, omega.est)))
         hyper <- list(
             mu_S=mean(cell.expr$S.hat),
             sigma_S=sd(cell.expr$S.hat),
             mu_phi=mean(gene.expr$phi.hat),
             sigma_phi=sd(gene.expr$phi.hat),
-            mu_psi=mean(log(lambda * gene.var$psi.hat), na.rm=TRUE),
-            sigma_psi=sd(log(lambda * gene.var$psi.hat), na.rm=TRUE),
-            mu_omega=mean(log(lambda * gene.var$omega.hat), na.rm=TRUE),
-            sigma_omega=sd(log(lambda * gene.var$omega.hat), na.rm=TRUE),
+            mu_psi=mean(log(gene.var$psi.hat), na.rm=TRUE),
+            sigma_psi=sd(log(gene.var$psi.hat), na.rm=TRUE),
+            mu_omega=mean(log(gene.var$omega.hat), na.rm=TRUE),
+            sigma_omega=sd(log(gene.var$omega.hat), na.rm=TRUE),
             sigma_tau=opts$sigma.tau,
             l=opts$length.scale
         )
+        stopifnot(all(! sapply(hyper, is.na)))
         # No longer needed
-        rm(expr.l, K, psi.hat.mean, omega.hat.mean, exp.sample.var)
+        # rm(expr.l)
     })
 }
 
@@ -153,17 +166,18 @@ estimate.hyper <- function(
 #' Filter genes
 #'
 #' @param dl de.lorean object
+#' @param number Number to sample if filter function or genes not supplied.
+#' @param genes The genes to keep.
 #' @param .filter Function that gakes a list of genes as input and returns
 #'     a vector of TRUE/FALSE
-#' @param number Number to sample if filter function not supplied.
 #'
 #' @export
 #'
-filter.genes <- function(dl, .filter=NULL, number=NULL) {
-    if (is.null(.filter)) {
-        sampled <- sample(rownames(dl$expr), number)
-        .filter <- function(genes) genes %in% sampled
-    }
+filter.genes <- function(dl,
+                         .filter=function(x) x %in% genes,
+                         number=NULL,
+                         genes=sample(rownames(dl$expr), number))
+{
     within(dl, {
         expr <- expr[.filter(rownames(expr)),]
         message("Have ", nrow(expr), " genes after filtering")
@@ -174,18 +188,18 @@ filter.genes <- function(dl, .filter=NULL, number=NULL) {
 #' Filter cells
 #'
 #' @param dl de.lorean object
+#' @param number Number to sample if filter function or cells not supplied.
+#' @param cells The cells to keep.
 #' @param .filter Function that gakes a list of cells as input and returns
 #'     a vector of TRUE/FALSE
-#' @param number Number to sample if filter function not supplied.
 #'
 #' @export
 #'
-filter.cells <- function(dl, .filter=NULL, number=NULL) {
-    if (is.null(.filter)) {
-        stopifnot(! is.null(number))
-        sampled <- sample(colnames(dl$expr), number)
-        .filter <- function(cells) cells %in% sampled
-    }
+filter.cells <- function(dl,
+                         .filter=function(x) x %in% cells,
+                         number=NULL,
+                         cells=sample(colnames(dl$expr), number))
+{
     within(dl, {
         expr <- expr[,.filter(colnames(expr))]
         message("Have ", ncol(expr), " cells after filtering")
@@ -254,8 +268,8 @@ format.for.stan <- function(
                     %>% left_join(gene.meta))
         stopifnot(! is.na(gene.map[
             c("g", "gene", "x.mean", "x.sd",
-            "phi.hat", "x.hat.sd", "omega.bar", "psi.bar",
-            "within.time.mislabelled", "omega.hat", "psi.hat")
+            "phi.hat", "x.hat.sd", "Omega", "Psi",
+            "omega.hat", "psi.hat")
         ]))
         #
         # Rename phi.hat if we are not estimating phi
@@ -292,6 +306,7 @@ format.for.stan <- function(
                 # Held out parameters
                 heldout_psi=filter(gene.map, g > .G)$psi.hat,
                 heldout_omega=filter(gene.map, g > .G)$omega.hat,
+                heldout_phi=filter(gene.map, g > .G)$phi.hat,
                 # Generated quantities
                 numtest=opts$num.test,
                 testinput=test.input,
@@ -303,7 +318,6 @@ format.for.stan <- function(
         # If we're not estimating phi, add it to the data
         if (! opts$estimate.phi) {
             stan.data$phi <- gene.map$x.mean
-            stan.data$heldout_phi <- filter(gene.map, g > .G)$phi.hat
         }
     })
 }
@@ -397,8 +411,8 @@ even.tau.spread <- function(dl) {
 #'
 find.smooth.tau <- function(
     dl,
-    psi = mean(dl$gene.map$psi.hat),
-    omega = mean(dl$gene.map$omega.hat),
+    psi = exp(dl$hyper$mu_psi),
+    omega = exp(dl$hyper$mu_omega),
     use.parallel = TRUE,
     num.cores = getOption("DL.num.cores", max(detectCores() - 1, 1)),
     num.tau.to.try = num.cores,
@@ -871,3 +885,22 @@ fit.held.out <- function(dl, held.out.genes, expr.held.out)
     })
 }
 
+
+#' Parameter values for sample
+#'
+#' @param dl de.lorean object
+#' @param sample.iter The sample we want the parameters for.
+#'
+#' @export
+#'
+sample.parameters <- function(dl,
+                              sample.iter=dl$best.sample,
+                              param.names=names(dl$samples.l))
+{
+    parameters <- lapply(param.names,
+                         function(param)
+                             filter(dl$samples.l[[param]],
+                                    iter == sample.iter)[[param]])
+    names(parameters) <- param.names
+    parameters
+}
