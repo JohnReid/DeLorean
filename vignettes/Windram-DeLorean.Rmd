@@ -139,7 +139,8 @@ Examine data for empirical Bayes estimation of hyperparameters.
 dl <- estimate.hyper(
     dl,
     sigma.tau=group.size / 2,
-    delta=.5)
+    delta=.5,
+    model.name='simple-model')
 
 ```
 
@@ -170,7 +171,7 @@ saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
 Format the data for Stan and fit the model.
 ```{r fitModel}
 dl <- format.for.stan(dl)
-dl <- compile.model.simple(dl)
+dl <- compile.model(dl)
 dl <- find.best.tau(dl)
 system.time(dl <- fit.model(dl, num.cores=getOption("DL.num.cores")))
 
