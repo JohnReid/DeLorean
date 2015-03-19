@@ -177,6 +177,7 @@ shalek.key.genes <- unique(toupper(c(
 clusters <- c("Id", "IIIb", "IIIc", "IIId")
 # clusters <- c("Id")
 dl <- analyse.variance(dl, adjust.cell.sizes=TRUE)
+gene.variances <- dl$gene.var  # Save copy for later
 genes.for.stan <- (
     dl$gene.var
     %>% left_join(dl$gene.meta)
@@ -420,12 +421,12 @@ $$
     \Sigma_t(c_1, c_2) = \Sigma_t(r=|\kappa_{c_1} - \kappa_{c_2}|)
 $$
 ```{r heldOutGenes}
-held.out.genes <- with(dl, gene.var
+held.out.genes <- with(dl, gene.variances
                            %>% left_join(gene.meta)
                            %>% filter(! gene %in% gene.map$gene)
                            %>% filter(cluster %in% clusters)
                            # %>% filter(cluster != "Id")
-                           %>% arrange(-Psi)
+                           %>% arrange(-Psi/Omega)
                            %>% head(getOption('Shalek.held.out', 100)))
 marg.lls <- fit.held.out(dl, held.out.genes$gene, shalek.A.expr)
 held.out.genes$marg.LL.tau <- marg.lls[1,]
