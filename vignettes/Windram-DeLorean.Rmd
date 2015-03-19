@@ -19,6 +19,7 @@ library(devtools)
 load_all('..')
 library(rmarkdown)
 # fit.model <- FALSE
+fit.model <- TRUE
 render('Windram-DeLorean.Rmd')
 
 ```
@@ -266,7 +267,8 @@ pseudotime in the full posterior.
 posterior.cor <- (
     dl$samples.l$tau
     %>% group_by(iter)
-    %>% summarise(pseudotime.capture.cor=cor(tau, obstime.orig))
+    %>% summarise(pseudotime.capture.cor=cor(tau, obstime.orig,
+                                             method="spearman"))
 )
 mean(posterior.cor$pseudotime.capture.cor)
 gp.post.cor <- (ggplot(posterior.cor, aes(x=pseudotime.capture.cor))
