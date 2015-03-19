@@ -174,8 +174,8 @@ estimate.hyper <- function(
             gene.var
             %>% mutate(var.ratio=Omega/Psi,
                        lambda=(1+var.ratio)/(V.psi+var.ratio),
-                       psi.hat=lambda*Psi,
-                       omega.hat=lambda*Omega))
+                       psi.hat=lambda*Psi/opts$delta,
+                       omega.hat=lambda*Omega/opts$delta))
         hyper <- list(
             mu_S=mean(cell.expr$S.hat),
             sigma_S=sd(cell.expr$S.hat),
