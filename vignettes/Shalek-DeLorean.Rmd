@@ -494,6 +494,32 @@ exp(dl$stan.data$mu_psi) + exp(dl$stan.data$mu_omega)
 ```
 
 
+Test Law of Total Variance
+```{r totalVar}
+expr.l <- (
+    dl$expr
+    %>% melt(varnames=c("gene", "cell"), value.name="x")
+    %>% left_join(dl$cell.meta))
+expr.gene.time <- (
+    expr.l
+    %>% group_by(gene, capture)
+    %>% summarise(num=n(), m=mean(x), v=mean((x-m)**2)))
+# Must use weighted means
+expr.gene <- (
+    expr.gene.time
+    %>% group_by(gene)
+    %>% summarise(m.m=weighted.mean(m, num),
+                  Psi=weighted.mean((m-m.m)**2, num),
+                  Omega=weighted.mean(v, num)))
+(
+    expr.l
+    %>% group_by(gene)
+    %>% summarise(v.total=mean((x-mean(x))**2))
+    %>% left_join(expr.gene)
+    %>% mutate(v.total-Psi-Omega))
+
+```
+
 ```{r date}
 date()
 ```
