@@ -215,7 +215,7 @@ Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes, eval=fit.model}
 dl <- estimate.hyper(
     dl,
-    sigma.tau=getOption("Shalek.sigma.tau", 2),
+    sigma.tau=getOption("Shalek.sigma.tau", 1),
     delta=getOption("Shalek.delta", .5),
     length.scale=getOption("Shalek.length.scale", 5),
     model.name=getOption("Shalek.model", 'simple-model'))
