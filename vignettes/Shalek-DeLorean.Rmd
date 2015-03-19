@@ -6,7 +6,7 @@ output:
   html_document:
     toc: true
     fig_caption: true
-    css: ../inst/Rmd/foghorn.css
+    # css: ../inst/Rmd/foghorn.css
 ---
 
 ```{r build, echo=FALSE, eval=FALSE}
@@ -14,7 +14,7 @@ library(devtools)
 load_all('..')
 library(rmarkdown)
 # fit.model <- FALSE
-# fit.model <- TRUE
+fit.model <- TRUE
 render('Shalek-DeLorean.Rmd')
 
 ```
@@ -115,7 +115,7 @@ time.course.cells <- (
                FALSE == disrupted,
                total > 1e6,
                "" == replicate))
-dl <- filter.cells(dl, function(cells) cells %in% time.course.cells$cell)
+dl <- filter.cells(dl, cells=time.course.cells$cell)
 
 ```
 
@@ -133,28 +133,10 @@ dl$cell.meta$cell <- factor(
 Only use induced genes that have been assigned to a cluster.
 ```{r useInducedGenes, eval=fit.model}
 induced.genes <- dl$gene.meta %>% filter(! is.na(cluster))
-dl <- filter.genes(dl, function(genes) genes %in% induced.genes$gene)
+dl <- filter.genes(dl, genes=induced.genes$gene)
 
 ```
 ```{r child=report.file("data")}
-```
-
-
-
-
-# Estimate hyperparameters
-
-Examine data for empirical Bayes estimation of hyperparameters.
-```{r empiricalBayes, eval=fit.model}
-dl <- estimate.hyper(
-    dl,
-    sigma.tau=getOption("Shalek.sigma.tau", 2),
-    delta=getOption("Shalek.delta", .5),
-    length.scale=getOption("Shalek.length.scale", 5),
-    model.name=getOption("Shalek.model", 'simple-model'))
-
-```
-```{r child=report.file("hyper-parameters")}
 ```
 
 
@@ -194,6 +176,7 @@ shalek.key.genes <- unique(toupper(c(
 )))
 clusters <- c("Id", "IIIb", "IIIc", "IIId")
 # clusters <- c("Id")
+dl <- analyse.variance(dl, adjust.cell.sizes=TRUE)
 genes.for.stan <- (
     dl$gene.var
     %>% left_join(dl$gene.meta)
@@ -201,7 +184,7 @@ genes.for.stan <- (
     %>% filter(cluster %in% clusters)
     %>% arrange(- Psi / Omega)
     %>% head(max.genes))
-dl <- filter.genes(dl, function(genes) genes %in% genes.for.stan$gene)
+dl <- filter.genes(dl, genes=genes.for.stan$gene)
 # How many come from each cluster?
 qplot(genes.for.stan$cluster)
 
@@ -218,8 +201,26 @@ if (! "LPS_1h_S51" %in% sampled.cells) {
 if (! "LPS_1h_S52" %in% sampled.cells) {
     sampled.cells[2] <- "LPS_1h_S52"
 }
-dl <- filter.cells(dl, function(cells) cells %in% sampled.cells)
+dl <- filter.cells(dl, cells=sampled.cells)
 
+```
+
+
+
+
+# Estimate hyperparameters
+
+Examine data for empirical Bayes estimation of hyperparameters.
+```{r empiricalBayes, eval=fit.model}
+dl <- estimate.hyper(
+    dl,
+    sigma.tau=getOption("Shalek.sigma.tau", 2),
+    delta=getOption("Shalek.delta", .5),
+    length.scale=getOption("Shalek.length.scale", 5),
+    model.name=getOption("Shalek.model", 'simple-model'))
+
+```
+```{r child=report.file("hyper-parameters")}
 ```
 
 
