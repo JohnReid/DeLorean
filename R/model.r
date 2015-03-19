@@ -1,3 +1,97 @@
+#' Update a factor based on the levels of another factor.
+#'
+#' @param .factor Factor
+#' @param reference.factor Factor whose levels to use.
+#' @param levels New levels
+#'
+#' @export
+#'
+update.levels <- function(.factor,
+                          reference.factor=NULL,
+                          .levels=levels(reference.factor),
+                          ordered=is.ordered(reference.factor))
+{
+    factor(.factor, levels=.levels, ordered=ordered)
+}
+
+
+#' Analyse variance of expression between and within capture times.
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+analyse.variance <- function(dl, adjust.cell.sizes) {
+    within(dl, {
+        #
+        # First melt expression data into long format
+        #
+        expr.l <- melt(expr, varnames=c("gene", "cell"), value.name="x")
+        expr.l$gene <- factor(expr.l$gene, levels=levels(gene.meta$gene))
+        expr.l$cell <- factor(expr.l$cell, levels=levels(cell.meta$cell))
+        #
+        # Estimate a pseudo reference mean for each gene
+        #
+        gene.expr <- (expr.l
+            %>% group_by(gene)
+            %>% summarise(x.mean=mean(x))
+        )
+        stopifnot(! is.na(gene.expr))
+        # Estimate the cell size by the median of the expression
+        # adjust by the gene's mean
+        cell.expr <- (expr.l
+            %>% left_join(gene.expr)
+            %>% group_by(cell)
+            %>% summarise(S.hat=median(x - x.mean))
+        )
+        stopifnot(! is.na(cell.expr))
+        expr.l <- expr.l %>% left_join(cell.expr)
+        if (adjust.cell.sizes) {
+            # Adjust the expression by the cell size estimates
+            expr.l <- expr.l %>% mutate(x.hat=x - S.hat)
+        } else {
+            # Use the raw expression values
+            expr.l <- expr.l %>% mutate(x.hat=x)
+        }
+        stopifnot(! is.na(expr.l))
+        # Resummarise the adjusted expression data
+        gene.expr <- (expr.l
+            %>% group_by(gene)
+            %>% summarise(x.mean=mean(x),
+                          x.sd=sd(x),
+                          phi.hat=mean(x.hat),
+                          x.hat.sd=sd(x.hat))
+            %>% filter(! is.na(x.sd), ! is.na(x.hat.sd))
+        )
+        stopifnot(! is.na(gene.expr))
+        stopifnot(nrow(gene.expr) > 0)  # Must have some rows left
+        # Examine the variation within and between times for each gene
+        gene.time.expr <- (expr.l
+            %>% left_join(cell.meta)
+            %>% group_by(gene, capture)
+            %>% summarise(x.mean=mean(x.hat),
+                          x.var=mean((x.hat-mean(x.hat))**2),
+                          num.capture=n())
+            %>% filter(! is.na(x.var))
+        )
+        stopifnot(! is.na(gene.time.expr))
+        stopifnot(nrow(gene.time.expr) > 0)  # Must have some rows left
+        # Decomposition of variance within and between time.
+        gene.var <- (gene.time.expr
+            %>% group_by(gene)
+            %>% summarise(Omega=weighted.mean(x.var, num.capture, na.rm=TRUE),
+                          Psi=weighted.mean((x.mean-mean(x.mean))**2,
+                                            num.capture, na.rm=TRUE))
+            %>% filter(! is.na(Psi), Omega > 0 | Psi > 0)
+        )
+        stopifnot(! is.na(gene.var))
+        stopifnot(nrow(gene.var) > 0)  # Must have some rows left
+        # No longer needed
+        rm(expr.l)
+    })
+}
+
+
 #' Estimate hyperparameters for model using empirical Bayes
 #'
 #' @param dl de.lorean object
@@ -43,70 +137,8 @@ estimate.hyper <- function(
         }
         # message("Length scale: ", opts$length.scale)
     })
+    dl <- analyse.variance(dl, dl$opts$adjust.cell.sizes)
     within(dl, {
-        #
-        # First melt expression data into long format
-        #
-        expr.l <- melt(expr, varnames=c("gene", "cell"), value.name="x")
-        expr.l$gene <- factor(expr.l$gene, levels=levels(gene.meta$gene))
-        expr.l$cell <- factor(expr.l$cell, levels=levels(cell.meta$cell))
-        #
-        # Estimate a pseudo reference mean for each gene
-        #
-        gene.expr <- (expr.l
-            %>% group_by(gene)
-            %>% summarise(x.mean=mean(x))
-        )
-        stopifnot(! is.na(gene.expr))
-        # Estimate the cell size by the median of the expression
-        # adjust by the gene's mean
-        cell.expr <- (expr.l
-            %>% left_join(gene.expr)
-            %>% group_by(cell)
-            %>% summarise(S.hat=median(x - x.mean))
-        )
-        stopifnot(! is.na(cell.expr))
-        expr.l <- expr.l %>% left_join(cell.expr)
-        if (opts$adjust.cell.sizes) {
-            # Adjust the expression by the cell size estimates
-            expr.l <- expr.l %>% mutate(x.hat=x - S.hat)
-        } else {
-            # Use the raw expression values
-            expr.l <- expr.l %>% mutate(x.hat=x)
-        }
-        stopifnot(! is.na(expr.l))
-        # Resummarise the adjusted expression data
-        gene.expr <- (expr.l
-            %>% group_by(gene)
-            %>% summarise(x.mean=mean(x),
-                          x.sd=sd(x),
-                          phi.hat=mean(x.hat),
-                          x.hat.sd=sd(x.hat))
-            %>% filter(! is.na(x.sd), ! is.na(x.hat.sd))
-        )
-        stopifnot(! is.na(gene.expr))
-        stopifnot(nrow(gene.expr) > 0)  # Must have some rows left
-        # Examine the variation within and between times for each gene
-        gene.time.expr <- (expr.l
-            %>% left_join(cell.meta)
-            %>% group_by(gene, capture)
-            %>% summarise(x.mean=mean(x.hat),
-                          x.var=mean((x.hat-mean(x.hat))**2),
-                          num.capture=n())
-            %>% filter(! is.na(x.var))
-        )
-        stopifnot(! is.na(gene.time.expr))
-        stopifnot(nrow(gene.time.expr) > 0)  # Must have some rows left
-        # Decomposition of variance within and between time.
-        gene.var <- (gene.time.expr
-            %>% group_by(gene)
-            %>% summarise(Omega=weighted.mean(x.var, num.capture, na.rm=TRUE),
-                          Psi=weighted.mean((x.mean-mean(x.mean))**2,
-                                            num.capture, na.rm=TRUE))
-            %>% filter(! is.na(Psi), Omega > 0 | Psi > 0)
-        )
-        stopifnot(! is.na(gene.var))
-        stopifnot(nrow(gene.var) > 0)  # Must have some rows left
         #
         # Work out the variance that would be expected from
         # a sample from the GP using a sample of tau from the prior
@@ -118,32 +150,32 @@ estimate.hyper <- function(
             %>% filter(cell %in% colnames(expr))
             # Sample tau from prior
             %>% mutate(tau.sample=rnorm(n(), mean=obstime, sd=sigma.tau)))
-        # Calculate the distance matrix
-        r <- cov.calc.dl.dists(dl,
-                               tau=cells$tau.sample,
-                               include.test=FALSE)
         # Calculate the covariance over the pseudotimes
-        K.psi <- cov.matern.32(r, opts$length.scale)
+        K.psi <- cov.matern.32(cov.calc.dl.dists(dl,
+                                                 tau=cells$tau.sample,
+                                                 include.test=FALSE),
+                               opts$length.scale)
         colnames(K.psi) <- rownames(K.psi) <- cells$cell
-        # The overall expected sample variance from the tau covariance
+        # The overall expected sample variance from the covariance over
+        # the pseudotimes
         V.psi <- expected.sample.var(K.psi)
         # message('V.psi: ', V.psi)
         # The expected sample variance within each capture time
-        var.capture <- (
-            cells
-            %>% group_by(capture)
-            %>% summarise(exp.sample.var=expected.sample.var(K.psi[as.character(cell),as.character(cell)]),
-                          num.capture=n()))
-        V.omega <- with(var.capture, weighted.mean(exp.sample.var, num.capture))
+        # var.capture <- (
+            # cells
+            # %>% group_by(capture)
+            # %>% summarise(exp.sample.var=expected.sample.var(K.psi[as.character(cell),as.character(cell)]),
+                          # num.capture=n()))
+        # V.omega <- with(var.capture, weighted.mean(exp.sample.var,
+                                                   # num.capture))
         # message('V.omega: ', V.omega)
         # message('V ratio: ', (V.psi - V.omega) / V.omega)
         gene.var <- (
             gene.var
-            %>% mutate(data.ratio=Psi/Omega,
-                       data.sum=Psi+Omega,
-                       psi.hat=Psi/(V.psi-V.omega),
-                       omega.est=Omega-Psi*V.omega/(V.psi-V.omega),
-                       omega.hat=pmax(opts$delta*V.omega, omega.est)))
+            %>% mutate(var.ratio=Omega/Psi,
+                       lambda=(1+var.ratio)/(V.psi+var.ratio),
+                       psi.hat=lambda*Psi,
+                       omega.hat=lambda*Omega))
         hyper <- list(
             mu_S=mean(cell.expr$S.hat),
             sigma_S=sd(cell.expr$S.hat),
@@ -158,7 +190,7 @@ estimate.hyper <- function(
         )
         stopifnot(all(! sapply(hyper, is.na)))
         # No longer needed
-        rm(expr.l, V.omega, var.capture, V.psi, K.psi, r, cells)
+        rm(V.psi, K.psi, cells)
     })
 }
 
