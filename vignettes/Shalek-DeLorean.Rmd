@@ -287,9 +287,10 @@ dl <- examine.convergence(dl)
 
 # Analyse posterior
 
-Examine posterior.
+Examine posterior and optimise best sample.
 ```{r posterior}
 dl <- process.posterior(dl)
+dl <- optimise.best.sample(dl)
 dl <- analyse.noise.levels(dl)
 
 ```
@@ -521,6 +522,7 @@ expr.gene <- (
     %>% mutate(v.total-Psi-Omega))
 
 ```
+
 
 ```{r date}
 date()

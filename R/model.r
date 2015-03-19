@@ -759,6 +759,68 @@ examine.convergence <- function(dl) {
 }
 
 
+#' The dimensions of the model parameters
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+model.parameter.dimensions <- function(dl) {
+    sample.dims <- list(
+        lp__=c(),
+        S=c("c"),
+        tau=c("c"),
+        phi=c("g"),
+        psi=c("g"),
+        omega=c("g"),
+        predictedmean=c("g", "t"),
+        predictedvar=c("g", "t"),
+        logmarglike=c("g")
+    )
+    if (! dl$opts$estimate.phi) {
+        sample.dims$phi <- NULL
+        sample.dims$S <- NULL
+    }
+    sample.dims
+}
+
+
+#' Sample melter
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+sample.melter <- function(dl, include.iter=TRUE) {
+    function(sample.list, sample.dims) {
+        melt.var <- function(param) {
+            # message(param)
+            if (include.iter) {
+                varnames <- c("iter", sample.dims[[param]])
+            } else {
+                varnames <- sample.dims[[param]]
+            }
+            melt(sample.list[[param]], varnames, value.name=param)
+        }
+        sapply(names(sample.dims), melt.var)
+    }
+}
+
+
+#' Join extra data to tau samples.
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+join.tau.samples <- function(dl, tau.samples) {
+    with(dl,
+         tau.samples
+             %>% left_join(cell.map)
+             %>% mutate(tau.offset=tau-obstime))
+}
+
+
 #' Process the posterior
 #'
 #' @param dl de.lorean object
@@ -768,32 +830,8 @@ examine.convergence <- function(dl) {
 process.posterior <- function(dl) {
     within(dl, {
         # Define a function to melt samples into a long format
-        melt.samples <- function(sample.list, sample.dims) {
-            melt.var <- function(var.name) {
-                melt(sample.list[[var.name]],
-                    c("iter", sample.dims[[var.name]]),
-                    value.name=var.name)
-            }
-            sapply(names(sample.dims), melt.var)
-        }
-        # The dimensions of each set of samples
-        sample.dims <- list(
-            lp__=c(),
-            S=c("c"),
-            tau=c("c"),
-            phi=c("g"),
-            psi=c("g"),
-            omega=c("g"),
-            predictedmean=c("g", "t"),
-            predictedvar=c("g", "t"),
-            logmarglike=c("g")
-        )
-        if (! opts$estimate.phi) {
-            sample.dims$phi <- NULL
-            sample.dims$S <- NULL
-        }
-        samples.l <- melt.samples(extract(dl$fit, permuted=TRUE),
-                                  sample.dims)
+        samples.l <- sample.melter(dl)(extract(dl$fit, permuted=TRUE),
+                                       model.parameter.dimensions(dl))
         best.sample <- which.max(samples.l$lp__$lp__)
         if (TRUE %in% samples.l$logmarglike$is.held.out) {
             mean.held.out.marg.ll <- mean(
@@ -803,12 +841,75 @@ process.posterior <- function(dl) {
             message('Mean held out marginal log likelihood per cell: ',
                     mean.held.out.marg.ll / stan.data$C)
         }
-        samples.l$tau <- (samples.l$tau
-            %>% left_join(cell.map)
-            %>% mutate(tau.offset=tau - obstime)
-        )
-        rm(melt.samples)
+        # Include meta data in tau samples
+        samples.l$tau <- join.tau.samples(dl, samples.l$tau)
     })
+}
+
+
+#' Optimise a sample.
+#'
+#' @param dl de.lorean object
+#' @param sample.iter Sample to optimise (defaults to best sample).
+#'
+#' @export
+#'
+optimise.sample <- function(dl, sample.iter=dl$best.sample, ...)
+{
+    with(dl, {
+        parameters <- sample.parameters(dl, sample.iter=sample.iter)
+        optimised <- optimizing(dl$fit@stanmodel,
+                                data=dl$stan.data,
+                                init=parameters,
+                                as_vector=FALSE,
+                                ...)
+        dims <- model.parameter.dimensions(dl)
+        # Don't melt lp__ value
+        dims$lp__ <- NULL
+        samples.l <- sample.melter(dl, include.iter=FALSE)(optimised$par, dims)
+        # Include meta data in tau samples
+        samples.l$tau <- join.tau.samples(dl, samples.l$tau)
+        # Include lp__ value
+        samples.l$lp__ <- data.frame(lp__=optimised$value)
+        samples.l
+    })
+}
+
+
+#' Bind a sample.
+#'
+#' @param dl de.lorean object
+#' @param samples Samples to bind to existing samples.
+#' @param sample.iter Iteration (defaults to -1).
+#'
+#' @export
+#'
+bind.sample <- function(dl, samples, sample.iter=-1)
+{
+    within(
+        dl,
+        for (param in names(samples.l)) {
+            samples.l[[param]] <- rbind(samples[[param]]
+                                            %>% mutate(iter=sample.iter),
+                                        samples.l[[param]])
+        })
+}
+
+
+#' Optimise the best sample and update the best.sample index.
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+optimise.best.sample <- function(
+    dl,
+    sample.to.opt=dl$best.sample,
+    new.best.sample=-1)
+{
+    dl <- bind.sample(dl, optimise.sample(dl, sample.iter=sample.to.opt))
+    dl$best.sample <- new.best.sample
+    dl
 }
 
 
