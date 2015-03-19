@@ -6,7 +6,7 @@ output:
   html_document:
     toc: true
     fig_caption: true
-    css: ../inst/Rmd/foghorn.css
+    # css: ../inst/Rmd/foghorn.css
 ---
 
 ```{r build, echo=FALSE, eval=FALSE}
