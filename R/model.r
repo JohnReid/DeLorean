@@ -907,7 +907,9 @@ optimise.best.sample <- function(
     sample.to.opt=dl$best.sample,
     new.best.sample=-1)
 {
+    dl$sample.optimised <- sample.to.opt
     dl <- bind.sample(dl, optimise.sample(dl, sample.iter=sample.to.opt))
+    dl$sample.old.best <- dl$best.sample
     dl$best.sample <- new.best.sample
     dl
 }
@@ -981,14 +983,18 @@ make.predictions <- function(dl) {
 #'
 #' @export
 #'
-fit.held.out <- function(dl, held.out.genes, expr.held.out)
+fit.held.out <- function(
+    dl,
+    held.out.genes,
+    expr.held.out,
+    sample.iter=dl$best.sample)
 {
     with(dl, {
         cell.posterior <- (
             samples.l$tau
-            %>% filter(best.sample == iter)
+            %>% filter(sample.iter == iter)
             %>% left_join(samples.l$S
-                          %>% filter(best.sample == iter)))
+                          %>% filter(sample.iter == iter)))
         # print(expr.held.out[held.out.genes,])
         # print(expr.held.out[,cell.map$cell])
         expr.held.out <- expr.held.out[as.character(held.out.genes),
@@ -1000,21 +1006,18 @@ fit.held.out <- function(dl, held.out.genes, expr.held.out)
                         include.test=F,
                         psi=exp(stan.data$mu_psi),
                         omega=exp(stan.data$mu_omega))
-        K.tau <- calc.K()
+        K.tau <- calc.K(tau=tau.for.sample(dl, sample.iter=sample.iter))
         K.capture <- calc.K(tau="capture")
         #' Evaluate the held out gene under the GP model using pseudotimes
         #' and a model without.
         #'
-        evaluate.held.out <- function(dl, cell.posterior, held.out) {
+        evaluate.held.out <- function(dl, held.out) {
             held.out.expr <- expr.adj[as.character(held.out),]
             c(
                 gp.log.marg.like(held.out.expr, K.tau),
                 gp.log.marg.like(held.out.expr, K.capture))
         }
-        sapply(held.out.genes,
-               Curry(evaluate.held.out,
-                     dl=dl,
-                     cell.posterior=cell.posterior))
+        sapply(held.out.genes, Curry(evaluate.held.out, dl=dl))
     })
 }
 
