@@ -131,7 +131,7 @@ estimate.hyper <- function(
         time.range <- range(cell.meta$obstime)
         time.width <- time.range[2] - time.range[1]
         if (is.null(length.scale)) {
-            opts$length.scale <- time.width / 2
+            opts$length.scale <- time.width
         } else {
             opts$length.scale <- length.scale
         }

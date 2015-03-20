@@ -116,9 +116,7 @@ genes.high.rank <- (
     %>% filter(!is.na(cbRank), cbRank < 201)
     %>% arrange(cbRank))
 levels(dl$cell.meta$cellline)
-cells.PC3 <- (
-    dl$cell.meta
-    %>% filter("PC3" == cellline))
+cells.PC3 <- mcdavid.cell.meta %>% filter("PC3" == cellline)
 pca <- prcomp(t(mcdavid.expr[as.character(genes.high.rank$gene),
                              as.character(cells.PC3$cell)]),
               .scale=TRUE)
@@ -157,12 +155,10 @@ dl <- estimate.hyper(
 
 Choose a few cells from the PC3 cell line.
 ```{r filterCells}
+dl <- filter.cells(dl, cells=cells.PC3$cell)
 set.seed(1)
-max.cells <- min(getOption("DL.max.cells", 57))
-cells.PC3 <- sample(filter(mcdavid.cell.meta, "PC3" == cellline)$cell,
-                    max.cells)
-cell.filter <- function(cells) cells %in% cells.PC3
-dl <- filter.cells(dl, cell.filter)
+max.cells <- min(getOption("McDavid.max.cells", 57))
+dl <- filter.cells(dl, number=max.cells)
 
 ```
 
@@ -170,11 +166,10 @@ dl <- filter.cells(dl, cell.filter)
 Choose genes with low $p$-values from the McDavid et al.
 differential expression test.
 ```{r filterGenes}
-max.genes <- min(getOption("DL.max.genes", 56))
+max.genes <- min(getOption("McDavid.max.genes", 56))
 genes.for.stan <- sample((dl$gene.meta %>% filter(pvalue > 10))$gene,
                          max.genes)
-gene.filter <- function(genes) genes %in% genes.for.stan
-dl <- filter.genes(dl, gene.filter)
+dl <- filter.genes(dl, genes=genes.for.stan)
 
 ```
 
@@ -194,7 +189,7 @@ Define and compile the model, find the best initialisation, and fit the model.
 dl <- format.for.stan(dl, period=3, hold.out=3)
 dl <- compile.model(dl)
 dl <- find.best.tau(dl)
-system.time(dl <- fit.model(dl, num.cores=getOption("DL.num.cores")))
+system.time(dl <- fit.model(dl))
 
 ```
 
