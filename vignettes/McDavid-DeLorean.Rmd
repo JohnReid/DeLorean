@@ -135,21 +135,6 @@ ggplot(pc.scores, aes(x=PC1, y=PC3, color=capture)) + geom_point()
 
 ```
 
-# Estimate hyperparameters
-
-Examine data for empirical Bayes estimation of hyperparameters.
-```{r empiricalBayes}
-dl <- estimate.hyper(
-    dl,
-    sigma.tau=.5,
-    delta=.5,
-    model.name='simple-model')
-
-```
-
-```{r child=report.file("hyper-parameters")}
-```
-
 
 # Choose genes and cells
 
@@ -171,6 +156,23 @@ genes.for.stan <- sample((dl$gene.meta %>% filter(pvalue > 10))$gene,
                          max.genes)
 dl <- filter.genes(dl, genes=genes.for.stan)
 
+```
+
+
+# Estimate hyperparameters
+
+Examine data for empirical Bayes estimation of hyperparameters.
+```{r empiricalBayes}
+dl <- estimate.hyper(
+    dl,
+    sigma.tau=.5,
+    length.scale=3,
+    delta=.5,
+    model.name='simple-model')
+
+```
+
+```{r child=report.file("hyper-parameters")}
 ```
 
 
@@ -211,7 +213,7 @@ dl <- examine.convergence(dl)
 Examine posterior.
 ```{r posterior}
 dl <- process.posterior(dl)
-# dl <- optimise.best.sample(dl)
+dl <- optimise.best.sample(dl)
 dl <- analyse.noise.levels(dl)
 
 ```
@@ -296,7 +298,7 @@ peak.distance <- function(peak.1, peak.2) {
 calc.rms <- function(d) sqrt(sum(d**2))/length(d)
 # Calculate the root mean square error between xhat and x.
 calc.rmse <- function(xhat, x) calc.rms(peak.distance(xhat, x))
-# cbPeaktimes of 0 (equiv. 100) correspond to the the transition
+# cbPeaktimes of 0 (equiv. 100) correspond to the transition
 # between M and G1.
 # (http://cyclebase2.jensenlab.org/methods.jsp#peaktime-uncertainty)
 # Hence cbPeaktime = 0 corresponds to a pseudotime of .5
@@ -345,6 +347,7 @@ gp <- (
     + geom_density()
     + geom_rug()
     + scale_x_continuous(name="RMSE (cell size adjusted)"))
+print(gp)
 pdf('McDavid-rmse-adj.pdf', width=fig.width, height=fig.height)
 print(gp)
 dev.off()
@@ -360,10 +363,11 @@ pdf('McDavid-rmse-adj-qq.pdf', width=fig.width, height=fig.height)
 print(gp)
 dev.off()
 # t-test for differences
-with(dl$peak.max.dist, t.test(x=rmse,
-                              y=rmse.adj,
-                              paired=TRUE,
-                              alternative="greater"))
+# Don't know which test to do yet.
+# with(dl$peak.max.dist, t.test(x=rmse,
+                              # y=rmse.adj,
+                              # paired=TRUE,
+                              # alternative="greater"))
 # Mean of both RMSEs
 mean(dl$peak.max.dist$rmse)
 mean(dl$peak.max.dist$rmse.adj)
@@ -412,7 +416,7 @@ capture.RMSE
 # Assuming a normal distribution for the adjusted RMSE, what is
 # the likelihood of observing at least as extreme as the
 # peak capture RMSE.
-with(dl$peak.max.dist, pnorm(peak.capture.dist,
+with(dl$peak.max.dist, pnorm(capture.RMSE,
                              mean=mean(rmse.adj),
                              sd=sd(rmse.adj),
                              lower.tail=F))
@@ -436,7 +440,6 @@ dev.off()
 
 Plot the profiles adjusted for the cell size.
 ```{r}
-# load_all('..')
 gp <- plot(dl, type="profiles", cell.size.adj=F, adjust.model=lo)
 pdf('McDavid-profiles-adj.pdf', width=fig.width*2, height=fig.height*2)
 print(gp)
