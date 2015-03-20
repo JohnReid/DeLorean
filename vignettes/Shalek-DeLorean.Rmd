@@ -432,6 +432,7 @@ held.out.genes <- with(dl, gene.variances
                            %>% head(getOption('Shalek.held.out', 100)))
 marg.lls <- fit.held.out(dl, held.out.genes$gene, shalek.A.expr,
                          sample.iter=dl$sample.optimised)
+                         #sample.iter=dl$best.sample)
 held.out.genes$marg.LL.tau <- marg.lls[1,]
 held.out.genes$marg.LL.capture <- marg.lls[2,]
 held.out.gp <- (

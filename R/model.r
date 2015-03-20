@@ -990,16 +990,14 @@ fit.held.out <- function(
     sample.iter=dl$best.sample)
 {
     with(dl, {
-        cell.posterior <- (
-            samples.l$tau
-            %>% filter(sample.iter == iter)
-            %>% left_join(samples.l$S
-                          %>% filter(sample.iter == iter)))
         # print(expr.held.out[held.out.genes,])
         # print(expr.held.out[,cell.map$cell])
         expr.held.out <- expr.held.out[as.character(held.out.genes),
                                        as.character(cell.map$cell)]
-        expr.adj <- t(t(expr.held.out) + cell.posterior$S)
+        if (opts$adjust.cell.sizes) {
+            cell.posterior <- samples.l$S %>% filter(sample.iter == iter)
+            expr.held.out <- t(t(expr.held.out) + cell.posterior$S)
+        }
         #' Calculate covariance over pseudotimes and capture times
         calc.K <- Curry(cov.calc.gene,
                         dl,
@@ -1011,13 +1009,13 @@ fit.held.out <- function(
         #' Evaluate the held out gene under the GP model using pseudotimes
         #' and a model without.
         #'
-        evaluate.held.out <- function(dl, held.out) {
-            held.out.expr <- expr.adj[as.character(held.out),]
+        evaluate.held.out <- function(held.out) {
+            held.out.expr <- expr.held.out[as.character(held.out),]
             c(
                 gp.log.marg.like(held.out.expr, K.tau),
                 gp.log.marg.like(held.out.expr, K.capture))
         }
-        sapply(held.out.genes, Curry(evaluate.held.out, dl=dl))
+        sapply(held.out.genes, evaluate.held.out)
     })
 }
 
