@@ -96,7 +96,6 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
 #'
 #' @param dl de.lorean object
 #' @param sigma.tau Noise s.d. in temporal dimension
-#' @param delta Proportion of within time variance to relabel as between time
 #' @param length.scale Length scale for stationary GP covariance function
 #'
 #' @export
@@ -174,8 +173,8 @@ estimate.hyper <- function(
             gene.var
             %>% mutate(var.ratio=Omega/Psi,
                        lambda=(1+var.ratio)/(V.psi+var.ratio),
-                       psi.hat=lambda*Psi/opts$delta,
-                       omega.hat=lambda*Omega/opts$delta))
+                       psi.hat=lambda*Psi,
+                       omega.hat=lambda*Omega))
         hyper <- list(
             mu_S=mean(cell.expr$S.hat),
             sigma_S=sd(cell.expr$S.hat),
@@ -847,17 +846,21 @@ process.posterior <- function(dl) {
 }
 
 
-#' Optimise a sample.
+#' Optimise the log posterior starting at a particular sample or from some
+#' other set of parameters.
 #'
 #' @param dl de.lorean object
 #' @param sample.iter Sample to optimise (defaults to best sample).
 #'
 #' @export
 #'
-optimise.sample <- function(dl, sample.iter=dl$best.sample, ...)
+optimise.sample <- function(
+    dl,
+    parameters=sample.parameters(dl, sample.iter=sample.iter),
+    sample.iter=dl$best.sample,
+    ...)
 {
     with(dl, {
-        parameters <- sample.parameters(dl, sample.iter=sample.iter)
         optimised <- optimizing(dl$fit@stanmodel,
                                 data=dl$stan.data,
                                 init=parameters,
