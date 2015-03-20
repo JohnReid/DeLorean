@@ -211,6 +211,7 @@ dl <- examine.convergence(dl)
 Examine posterior.
 ```{r posterior}
 dl <- process.posterior(dl)
+# dl <- optimise.best.sample(dl)
 dl <- analyse.noise.levels(dl)
 
 ```
@@ -280,32 +281,45 @@ dev.off()
 
 # Plot cbPeaktime against best sample max predicted mean time
 # print(plot.profiles(dl, genes="CDCA8"))
-peak.distance <- Vectorize(function(peak.1, peak.2) {
-    if (peak.1 - peak.2 > .5) {
-        peak.1 <- peak.1 - 1
-    }
-    if (peak.2 - peak.1 > .5) {
-        peak.2 <- peak.2 - 1
-    }
-    abs(peak.1 - peak.2)
-})
-# peak.distance(c(.1, .2, .1, .9), c(.2, .1, .9, .1))
-calc.rms <- function(d) sqrt(sum(d))/length(d)
+# Distance between two points on unit interval where 0 is connected to 1
+peak.distance <- function(peak.1, peak.2) {
+    stopifnot(all(peak.1 >= 0.))
+    stopifnot(all(peak.1 <= 1.))
+    stopifnot(all(peak.2 >= 0.))
+    stopifnot(all(peak.2 <= 1.))
+    dist <- abs(peak.1 - peak.2)
+    ifelse(dist > .5, 1 - dist, dist)
+}
+# Test peak distances
+# peak.distance(c(.1, .2, .1, .9, .5, .5), c(.2, .1, .9, .1, .5, .4))
+# Calculate the root mean square of d
+calc.rms <- function(d) sqrt(sum(d**2))/length(d)
+# Calculate the root mean square error between xhat and x.
 calc.rmse <- function(xhat, x) calc.rms(peak.distance(xhat, x))
+# cbPeaktimes of 0 (equiv. 100) correspond to the the transition
+# between M and G1.
+# (http://cyclebase2.jensenlab.org/methods.jsp#peaktime-uncertainty)
+# Hence cbPeaktime = 0 corresponds to a pseudotime of .5
+# A function to map from pseudotimes (tau) to cbPeaktimes
+tau.to.cbtime <- function(tau) periodise((tau - .5)/3, 1)
 dl <- within(dl, {
-    peak.vs.max <- (predictions %>% left_join(prediction.times %>% select(-tau))
+    # Find the peaks in the predicted profiles
+    peak.vs.max <- (
+        predictions
+        %>% left_join(prediction.times %>% select(-tau))
         %>% group_by(iter, g)
-        %>% summarise(predicted.peak=periodise(tau[which.max(predictedmean)]),
-                      predicted.peak.adj=periodise(tau[which.max(predictedmean+S)]))
+        %>% summarise(predicted.peak=tau.to.cbtime(tau[which.max(predictedmean)]),
+                      predicted.peak.adj=tau.to.cbtime(tau[which.max(predictedmean+S)]))
         %>% left_join(gene.map)
         %>% filter(! is.na(cbPeaktime)))
+    # Calculate the distance between the peaks and the CycleBase peaktimes
     peak.max.dist <- (
         peak.vs.max
         %>% group_by(iter)
         %>% summarise(rmse=calc.rmse(cbPeaktime/100,
-                                     predicted.peak/3),
+                                     predicted.peak),
                       rmse.adj=calc.rmse(cbPeaktime/100,
-                                         predicted.peak.adj/3)))
+                                         predicted.peak.adj)))
 })
 sample_n(dl$peak.max.dist, 15)
 gp <- (
@@ -334,6 +348,11 @@ gp <- (
 pdf('McDavid-rmse-adj.pdf', width=fig.width, height=fig.height)
 print(gp)
 dev.off()
+png('McDavid-rmse-adj.png', width=fig.width*1.75, height=fig.height*1.5,
+    units="in", res=200)
+print(gp)
+dev.off()
+
 gp <- (
     ggplot(dl$peak.max.dist, aes(sample=rmse.adj))
     + stat_qq())
@@ -372,22 +391,23 @@ Capture times are as defined in
 [CycleBase](http://www.cyclebase.org/About "CycleBase").
 ```{r}
 expr.l <- melt(unname(dl$expr), varnames=c("g", "c"), value.name="x")
-names(expr.l)
 peaks <- (
     expr.l
     %>% group_by(g)
     %>% summarise(c=c[which.max(x)])
+    %>% left_join(dl$gene.map)
+    %>% filter(! is.na(cbPeaktime))
     %>% left_join(dl$cell.map)
-    %>% left_join(dl$gene.map))
-peak.capture.dist <- with(
-    peaks %>% filter(! is.na(cbPeaktime)),
-    calc.rmse(cbPeaktime/100,
-              (as.integer(capture) - .5) / 2))
-peak.capture.dist
+    %>% mutate(capture.dist=peak.distance(cbPeaktime/100,
+                                          tau.to.cbtime(as.integer(capture)))))
+capture.RMSE <- calc.rms(peaks$capture.dist)
+capture.RMSE
+
+# Haven't decided which test to do yet.
 # t-test
-with(dl$peak.max.dist, t.test(x=peak.capture.dist,
-                              y=rmse.adj,
-                              alternative="greater"))
+#with(dl$peak.max.dist, t.test(x=capture.RMSE,
+                              #y=rmse.adj,
+                              #alternative="greater"))
 
 # Assuming a normal distribution for the adjusted RMSE, what is
 # the likelihood of observing at least as extreme as the
@@ -416,7 +436,7 @@ dev.off()
 
 Plot the profiles adjusted for the cell size.
 ```{r}
-load_all('..')
+# load_all('..')
 gp <- plot(dl, type="profiles", cell.size.adj=F, adjust.model=lo)
 pdf('McDavid-profiles-adj.pdf', width=fig.width*2, height=fig.height*2)
 print(gp)
