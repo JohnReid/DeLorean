@@ -258,10 +258,9 @@ prediction.times <- (
     %>% filter(dl$best.sample == iter, 1 == g, 0 <= tau, tau <= dl$opts$period)
     %>% select(t, tau))
 prediction.times$S <- predict(lo, prediction.times)
-prediction.times
 # Plot data + fit
 gp <- (ggplot(tau.S, aes(x=tau, y=S, color=capture))
-    + geom_point(alpha=.1)
+    + geom_point(alpha=.4)
     + geom_line(aes(y=loess), color='black')
     + scale_x_continuous(name="pseudotime")
     + scale_y_continuous(name="cell size")
@@ -270,10 +269,9 @@ gp <- (ggplot(tau.S, aes(x=tau, y=S, color=capture))
     + guides(colour=guide_legend(override.aes=list(alpha=1)))
 )
 print(gp)
-png('McDavid-cell-size-vs-pseudotime.png', width=fig.width, height=fig.height,
-    units='in', res=72*2)
-print(gp)
-dev.off()
+ggsave('McDavid-cell-size-vs-pseudotime.png', plot=gp,
+       width=fig.width, height=fig.height,
+       units='in', res=72*2)
 
 ```
 
@@ -331,13 +329,11 @@ gp <- (
     + scale_y_continuous(name="RMSE (cell size adjusted)")
     + geom_abline(alpha=.5))
 print(gp)
-pdf('McDavid-rmse-vs-rmse-adj.pdf', width=fig.width, height=fig.height)
-print(gp)
-dev.off()
-png('McDavid-rmse-vs-rmse-adj.png', width=fig.width*1.75, height=fig.height*1.5,
-    units="in", res=200)
-print(gp)
-dev.off()
+ggsave('McDavid-rmse-vs-rmse-adj.pdf', plot=gp,
+       width=fig.width, height=fig.height)
+ggsave('McDavid-rmse-vs-rmse-adj.png', plot=gp,
+       width=fig.width*1.75, height=fig.height*1.5,
+       units="in", res=200)
 
 # Test for normality
 with(dl$peak.max.dist, shapiro.test(rmse.adj))
@@ -348,20 +344,17 @@ gp <- (
     + geom_rug()
     + scale_x_continuous(name="RMSE (cell size adjusted)"))
 print(gp)
-pdf('McDavid-rmse-adj.pdf', width=fig.width, height=fig.height)
-print(gp)
-dev.off()
-png('McDavid-rmse-adj.png', width=fig.width*1.75, height=fig.height*1.5,
+ggsave('McDavid-rmse-adj.pdf', plot=gp,
+       width=fig.width, height=fig.height)
+ggsave('McDavid-rmse-adj.png', plot=gp,
+       width=fig.width*1.75, height=fig.height*1.5,
     units="in", res=200)
-print(gp)
-dev.off()
 
 gp <- (
     ggplot(dl$peak.max.dist, aes(sample=rmse.adj))
     + stat_qq())
-pdf('McDavid-rmse-adj-qq.pdf', width=fig.width, height=fig.height)
-print(gp)
-dev.off()
+ggsave('McDavid-rmse-adj-qq.pdf', plot=gp,
+       width=fig.width, height=fig.height)
 # t-test for differences
 # Don't know which test to do yet.
 # with(dl$peak.max.dist, t.test(x=rmse,
@@ -380,13 +373,11 @@ gp <- (
     + geom_point(aes(y=predicted.peak.adj), alpha=.7, size=2, color="blue")
 )
 print(gp)
-pdf('McDavid-peak-vs-max.pdf', width=fig.width, height=fig.height)
-print(gp)
-dev.off()
-png('McDavid-peak-vs-max.png', width=fig.width*1.75, height=fig.height*1.5,
-    units="in", res=200)
-print(gp)
-dev.off()
+ggsave('McDavid-peak-vs-max.pdf', plot=gp,
+       width=fig.width, height=fig.height)
+ggsave('McDavid-peak-vs-max.png', plot=gp,
+       width=fig.width*1.75, height=fig.height*1.5,
+       units="in", res=200)
 
 ```
 
@@ -427,13 +418,11 @@ gp <- (
     + scale_x_discrete(name="cell cycle phase")
     + coord_flip())
 print(gp)
-pdf('McDavid-capture-peaks.pdf', width=fig.width, height=fig.height)
-print(gp)
-dev.off()
-png('McDavid-capture-peaks.png', width=fig.width*3.5, height=fig.height*3,
-    units="in", res=100)
-print(gp)
-dev.off()
+ggsave('McDavid-capture-peaks.pdf', plot=gp,
+       width=fig.width, height=fig.height)
+ggsave('McDavid-capture-peaks.png', plot=gp,
+       width=fig.width*3.5, height=fig.height*3,
+       units="in", res=100)
 
 ```
 
@@ -441,18 +430,15 @@ dev.off()
 Plot the profiles adjusted for the cell size.
 ```{r}
 gp <- plot(dl, type="profiles", cell.size.adj=F, adjust.model=lo)
-pdf('McDavid-profiles-adj.pdf', width=fig.width*2, height=fig.height*2)
-print(gp)
-dev.off()
-gp <- plot(dl, type="profiles") + scale_x_continuous(name='Pseudotime',
+ggsave('McDavid-profiles-adj.pdf', plot=gp,
+       width=fig.width*2, height=fig.height*2)
+gp <- plot(dl, type="profiles", sample.iter=dl$sample.old.best) + scale_x_continuous(name='Pseudotime',
                                                      limits=c(0, 3))
-pdf('McDavid-profiles.pdf', width=fig.width*2, height=fig.height*2)
 print(gp)
-dev.off()
-png('McDavid-profiles.png', width=fig.width*3.5, height=fig.height*3,
-    units="in", res=100)
-print(gp)
-dev.off()
+ggsave('McDavid-profiles.png', plot=gp,
+       width=fig.width*3.5, height=fig.height*3,
+       units="in", dpi=100)
+ggsave('McDavid-profiles.pdf', plot=gp, width=fig.width*2, height=fig.height*2)
 
 ```
 
