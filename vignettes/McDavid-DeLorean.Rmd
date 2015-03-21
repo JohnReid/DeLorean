@@ -271,7 +271,7 @@ gp <- (ggplot(tau.S, aes(x=tau, y=S, color=capture))
 print(gp)
 ggsave('McDavid-cell-size-vs-pseudotime.png', plot=gp,
        width=fig.width, height=fig.height,
-       units='in', res=72*2)
+       units='in', dpi=72*2)
 
 ```
 
@@ -333,7 +333,7 @@ ggsave('McDavid-rmse-vs-rmse-adj.pdf', plot=gp,
        width=fig.width, height=fig.height)
 ggsave('McDavid-rmse-vs-rmse-adj.png', plot=gp,
        width=fig.width*1.75, height=fig.height*1.5,
-       units="in", res=200)
+       units="in", dpi=200)
 
 # Test for normality
 with(dl$peak.max.dist, shapiro.test(rmse.adj))
@@ -348,7 +348,7 @@ ggsave('McDavid-rmse-adj.pdf', plot=gp,
        width=fig.width, height=fig.height)
 ggsave('McDavid-rmse-adj.png', plot=gp,
        width=fig.width*1.75, height=fig.height*1.5,
-    units="in", res=200)
+    units="in", dpi=200)
 
 gp <- (
     ggplot(dl$peak.max.dist, aes(sample=rmse.adj))
@@ -377,7 +377,7 @@ ggsave('McDavid-peak-vs-max.pdf', plot=gp,
        width=fig.width, height=fig.height)
 ggsave('McDavid-peak-vs-max.png', plot=gp,
        width=fig.width*1.75, height=fig.height*1.5,
-       units="in", res=200)
+       units="in", dpi=200)
 
 ```
 
@@ -422,7 +422,7 @@ ggsave('McDavid-capture-peaks.pdf', plot=gp,
        width=fig.width, height=fig.height)
 ggsave('McDavid-capture-peaks.png', plot=gp,
        width=fig.width*3.5, height=fig.height*3,
-       units="in", res=100)
+       units="in", dpi=100)
 
 ```
 
