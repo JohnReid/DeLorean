@@ -405,6 +405,7 @@ make.chain.init.fn <- function(dl) {
         with(dl$stan.data, {
             # message("Creating initialisation")
             init <- list(
+                delta=runif(1),
                 S=dl$cell.map$S.hat,
                 tau=rnorm(C, mean=time, sd=sigma_tau),
                 psi=rlnorm(G, meanlog=mu_psi, sdlog=sigma_psi),
@@ -767,6 +768,7 @@ examine.convergence <- function(dl) {
 model.parameter.dimensions <- function(dl) {
     sample.dims <- list(
         lp__=c(),
+        delta=c(),
         S=c("c"),
         tau=c("c"),
         phi=c("g"),
@@ -992,9 +994,8 @@ fit.held.out <- function(
     expr.held.out,
     sample.iter=dl$best.sample)
 {
+    library(mgcv)
     with(dl, {
-        # print(expr.held.out[held.out.genes,])
-        # print(expr.held.out[,cell.map$cell])
         expr.held.out <- expr.held.out[as.character(held.out.genes),
                                        as.character(cell.map$cell)]
         if (opts$adjust.cell.sizes) {
@@ -1007,18 +1008,28 @@ fit.held.out <- function(
                         include.test=F,
                         psi=exp(stan.data$mu_psi),
                         omega=exp(stan.data$mu_omega))
-        K.tau <- calc.K(tau=tau.for.sample(dl, sample.iter=sample.iter))
-        K.capture <- calc.K(tau="capture")
+        tau <- tau.for.sample(dl, sample.iter=sample.iter)
+        obstime <- cell.map$obstime
+        K.tau <- calc.K(tau=tau)
+        K.capture <- calc.K(tau=obstime)
         #' Evaluate the held out gene under the GP model using pseudotimes
         #' and a model without.
         #'
-        evaluate.held.out <- function(held.out) {
-            held.out.expr <- expr.held.out[as.character(held.out),]
+        calc.gp.marginals <- function(held.out) {
+            expr <- expr.held.out[as.character(held.out),]
             c(
-                gp.log.marg.like(held.out.expr, K.tau),
-                gp.log.marg.like(held.out.expr, K.capture))
+                gp.log.marg.like(expr, K.tau),
+                gp.log.marg.like(expr, K.capture))
         }
-        sapply(held.out.genes, evaluate.held.out)
+        fit.model <- function(held.out, model=loess) {
+            expr <- expr.held.out[as.character(held.out),]
+            list(tau=model(expr~s(tau)))
+        }
+        sapply(held.out.genes, calc.gp.marginals)
+        # list(
+            # gp.marginals=sapply(held.out.genes, calc.gp.marginals),
+            # loess=lapply(held.out.genes, Curry(fit.model, model=gam)))
+            # gam=lapply(held.out.genes, Curry(fit.model, model=gam)))
     })
 }
 
