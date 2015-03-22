@@ -121,7 +121,7 @@ dl <- de.lorean(
     windram.expr,
     windram.gene.meta,
     windram.cell.meta)
-max.cells <- min(getOption("DL.max.cells", 24))
+max.cells <- min(getOption("Windram.max.cells", 24))
 botrytis.cells <- sample(
     filter(dl$cell.meta, condition == "Botrytis")$cell,
     max.cells)
@@ -154,7 +154,7 @@ dl <- estimate.hyper(
 
 Choose a few genes.
 ```{r filterGenes, eval=fit.model}
-max.genes <- min(getOption("DL.max.genes", 150))
+max.genes <- min(getOption("Windram.max.genes", 100))
 sampled.genes <- sample_n(dl$gene.meta, max.genes)$gene
 gene.filter <- function(genes) genes %in% sampled.genes
 dl <- filter.genes(dl, gene.filter)
@@ -175,7 +175,7 @@ Format the data for Stan and fit the model.
 dl <- format.for.stan(dl)
 dl <- compile.model(dl)
 dl <- find.best.tau(dl)
-system.time(dl <- fit.model(dl, num.cores=getOption("DL.num.cores")))
+system.time(dl <- fit.model(dl))
 
 ```
 
@@ -275,9 +275,8 @@ gp.post.cor <- (ggplot(posterior.cor, aes(x=pseudotime.capture.cor))
     + geom_histogram()
     + scale_x_continuous(name="correlation"))
 print(gp.post.cor)
-pdf('Windram-posterior-cor.pdf', width=fig.width, height=fig.height)
-print(gp.post.cor)
-dev.off()
+ggsave('Windram-posterior-cor.pdf', plot=gp.post.cor,
+       width=fig.width, height=fig.height)
 ggsave('Windram-posterior-cor.png', gp.post.cor,
        width=slide.fig.width / 2, height=slide.fig.width / 2 / html5$ratio,
        dpi=300, units="in")
@@ -292,6 +291,49 @@ with(dl$samples.l$tau %>% filter(iter == dl$best.sample),
      cor(tau, obstime.orig, method="spearman"))
 
 ```
+
+# Fit held out genes
+
+Fit some held out genes.
+```{r fitHeldOut}
+held.out.genes <- with(dl, gene.var
+                           %>% left_join(gene.meta)
+                           %>% filter(! gene %in% gene.map$gene)
+                           %>% arrange(-Psi/Omega)
+                           %>% head(getOption('Windram.held.out', 100)))
+load_all('..')
+held.out.fits <- fit.held.out(dl, held.out.genes$gene, windram.expr)
+held.out.fits$loess[[1]]$tau
+held.out.fits$loess[[1]]$capture
+
+loess.fit.tau <- held.out.fits$loess[[1]]$tau
+loess.fit.tau
+
+.pdata <- data.frame(tau=dl$stan.data$testinput)
+pred <- predict(gam.fit.tau, .pdata, type = "response", se.fit = TRUE)
+names(pred)
+.pdata$x <- pred$fit
+ggplot(.pdata, aes(x=tau, y=x)) + geom_path()
+
+
+
+held.out.genes$marg.LL.tau <- marg.lls[1,]
+held.out.genes$marg.LL.capture <- marg.lls[2,]
+held.out.gp <- (
+    ggplot(held.out.genes,
+           aes(x=marg.LL.tau,
+               y=marg.LL.capture,
+               color=Psi))
+    + geom_point()
+    + scale_colour_gradient(high="red")
+    + geom_abline(intercept=0, slope=1))
+print(held.out.gp)
+ggsave('Windram-held-out.png', held.out.gp)
+with(held.out.genes, t.test(marg.LL.tau, marg.LL.capture,
+                            paired=TRUE, alternative="greater"))
+
+```
+
 
 ```{r echo=FALSE}
 # Save DeLorean object without fit component
