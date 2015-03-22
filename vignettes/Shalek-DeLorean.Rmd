@@ -10,6 +10,9 @@ output:
 ---
 
 ```{r build, echo=FALSE, eval=FALSE}
+#
+# Execute this blcok to render the Rmarkdown.
+#
 library(devtools)
 load_all('..')
 library(rmarkdown)
@@ -218,7 +221,7 @@ dl <- estimate.hyper(
     sigma.tau=getOption("Shalek.sigma.tau", 1),
     delta=getOption("Shalek.delta", .5),
     length.scale=getOption("Shalek.length.scale", 5),
-    model.name=getOption("Shalek.model", 'simple-model'))
+    model.name=getOption("Shalek.model", 'simplest-model'))
 
 ```
 ```{r child=report.file("hyper-parameters")}
@@ -422,7 +425,6 @@ $$
     \Sigma_t(c_1, c_2) = \Sigma_t(r=|\kappa_{c_1} - \kappa_{c_2}|)
 $$
 ```{r heldOutGenes}
-load_all('..')
 held.out.genes <- with(dl, gene.variances
                            %>% left_join(gene.meta)
                            %>% filter(! gene %in% gene.map$gene)
