@@ -152,9 +152,11 @@ Choose genes with low $p$-values from the McDavid et al.
 differential expression test.
 ```{r filterGenes}
 max.genes <- min(getOption("McDavid.max.genes", 56))
-genes.for.stan <- sample((dl$gene.meta %>% filter(pvalue > 10))$gene,
-                         max.genes)
-dl <- filter.genes(dl, genes=genes.for.stan)
+genes.for.stan <- (
+    dl$gene.meta
+    %>% filter(pvalue > 10)
+    %>% sample_n(max.genes))
+dl <- filter.genes(dl, genes=genes.for.stan$gene)
 
 ```
 
@@ -213,7 +215,7 @@ dl <- examine.convergence(dl)
 Examine posterior.
 ```{r posterior}
 dl <- process.posterior(dl)
-dl <- optimise.best.sample(dl)
+# dl <- optimise.best.sample(dl)
 dl <- analyse.noise.levels(dl)
 
 ```
