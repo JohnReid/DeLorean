@@ -632,7 +632,8 @@ init.chain.sample.tau <- function(dl) {
             tau=rnorm(C, time, sd=sigma_tau),
             phi=dl$gene.map$phi.hat[1:G],
             psi=dl$gene.map$psi.hat[1:G],
-            omega=dl$gene.map$omega.hat[1:G]
+            omega=dl$gene.map$omega.hat[1:G],
+            delta=.5
         )
         # If not estimating phi, don't include it.
         if (! dl$opts$estimate.phi) {
