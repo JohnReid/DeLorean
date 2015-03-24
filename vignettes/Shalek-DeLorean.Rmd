@@ -432,7 +432,10 @@ held.out.genes <- with(dl, gene.variances
                            # %>% filter(cluster != "Id")
                            %>% arrange(-Psi/Omega)
                            %>% head(getOption('Shalek.held.out', 100)))
-marg.lls <- fit.held.out(dl, held.out.genes$gene, shalek.A.expr)
+# Get an expression matrix of held out genes in the cells of interest
+held.out.expr <- shalek.A.expr[as.character(held.out.genes$gene),
+                               as.character(dl$cell.map$cell)]
+marg.lls <- fit.held.out(dl, held.out.expr)
                          #sample.iter=dl$sample.optimised)
                          #sample.iter=dl$best.sample)
 held.out.genes$marg.LL.tau <- marg.lls[1,]
@@ -449,6 +452,21 @@ print(held.out.gp)
 ggsave('Shalek-held-out.png', held.out.gp)
 with(held.out.genes, t.test(marg.LL.tau, marg.LL.capture,
                             paired=TRUE, alternative="greater"))
+
+```
+
+
+Permutation test for roughness.
+```{r}
+load_all('..')
+# Calculate the roughness over some random permutations
+roughnesses <- sapply(1:1000, function(i) permuted.roughness(dl, held.out.expr))
+dim(roughnesses)
+# Plot the roughnesses
+qplot(colMeans(roughnesses))
+# Calculate the roughness of the held out genes under the ordering induced
+# by the pseudotime
+mean(apply(held.out.expr[,order(tau.for.sample(dl))], 1, calc.roughness))
 
 ```
 
