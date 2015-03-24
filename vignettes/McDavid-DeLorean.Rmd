@@ -168,7 +168,7 @@ Examine data for empirical Bayes estimation of hyperparameters.
 dl <- estimate.hyper(
     dl,
     sigma.tau=.5,
-    length.scale=3,
+    length.scale=5,
     delta=.5,
     model.name='simple-model')
 

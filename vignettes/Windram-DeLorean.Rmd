@@ -303,22 +303,22 @@ held.out.genes <- with(dl, gene.var
                            %>% head(getOption('Windram.held.out', 100)))
 load_all('..')
 held.out.fits <- fit.held.out(dl, held.out.genes$gene, windram.expr)
-held.out.fits$loess[[1]]$tau
-held.out.fits$loess[[1]]$capture
+#held.out.fits$loess[[1]]$tau
+#held.out.fits$loess[[1]]$capture
 
-loess.fit.tau <- held.out.fits$loess[[1]]$tau
-loess.fit.tau
+#loess.fit.tau <- held.out.fits$loess[[1]]$tau
+#loess.fit.tau
 
-.pdata <- data.frame(tau=dl$stan.data$testinput)
-pred <- predict(gam.fit.tau, .pdata, type = "response", se.fit = TRUE)
-names(pred)
-.pdata$x <- pred$fit
-ggplot(.pdata, aes(x=tau, y=x)) + geom_path()
+#.pdata <- data.frame(tau=dl$stan.data$testinput)
+#pred <- predict(gam.fit.tau, .pdata, type = "response", se.fit = TRUE)
+#names(pred)
+#.pdata$x <- pred$fit
+#ggplot(.pdata, aes(x=tau, y=x)) + geom_path()
 
 
 
-held.out.genes$marg.LL.tau <- marg.lls[1,]
-held.out.genes$marg.LL.capture <- marg.lls[2,]
+held.out.genes$marg.LL.tau <- held.out.fits[1,]
+held.out.genes$marg.LL.capture <- held.out.fits[2,]
 held.out.gp <- (
     ggplot(held.out.genes,
            aes(x=marg.LL.tau,

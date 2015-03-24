@@ -11,7 +11,7 @@ output:
 
 ```{r build, echo=FALSE, eval=FALSE}
 #
-# Execute this blcok to render the Rmarkdown.
+# Execute this block to render the Rmarkdown.
 #
 library(devtools)
 load_all('..')
