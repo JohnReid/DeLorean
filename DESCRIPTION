@@ -13,7 +13,8 @@ Depends:
     dplyr (>= 0.4.1.9000),
     reshape2 (>= 1.4),
     ggplot2 (>= 1.0.0),
-    knitr (>= 1.8)
+    knitr (>= 1.8),
+    broom (>= 0.3.6)
 License: MIT
 LazyData: true
 VignetteBuilder: knitr

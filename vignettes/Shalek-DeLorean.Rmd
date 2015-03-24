@@ -133,6 +133,52 @@ dl$cell.meta$cell <- factor(
 ```
 
 
+```{r testCellSize}
+library(broom)
+gene.levels <- levels(dl$gene.meta$gene)
+cell.levels <- levels(dl$cell.meta$cell)
+load_all('..')
+shalek.l <- melt.expr(dl) %>% left_join(dl$cell.meta)
+qplot(sample_n(shalek.l, 10000)$x)
+(
+    shalek.l
+    %>% group_by(capture)
+    %>% do(tidy(kruskal.test(x ~ cell, data=.)))
+)
+gene.means <- (
+    shalek.l
+    %>% group_by(gene)
+    %>% summarise(mu=mean(x), prop.expr=mean(x>0))
+    %>% filter(prop.expr > .5)
+)
+qplot(gene.means$mu)
+
+cell.sizes.ah <- (
+    shalek.l
+    %>% filter(gene %in% gene.means$gene)
+    %>% group_by(capture)
+    %>% do(anders.huber.cell.sizes(.))
+)
+cell.sizes.ah
+ggplot(cell.sizes.ah, aes(x=capture, y=size)) + geom_boxplot()
+
+shalek.adj.l <- (
+    shalek.l
+    %>% filter(gene %in% gene.means$gene)
+    %>% left_join(cell.sizes.ah)
+    %>% mutate(x=x-size)
+)
+cell.sizes.ah.test <- (
+    shalek.adj.l
+    %>% group_by(capture)
+    %>% do(anders.huber.cell.sizes(.))
+)
+ggplot(cell.sizes.ah.test, aes(x=capture, y=size)) + geom_boxplot()
+dl$expr <- shalek.l %>% acast(gene ~ cell, value.var="x")
+
+```
+
+
 Only use induced genes that have been assigned to a cluster.
 ```{r useInducedGenes, eval=fit.model}
 induced.genes <- dl$gene.meta %>% filter(! is.na(cluster))
@@ -433,12 +479,15 @@ roughness.tau <- apply(held.out.expr[,order(tau.for.sample(dl))],
 roughness.tau <- data.frame(
     roughness.tau=roughness.tau,
     gene=factor(names(roughness.tau), levels=dl$gene.meta$gene))
-mean(roughness.tau$roughness.tau)
+roughness.tau.mean <- mean(roughness.tau$roughness.tau)
 # Calculate the roughness over some random permutations
 roughnesses <- sapply(1:1000, function(i) permuted.roughness(dl, held.out.expr))
 dim(roughnesses)
 # Plot the roughnesses
-gp <- qplot(colMeans(roughnesses))
+gp <- (
+    qplot(colMeans(roughnesses))
+    + geom_vline(x=roughness.tau.mean, linetype='dashed')
+)
 print(gp)
 ggsave('Shalek-roughnesses-random.png', gp)
 roughnesses.l <- (

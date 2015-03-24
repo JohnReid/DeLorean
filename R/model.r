@@ -15,6 +15,39 @@ update.levels <- function(.factor,
 }
 
 
+#' The levels of the gene factor
+#'
+#' @param dl The de.lorean object.
+#'
+#' @export
+#'
+gene.levels <- function(dl) levels=levels(dl$gene.meta$gene)
+
+
+#' The levels of the cell factor
+#'
+#' @param dl The de.lorean object.
+#'
+#' @export
+#'
+cell.levels <- function(dl) levels=levels(dl$cell.meta$cell)
+
+
+#' Melt an expression matrix.
+#'
+#' @param dl The de.lorean object.
+#' @param expr Matrix of expression values.
+#'
+#' @export
+#'
+melt.expr <- function(dl, expr=dl$expr) (
+    expr
+    %>% melt(varnames=c("gene", "cell"), value.name="x")
+    %>% mutate(gene=factor(gene, levels=gene.levels(dl)),
+               cell=factor(cell, levels=cell.levels(dl)))
+)
+
+
 #' Analyse variance of expression between and within capture times.
 #'
 #' @param dl de.lorean object
