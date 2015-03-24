@@ -435,9 +435,11 @@ held.out.genes <- with(dl, gene.variances
 # Get an expression matrix of held out genes in the cells of interest
 held.out.expr <- shalek.A.expr[as.character(held.out.genes$gene),
                                as.character(dl$cell.map$cell)]
+load_all('..')
 marg.lls <- fit.held.out(dl, held.out.expr)
                          #sample.iter=dl$sample.optimised)
                          #sample.iter=dl$best.sample)
+
 held.out.genes$marg.LL.tau <- marg.lls[1,]
 held.out.genes$marg.LL.capture <- marg.lls[2,]
 held.out.gp <- (
@@ -459,14 +461,37 @@ with(held.out.genes, t.test(marg.LL.tau, marg.LL.capture,
 Permutation test for roughness.
 ```{r}
 load_all('..')
+# Calculate the roughness of the held out genes under the ordering induced
+# by the pseudotime
+roughness.tau <- apply(held.out.expr[,order(tau.for.sample(dl))],
+                       1,
+                       calc.roughness)
+roughness.tau <- data.frame(
+    roughness.tau=roughness.tau,
+    gene=factor(names(roughness.tau), levels=dl$gene.meta$gene))
+mean(roughness.tau$roughness.tau)
 # Calculate the roughness over some random permutations
 roughnesses <- sapply(1:1000, function(i) permuted.roughness(dl, held.out.expr))
+roughnesses.l <- (
+    melt(roughnesses,
+         varnames=c("gene", "permutation"),
+         value.name="roughness")
+    %>% mutate(gene=update.levels(gene, dl$gene.meta[['gene']])))
+names(roughnesses.l)
+roughnesses.gene <- (
+    roughnesses.l
+    %>% group_by(gene)
+    %>% summarise(mu=mean(roughness), sigma=sd(roughness))
+    %>% left_join(roughness.tau)
+    %>% mutate(Z=(mu-roughness.tau)/sigma)
+    %>% arrange(Z))
+gp <- qplot(roughnesses.gene$Z)
+print(gp)
+ggsave('Shalek-roughnesses-Z.png', gp)
+
 dim(roughnesses)
 # Plot the roughnesses
 qplot(colMeans(roughnesses))
-# Calculate the roughness of the held out genes under the ordering induced
-# by the pseudotime
-mean(apply(held.out.expr[,order(tau.for.sample(dl))], 1, calc.roughness))
 
 ```
 
