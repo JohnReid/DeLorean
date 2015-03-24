@@ -981,24 +981,37 @@ make.predictions <- function(dl) {
     })
 }
 
+
+#' Permute cells and test roughness of expression.
+#'
+#' @param dl de.lorean object
+#' @param expr.held.out The expression matrix of the held out genes
+#'
+#' @export
+#'
+permuted.roughness <- function(
+    dl,
+    expr.held.out)
+{
+    permuted <- permute.df(dl$cell.map, "capture")
+    apply(expr.held.out[,permuted$c], 1, calc.roughness)
+}
+
+
 #' Fit held out genes
 #'
 #' @param dl de.lorean object
-#' @param held.out.genes The held out genes
 #' @param expr.held.out The expression matrix including the held out genes
 #'
 #' @export
 #'
 fit.held.out <- function(
     dl,
-    held.out.genes,
     expr.held.out,
     sample.iter=dl$best.sample)
 {
     library(mgcv)
     with(dl, {
-        expr.held.out <- expr.held.out[as.character(held.out.genes),
-                                       as.character(cell.map$cell)]
         if (opts$adjust.cell.sizes) {
             cell.posterior <- samples.l$S %>% filter(sample.iter == iter)
             expr.held.out <- t(t(expr.held.out) + cell.posterior$S)
@@ -1016,17 +1029,15 @@ fit.held.out <- function(
         #' Evaluate the held out gene under the GP model using pseudotimes
         #' and a model without.
         #'
-        calc.gp.marginals <- function(held.out) {
-            expr <- expr.held.out[as.character(held.out),]
+        calc.gp.marginals <- function(expr) {
             c(
                 gp.log.marg.like(expr, K.tau),
                 gp.log.marg.like(expr, K.capture))
         }
-        fit.model <- function(held.out, model=loess) {
-            expr <- expr.held.out[as.character(held.out),]
+        fit.model <- function(expr, model=loess) {
             list(tau=model(expr~s(tau)))
         }
-        sapply(held.out.genes, calc.gp.marginals)
+        apply(expr.held.out, 1, calc.gp.marginals)
         # list(
             # gp.marginals=sapply(held.out.genes, calc.gp.marginals),
             # loess=lapply(held.out.genes, Curry(fit.model, model=gam)))
