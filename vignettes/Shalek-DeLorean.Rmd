@@ -406,24 +406,7 @@ dev.off()
 ```
 
 
-Evaluate the held out genes that weren't used to fit the model. We fit GPs
-to the data with two covariance functions. We use the same covariance
-structure as the model.
-$$
-    \Sigma(c_1, c_2) = \mu_\bar{\psi} \Sigma_t(c_1, c_2) + \mu_\bar{\omega}
-$$
-In one case we use the pseudotimes from the best sample for $\Sigma_t$. The
-marginal likelihood from this model is a proxy for how well the pseudotimes
-smooth the expression values.
-$$
-    \Sigma_t(c_1, c_2) = \Sigma_t(r=|\tau_{c_1} - \tau_{c_2}|)
-$$
-in the other case, we use the cell capture times. The marginal likelihood
-for this model is a proxy for how well the expression values are smoothed
-by the capture times.
-$$
-    \Sigma_t(c_1, c_2) = \Sigma_t(r=|\kappa_{c_1} - \kappa_{c_2}|)
-$$
+Evaluate the held out genes that weren't used to fit the model.
 ```{r heldOutGenes}
 held.out.genes <- with(dl, gene.variances
                            %>% left_join(gene.meta)
@@ -431,29 +414,11 @@ held.out.genes <- with(dl, gene.variances
                            %>% filter(cluster %in% clusters)
                            # %>% filter(cluster != "Id")
                            %>% arrange(-Psi/Omega)
-                           %>% head(getOption('Shalek.held.out', 100)))
+                           %>% head(getOption('Shalek.held.out', 100))
+)
 # Get an expression matrix of held out genes in the cells of interest
 held.out.expr <- shalek.A.expr[as.character(held.out.genes$gene),
                                as.character(dl$cell.map$cell)]
-load_all('..')
-marg.lls <- fit.held.out(dl, held.out.expr)
-                         #sample.iter=dl$sample.optimised)
-                         #sample.iter=dl$best.sample)
-
-held.out.genes$marg.LL.tau <- marg.lls[1,]
-held.out.genes$marg.LL.capture <- marg.lls[2,]
-held.out.gp <- (
-    ggplot(held.out.genes,
-           aes(x=marg.LL.tau,
-               y=marg.LL.capture,
-               color=Psi))
-    + geom_point()
-    + scale_colour_gradient(high="red")
-    + geom_abline(intercept=0, slope=1))
-print(held.out.gp)
-ggsave('Shalek-held-out.png', held.out.gp)
-with(held.out.genes, t.test(marg.LL.tau, marg.LL.capture,
-                            paired=TRUE, alternative="greater"))
 
 ```
 
@@ -494,6 +459,47 @@ gp <- ggplot(roughnesses.gene,
              aes(x=Psi/Omega, y=roughnesses.gene$Z)) + geom_point()
 print(gp)
 ggsave('Shalek-roughnesses-Z.png', gp)
+with(roughnesses.gene, cor(sigma, Z))
+
+```
+
+
+We fit GPs to the data with two covariance functions. We use the
+same covariance structure as the model.
+$$
+    \Sigma(c_1, c_2) = \mu_\bar{\psi} \Sigma_t(c_1, c_2) + \mu_\bar{\omega}
+$$
+In one case we use the pseudotimes from the best sample for $\Sigma_t$. The
+marginal likelihood from this model is a proxy for how well the pseudotimes
+smooth the expression values.
+$$
+    \Sigma_t(c_1, c_2) = \Sigma_t(r=|\tau_{c_1} - \tau_{c_2}|)
+$$
+in the other case, we use the cell capture times. The marginal likelihood
+for this model is a proxy for how well the expression values are smoothed
+by the capture times.
+$$
+    \Sigma_t(c_1, c_2) = \Sigma_t(r=|\kappa_{c_1} - \kappa_{c_2}|)
+$$
+```{r fitHeldOut}
+marg.lls <- fit.held.out(dl, held.out.expr)
+                         #sample.iter=dl$sample.optimised)
+                         #sample.iter=dl$best.sample)
+
+held.out.genes$marg.LL.tau <- marg.lls[1,]
+held.out.genes$marg.LL.capture <- marg.lls[2,]
+held.out.gp <- (
+    ggplot(held.out.genes,
+           aes(x=marg.LL.tau,
+               y=marg.LL.capture,
+               color=Psi))
+    + geom_point()
+    + scale_colour_gradient(high="red")
+    + geom_abline(intercept=0, slope=1))
+print(held.out.gp)
+ggsave('Shalek-held-out.png', held.out.gp)
+with(held.out.genes, t.test(marg.LL.tau, marg.LL.capture,
+                            paired=TRUE, alternative="greater"))
 
 ```
 
