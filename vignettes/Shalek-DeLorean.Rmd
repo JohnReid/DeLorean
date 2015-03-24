@@ -460,7 +460,6 @@ with(held.out.genes, t.test(marg.LL.tau, marg.LL.capture,
 
 Permutation test for roughness.
 ```{r}
-load_all('..')
 # Calculate the roughness of the held out genes under the ordering induced
 # by the pseudotime
 roughness.tau <- apply(held.out.expr[,order(tau.for.sample(dl))],
@@ -483,9 +482,11 @@ roughnesses.gene <- (
     %>% group_by(gene)
     %>% summarise(mu=mean(roughness), sigma=sd(roughness))
     %>% left_join(roughness.tau)
+    %>% left_join(gene.variances)
     %>% mutate(Z=(mu-roughness.tau)/sigma)
     %>% arrange(Z))
-gp <- qplot(roughnesses.gene$Z)
+gp <- ggplot(roughnesses.gene,
+             aes(x=Psi/Omega, y=roughnesses.gene$Z)) + geom_point()
 print(gp)
 ggsave('Shalek-roughnesses-Z.png', gp)
 
