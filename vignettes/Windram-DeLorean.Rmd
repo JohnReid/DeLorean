@@ -301,8 +301,9 @@ held.out.genes <- with(dl, gene.var
                            %>% filter(! gene %in% gene.map$gene)
                            %>% arrange(-Psi/Omega)
                            %>% head(getOption('Windram.held.out', 100)))
-load_all('..')
-held.out.fits <- fit.held.out(dl, held.out.genes$gene, windram.expr)
+held.out.expr <- windram.expr[as.character(held.out.genes$gene),
+                              as.character(dl$cell.map$cell)]
+held.out.fits <- fit.held.out(dl, held.out.expr)
 held.out.fits$loess[[1]]$tau
 held.out.fits$loess[[1]]$capture
 
