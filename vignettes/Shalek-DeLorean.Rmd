@@ -472,6 +472,11 @@ roughness.tau <- data.frame(
 mean(roughness.tau$roughness.tau)
 # Calculate the roughness over some random permutations
 roughnesses <- sapply(1:1000, function(i) permuted.roughness(dl, held.out.expr))
+dim(roughnesses)
+# Plot the roughnesses
+gp <- qplot(colMeans(roughnesses))
+print(gp)
+ggsave('Shalek-roughnesses-random.png', gp)
 roughnesses.l <- (
     melt(roughnesses,
          varnames=c("gene", "permutation"),
@@ -488,10 +493,6 @@ roughnesses.gene <- (
 gp <- qplot(roughnesses.gene$Z)
 print(gp)
 ggsave('Shalek-roughnesses-Z.png', gp)
-
-dim(roughnesses)
-# Plot the roughnesses
-qplot(colMeans(roughnesses))
 
 ```
 
