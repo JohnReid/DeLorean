@@ -304,6 +304,31 @@ calc.rmse <- function(xhat, x) calc.rms(peak.distance(xhat, x))
 # Hence cbPeaktime = 0 corresponds to a pseudotime of .5
 # A function to map from pseudotimes (tau) to cbPeaktimes
 tau.to.cbtime <- function(tau) periodise((tau - .5)/3, 1)
+
+```
+
+
+Calculate distance between peak time and capture time.
+Capture times are as defined in
+[CycleBase](http://www.cyclebase.org/About "CycleBase").
+```{r}
+expr.l <- melt(unname(dl$expr), varnames=c("g", "c"), value.name="x")
+peaks <- (
+    expr.l
+    %>% group_by(g)
+    %>% summarise(c=c[which.max(x)])
+    %>% left_join(dl$gene.map)
+    %>% filter(! is.na(cbPeaktime))
+    %>% left_join(dl$cell.map)
+    %>% mutate(capture.dist=peak.distance(cbPeaktime/100,
+                                          tau.to.cbtime(as.integer(capture)))))
+capture.RMSE <- calc.rms(peaks$capture.dist)
+capture.RMSE
+
+```
+
+
+```{r predictedPeaks}
 dl <- within(dl, {
     # Find the peaks in the predicted profiles
     peak.vs.max <- (
@@ -329,7 +354,10 @@ gp <- (
     + geom_point()
     + scale_x_continuous(name="RMSE (not adjusted)")
     + scale_y_continuous(name="RMSE (cell size adjusted)")
-    + geom_abline(alpha=.5))
+    + geom_abline(alpha=.5)
+    + geom_hline(y=capture.RMSE, linetype='dashed')
+    + geom_vline(x=capture.RMSE, linetype='dashed')
+)
 print(gp)
 ggsave('McDavid-rmse-vs-rmse-adj.pdf', plot=gp,
        width=fig.width, height=fig.height)
@@ -344,6 +372,7 @@ gp <- (
     ggplot(dl$peak.max.dist, aes(x=rmse.adj))
     + geom_density()
     + geom_rug()
+    + geom_vline(x=capture.RMSE, linetype='dashed')
     + scale_x_continuous(name="RMSE (cell size adjusted)"))
 print(gp)
 ggsave('McDavid-rmse-adj.pdf', plot=gp,
@@ -383,23 +412,7 @@ ggsave('McDavid-peak-vs-max.png', plot=gp,
 
 ```
 
-Calculate distance between peak time and capture time.
-Capture times are as defined in
-[CycleBase](http://www.cyclebase.org/About "CycleBase").
-```{r}
-expr.l <- melt(unname(dl$expr), varnames=c("g", "c"), value.name="x")
-peaks <- (
-    expr.l
-    %>% group_by(g)
-    %>% summarise(c=c[which.max(x)])
-    %>% left_join(dl$gene.map)
-    %>% filter(! is.na(cbPeaktime))
-    %>% left_join(dl$cell.map)
-    %>% mutate(capture.dist=peak.distance(cbPeaktime/100,
-                                          tau.to.cbtime(as.integer(capture)))))
-capture.RMSE <- calc.rms(peaks$capture.dist)
-capture.RMSE
-
+```{r testPeaks}
 # Haven't decided which test to do yet.
 # t-test
 #with(dl$peak.max.dist, t.test(x=capture.RMSE,
@@ -432,6 +445,7 @@ ggsave('McDavid-capture-peaks.png', plot=gp,
 Plot the profiles adjusted for the cell size.
 ```{r}
 gp <- plot(dl, type="profiles", cell.size.adj=F, adjust.model=lo)
+print(gp)
 ggsave('McDavid-profiles-adj.pdf', plot=gp,
        width=fig.width*2, height=fig.height*2)
 gp <- plot(dl, type="profiles", sample.iter=dl$sample.old.best) + scale_x_continuous(name='Pseudotime',
