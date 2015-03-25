@@ -134,46 +134,16 @@ dl$cell.meta$cell <- factor(
 
 
 ```{r testCellSize}
-library(broom)
-gene.levels <- levels(dl$gene.meta$gene)
-cell.levels <- levels(dl$cell.meta$cell)
-shalek.l <- melt.expr(dl) %>% left_join(dl$cell.meta)
-qplot(sample_n(shalek.l, 10000)$x)
-(
-    shalek.l
-    %>% group_by(capture)
-    %>% do(tidy(kruskal.test(x ~ cell, data=.)))
-)
+dl <- adjust.by.cell.sizes(dl)
+qplot(sample_n(dl$expr.l, 10000)$x)
 gene.means <- (
-    shalek.l
+    dl$expr.l
     %>% group_by(gene)
     %>% summarise(mu=mean(x), prop.expr=mean(x>0))
     %>% filter(prop.expr > .5)
 )
 qplot(gene.means$mu)
-
-cell.sizes.ah <- (
-    shalek.l
-    %>% filter(gene %in% gene.means$gene)
-    %>% group_by(capture)
-    %>% do(anders.huber.cell.sizes(.))
-)
-cell.sizes.ah
-ggplot(cell.sizes.ah, aes(x=capture, y=size)) + geom_boxplot()
-
-shalek.adj.l <- (
-    shalek.l
-    %>% filter(gene %in% gene.means$gene)
-    %>% left_join(cell.sizes.ah)
-    %>% mutate(x=x-size)
-)
-cell.sizes.ah.test <- (
-    shalek.adj.l
-    %>% group_by(capture)
-    %>% do(anders.huber.cell.sizes(.))
-)
-ggplot(cell.sizes.ah.test, aes(x=capture, y=size)) + geom_boxplot()
-dl$expr <- shalek.l %>% acast(gene ~ cell, value.var="x")
+ggplot(dl$cell.sizes, aes(x=capture, y=size)) + geom_boxplot()
 
 ```
 

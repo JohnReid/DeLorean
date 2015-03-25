@@ -64,6 +64,16 @@ melt.expr <- function(dl, expr=dl$expr) (
 )
 
 
+#' Cast an expression matrix.
+#'
+#' @param dl The de.lorean object.
+#' @param expr.l Expression values in long format.
+#'
+#' @export
+#'
+cast.expr <- function(expr.l) expr.l %>% acast(gene ~ cell, value.var="x")
+
+
 #' Analyse variance of expression between and within capture times.
 #'
 #' @param dl de.lorean object
