@@ -137,7 +137,6 @@ dl$cell.meta$cell <- factor(
 library(broom)
 gene.levels <- levels(dl$gene.meta$gene)
 cell.levels <- levels(dl$cell.meta$cell)
-load_all('..')
 shalek.l <- melt.expr(dl) %>% left_join(dl$cell.meta)
 qplot(sample_n(shalek.l, 10000)$x)
 (
