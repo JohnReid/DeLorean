@@ -15,6 +15,22 @@ update.levels <- function(.factor,
 }
 
 
+#' Retrieve the estimated tau for the given sample.
+#'
+#' @param dl de.lorean object
+#' @param sample.iter Which sample to use, defaults to best sample
+#'
+#' @export
+#'
+tau.for.sample <- function(dl, sample.iter=dl$best.sample) {
+    (
+        dl$samples.l$tau
+        %>% filter(sample.iter == iter)  # Filter correct iteration
+        %>% arrange(c)  # Sort by cell
+    )$tau
+}
+
+
 #' The levels of the gene factor
 #'
 #' @param dl The de.lorean object.

@@ -43,22 +43,6 @@ cov.calc.dists <- function(tau.1, tau.2=NULL, period=NULL) {
 }
 
 
-#' Retrieve the estimated tau for the given sample.
-#'
-#' @param dl de.lorean object
-#' @param sample.iter Which sample to use, defaults to best sample
-#'
-#' @export
-#'
-tau.for.sample <- function(dl, sample.iter=dl$best.sample) {
-    (
-        dl$samples.l$tau
-        %>% filter(sample.iter == iter)  # Filter correct iteration
-        %>% arrange(c)  # Sort by cell
-    )$tau
-}
-
-
 #' Calculate distances over estimated pseudotimes and
 #' test inputs.
 #'
@@ -298,7 +282,7 @@ gaussian.condition <- function(
          Sigma = .A - .C %*% alpha)
 }
 
-#' The expected sample variance of a Gaussian with the given covariance.
+#' The expected within sample variance of a Gaussian with the given covariance.
 #'
 #' @param K Covariance
 #'
