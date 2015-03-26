@@ -449,7 +449,7 @@ print(dl$roughness.test)
 # Plot the roughnesses
 gp <- plot(dl, type="roughnesses")
 print(gp)
-ggsave('Shalek-roughnesses-random.png', gp)
+ggsave('Shalek-roughnesses.png', gp)
 
 ```
 

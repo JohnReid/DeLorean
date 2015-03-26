@@ -302,10 +302,10 @@ with(dl$samples.l$tau %>% filter(iter == dl$best.sample),
 
 ```
 
-# Fit held out genes
+# Evaluate held out genes
 
 Fit some held out genes.
-```{r fitHeldOut}
+```{r heldOutGenes}
 held.out.genes <- with(dl, gene.var
                            %>% left_join(gene.meta)
                            %>% filter(! gene %in% gene.map$gene)
@@ -313,6 +313,27 @@ held.out.genes <- with(dl, gene.var
                            %>% head(getOption('Windram.held.out', 100)))
 held.out.expr <- windram.expr[as.character(held.out.genes$gene),
                               as.character(dl$cell.map$cell)]
+
+```
+
+
+## Roughness permutation test
+
+Permutation test for roughness.
+```{r}
+dl <- roughness.test(dl, held.out.expr)
+print(dl$roughness.test)
+# Plot the roughnesses
+gp <- plot(dl, type="roughnesses")
+print(gp)
+ggsave('Windram-roughnesses.png', gp)
+
+```
+
+
+## Fit GPs
+
+```{r fitHeldOut}
 held.out.fits <- fit.held.out(dl, held.out.expr)
 #held.out.fits$loess[[1]]$tau
 #held.out.fits$loess[[1]]$capture
