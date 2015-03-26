@@ -283,6 +283,7 @@ posterior.cor <- (
 mean(posterior.cor$pseudotime.capture.cor)
 gp.post.cor <- (ggplot(posterior.cor, aes(x=pseudotime.capture.cor))
     + geom_histogram()
+    + geom_vline(x=.94, linetype='dashed', color='red')
     + scale_x_continuous(name="correlation"))
 print(gp.post.cor)
 ggsave('Windram-posterior-cor.pdf', plot=gp.post.cor,
