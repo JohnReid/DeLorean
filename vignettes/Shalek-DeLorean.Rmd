@@ -137,18 +137,12 @@ dl$cell.meta$cell <- factor(
 
 ```{r testCellSize}
 dl <- adjust.by.cell.sizes(dl)
-qplot(sample_n(dl$expr.l, 10000)$x)
-gene.means <- (
-    dl$expr.l
-    %>% group_by(gene)
-    %>% summarise(mu=mean(x), prop.expr=mean(x>0))
-    %>% filter(prop.expr > .5)
-)
-qplot(gene.means$mu)
 ggplot(dl$cell.sizes, aes(x=capture, y=size)) + geom_boxplot()
 
 ```
 
+
+## Choose genes and cells
 
 Only use induced genes that have been assigned to a cluster.
 ```{r useInducedGenes, eval=fit.model}
@@ -159,8 +153,6 @@ dl <- filter.genes(dl, genes=induced.genes$gene)
 ```{r child=report.file("data")}
 ```
 
-
-## Choose genes and cells
 
 Choose genes: take those with highest variance between time points
 relative to the noise level.

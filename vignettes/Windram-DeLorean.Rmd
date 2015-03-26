@@ -134,6 +134,15 @@ dl <- filter.cells(dl, cell.filter)
 ```
 
 
+## Adjust by cell sizes
+
+```{r testCellSize}
+dl <- adjust.by.cell.sizes(dl)
+ggplot(dl$cell.sizes, aes(x=capture, y=size)) + geom_boxplot()
+
+```
+
+
 # Estimate hyperparameters
 
 Examine data for empirical Bayes estimation of hyperparameters.
@@ -142,7 +151,7 @@ dl <- estimate.hyper(
     dl,
     sigma.tau=group.size / 2,
     delta=.5,
-    model.name='simple-model')
+    model.name='simplest-model')
 
 ```
 
