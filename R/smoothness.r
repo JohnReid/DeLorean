@@ -36,3 +36,97 @@ permute.df <- function(.df, group.col=NULL) {
     }
 }
 
+
+#' Calculate the roughness of the held out genes given the sample.
+#'
+#' @param dl de.lorean object
+#' @param expr.held.out The expression matrix including the held out genes
+#'
+#' @export
+#'
+roughness.of.sample <- function(
+    dl,
+    expr.held.out=dl$expr.held.out,
+    sample.iter=dl$best.sample)
+with(dl, {
+    tau <- tau.for.sample(dl, sample.iter=sample.iter)
+    mean(apply(expr.held.out[,order(tau)], 1, calc.roughness))
+})
+
+
+#' Permute cells and test roughness of expression.
+#'
+#' @param dl de.lorean object
+#' @param expr.held.out The expression matrix of the held out genes
+#'
+#' @export
+#'
+permuted.roughness <- function(
+    dl,
+    expr.held.out=dl$expr.held.out)
+{
+    permuted <- permute.df(dl$cell.map, "capture")
+    apply(expr.held.out[,permuted$c], 1, calc.roughness)
+}
+
+
+#' Apply permutation based roughness test to held out genes
+#'
+#' @param dl de.lorean object
+#' @param expr.held.out The expression matrix including the held out genes
+#'
+#' @export
+#'
+roughness.of.permutations <- function(
+    dl,
+    expr.held.out=dl$expr.held.out,
+    num.perms=1000)
+{
+    colMeans(sapply(1:num.perms, function(i) permuted.roughness(dl, expr.held.out)))
+}
+
+
+#' Calculate roughnesses under fit samples and also under random
+#' permutations
+#'
+#' @param dl de.lorean object
+#' @param expr.held.out The expression matrix including the held out genes
+#'
+#' @export
+#'
+roughness.test <- function(
+    dl,
+    expr.held.out=dl$expr.held.out,
+    num.perms=1000)
+within(dl, {
+    # Combine both types into a dataframe
+    roughnesses <- rbind(
+        data.frame(type="tau",
+                   roughness=sapply(sample.iters(dl),
+                                    function(sample.iter)
+                                        roughness.of.sample(
+                                            dl,
+                                            expr.held.out,
+                                            sample.iter=sample.iter))),
+        data.frame(type="permutation",
+                   roughness=roughness.of.permutations(dl, held.out.expr)))
+    roughness.test <- t.test(
+        x=filter(roughnesses, "permutation" == type)$roughness,
+        y=filter(roughnesses, "tau"         == type)$roughness,
+        alternative="greater")
+})
+
+
+#' Plot results of roughness test
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+plot.roughnesses <- function(dl) with(dl, (
+    ggplot(roughnesses, aes(x=roughness,
+                            fill=type, color=type))
+    + geom_histogram(aes(y=..density..), position='dodge')
+    + geom_rug()
+    + geom_vline(x=roughnesses.tau[dl$best.sample], linetype='dashed')
+))

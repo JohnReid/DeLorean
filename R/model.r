@@ -1041,22 +1041,6 @@ make.predictions <- function(dl) {
 }
 
 
-#' Permute cells and test roughness of expression.
-#'
-#' @param dl de.lorean object
-#' @param expr.held.out The expression matrix of the held out genes
-#'
-#' @export
-#'
-permuted.roughness <- function(
-    dl,
-    expr.held.out)
-{
-    permuted <- permute.df(dl$cell.map, "capture")
-    apply(expr.held.out[,permuted$c], 1, calc.roughness)
-}
-
-
 #' Fit held out genes
 #'
 #' @param dl de.lorean object
@@ -1123,3 +1107,12 @@ sample.parameters <- function(dl,
     names(parameters) <- param.names
     parameters
 }
+
+
+#' The samples
+#''
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+sample.iters <- function(dl) dl$samples.l$lp__$iter

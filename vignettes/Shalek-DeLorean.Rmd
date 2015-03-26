@@ -444,44 +444,11 @@ held.out.expr <- shalek.A.expr[as.character(held.out.genes$gene),
 
 Permutation test for roughness.
 ```{r}
-# Calculate the roughness of the held out genes under the ordering induced
-# by the pseudotime
-roughness.tau <- apply(held.out.expr[,order(tau.for.sample(dl))],
-                       1,
-                       calc.roughness)
-roughness.tau <- data.frame(
-    roughness.tau=roughness.tau,
-    gene=factor(names(roughness.tau), levels=dl$gene.meta$gene))
-roughness.tau.mean <- mean(roughness.tau$roughness.tau)
-# Calculate the roughness over some random permutations
-roughnesses <- sapply(1:1000, function(i) permuted.roughness(dl, held.out.expr))
-dim(roughnesses)
+dl <- roughness.test(dl, held.out.expr)
 # Plot the roughnesses
-gp <- (
-    qplot(colMeans(roughnesses))
-    + geom_vline(x=roughness.tau.mean, linetype='dashed')
-)
+gp <- plot(dl, type="roughnesses")
 print(gp)
 ggsave('Shalek-roughnesses-random.png', gp)
-roughnesses.l <- (
-    melt(roughnesses,
-         varnames=c("gene", "permutation"),
-         value.name="roughness")
-    %>% mutate(gene=update.levels(gene, dl$gene.meta[['gene']])))
-names(roughnesses.l)
-roughnesses.gene <- (
-    roughnesses.l
-    %>% group_by(gene)
-    %>% summarise(mu=mean(roughness), sigma=sd(roughness))
-    %>% left_join(roughness.tau)
-    %>% left_join(gene.variances)
-    %>% mutate(Z=(mu-roughness.tau)/sigma)
-    %>% arrange(Z))
-gp <- ggplot(roughnesses.gene,
-             aes(x=Psi/Omega, y=roughnesses.gene$Z)) + geom_point()
-print(gp)
-ggsave('Shalek-roughnesses-Z.png', gp)
-with(roughnesses.gene, cor(sigma, Z))
 
 ```
 

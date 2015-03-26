@@ -11,6 +11,7 @@ plot.de.lorean <- function(dl, type="profiles", ...) {
         pseudotime=plot.pseudotime(dl, ...),
         convergence=plot.convergence(dl, ...),
         expr.data=plot.expr.data(dl, ...),
+        roughnesses=plot.roughnesses(dl, ...),
         tau.offsets=plot.tau.offsets(dl, ...)
     )
     if (is.null(result)) {
