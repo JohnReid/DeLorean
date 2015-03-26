@@ -101,14 +101,15 @@ roughness.test <- function(
 within(dl, {
     # Combine both types into a dataframe
     roughnesses <- rbind(
-        data.frame(type="tau",
-                   roughness=sapply(sample.iters(dl),
-                                    function(sample.iter)
-                                        roughness.of.sample(
-                                            dl,
-                                            expr.held.out,
-                                            sample.iter=sample.iter))),
+        data.frame(type="tau", sample.iter=sample.iters(dl))
+        %>% mutate(roughness=Vectorize(
+                                roughness.of.sample,
+                                vectorize.args='sample.iter')(
+                                    dl,
+                                    expr.held.out=expr.held.out,
+                                    sample.iter)),
         data.frame(type="permutation",
+                   sample.iter=NA,
                    roughness=roughness.of.permutations(dl, held.out.expr)))
     roughness.test <- t.test(
         x=filter(roughnesses, "permutation" == type)$roughness,
@@ -128,5 +129,6 @@ plot.roughnesses <- function(dl) with(dl, (
                             fill=type, color=type))
     + geom_histogram(aes(y=..density..), position='dodge')
     + geom_rug()
-    + geom_vline(x=roughnesses.tau[dl$best.sample], linetype='dashed')
+    + geom_vline(x=filter(roughnesses, dl$best.sample==sample.iter)$roughness,
+                          linetype='dashed')
 ))
