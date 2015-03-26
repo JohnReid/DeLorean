@@ -142,7 +142,7 @@ Choose a few cells from the PC3 cell line.
 ```{r filterCells}
 dl <- filter.cells(dl, cells=cells.PC3$cell)
 set.seed(1)
-max.cells <- min(getOption("McDavid.max.cells", 57))
+max.cells <- min(getOption("McDavid.max.cells", 17))
 dl <- filter.cells(dl, number=max.cells)
 
 ```
@@ -151,7 +151,7 @@ dl <- filter.cells(dl, number=max.cells)
 Choose genes with low $p$-values from the McDavid et al.
 differential expression test.
 ```{r filterGenes}
-max.genes <- min(getOption("McDavid.max.genes", 56))
+max.genes <- min(getOption("McDavid.max.genes", 21))
 genes.for.stan <- (
     dl$gene.meta
     %>% filter(pvalue > 10)
