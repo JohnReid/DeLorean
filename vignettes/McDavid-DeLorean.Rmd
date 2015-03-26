@@ -448,7 +448,8 @@ gp <- plot(dl, type="profiles", cell.size.adj=F, adjust.model=lo)
 print(gp)
 ggsave('McDavid-profiles-adj.pdf', plot=gp,
        width=fig.width*2, height=fig.height*2)
-gp <- plot(dl, type="profiles", sample.iter=dl$sample.old.best) + scale_x_continuous(name='Pseudotime',
+load_all('..')
+gp <- plot(dl, type="profiles") + scale_x_continuous(name='Pseudotime',
                                                      limits=c(0, 3))
 print(gp)
 ggsave('McDavid-profiles.png', plot=gp,

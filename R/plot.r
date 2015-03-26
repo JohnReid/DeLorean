@@ -162,7 +162,10 @@ plot.cmp.profiles <- function(...,
     gp <- ggplot(mutate.profile.data(means),
                  aes(x=tau),
                  environment=environment())
-    gp <- plot.add.mean.and.variance(gp, color=name, line.alpha=8, ribbon.alpha=.2)
+    gp <- plot.add.mean.and.variance(gp,
+                                     color=name,
+                                     line.alpha=8,
+                                     ribbon.alpha=.2)
     (
         gp
         + facet_wrap(~ gene)
@@ -182,18 +185,12 @@ plot.cmp.profiles <- function(...,
 #' @export
 #'
 plot.profiles <- function(dl,
-                          genes=NULL,
+                          genes=dl$genes.high.psi,
                           profile.color='black',
                           add.data=T,
-                          sample.iter=NULL,
+                          sample.iter=dl$best.sample,
                           ...) {
     varargs <- list(...)
-    if (is.null(genes)) {
-        genes <- dl$genes.high.psi
-    }
-    if (is.null(sample.iter)) {
-        sample.iter <- dl$best.sample
-    }
     with(dl, {
         if (opts$periodic) {
             modulo.period <- function(t) ( t - floor(t / opts$period)
@@ -207,11 +204,12 @@ plot.profiles <- function(dl,
                       %>% filter(gene %in% genes),
                       environment=environment()))
         profile.data <- (
-            dl$predictions
+            predictions
             %>% filter(sample.iter == iter)
             %>% left_join(dl$gene.map)
             %>% filter(gene %in% genes)
         )
+        # stopifnot(! any(is.na(profile.data %>% select(-cbRank, cbPeaktime))))
         gp <- (
             plot.add.mean.and.variance(
                 gp,
