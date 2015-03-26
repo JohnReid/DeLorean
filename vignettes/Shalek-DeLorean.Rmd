@@ -133,6 +133,8 @@ dl$cell.meta$cell <- factor(
 ```
 
 
+## Adjust by cell sizes
+
 ```{r testCellSize}
 dl <- adjust.by.cell.sizes(dl)
 qplot(sample_n(dl$expr.l, 10000)$x)
@@ -158,7 +160,7 @@ dl <- filter.genes(dl, genes=induced.genes$gene)
 ```
 
 
-# Choose genes and cells
+## Choose genes and cells
 
 Choose genes: take those with highest variance between time points
 relative to the noise level.
@@ -212,8 +214,8 @@ qplot(genes.for.stan$cluster)
 Choose a few cells but make sure we have the precocious cells.
 ```{r filterCells, eval=fit.model}
 set.seed(1)
-num.cells <- getOption("Shalek.max.cells", 12)
-sampled.cells <- sample(colnames(dl$expr), num.cells)
+max.cells <- getOption("Shalek.max.cells", 12)
+sampled.cells <- sample(colnames(dl$expr), max.cells)
 if (! "LPS_1h_S51" %in% sampled.cells) {
     sampled.cells[1] <- "LPS_1h_S51"
 }
@@ -250,6 +252,8 @@ saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
 
 ```
 
+
+# Fit model
 
 Format the data for Stan and fit the model.
 ```{r fitModel, eval=fit.model}
@@ -335,6 +339,8 @@ saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Shalek.rds")
 ```
 
 
+# Cluster analysis
+
 ```{r clusterAnalysis}
 clustered <- dl$gene.meta %>% filter(! is.na(cluster))
 clustered.expr <- shalek.A.expr[clustered$gene,time.course.cells$cell]
@@ -396,6 +402,8 @@ module.scores <- module.scores %>% mutate(precocious=cell %in% precocious$cell)
 ```
 
 
+## Check precocious
+
 ```{r checkPrecocious}
 S51.dists <- with(
     dl,
@@ -421,6 +429,8 @@ dev.off()
 ```
 
 
+# Evaluate held out genes
+
 Evaluate the held out genes that weren't used to fit the model.
 ```{r heldOutGenes}
 held.out.genes <- with(dl, gene.variances
@@ -437,6 +447,8 @@ held.out.expr <- shalek.A.expr[as.character(held.out.genes$gene),
 
 ```
 
+
+## Roughness permutation test
 
 Permutation test for roughness.
 ```{r}
@@ -481,6 +493,8 @@ with(roughnesses.gene, cor(sigma, Z))
 
 ```
 
+
+# Fit GPs
 
 We fit GPs to the data with two covariance functions. We use the
 same covariance structure as the model.
