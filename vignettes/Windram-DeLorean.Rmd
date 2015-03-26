@@ -81,6 +81,7 @@ theme_set(font.theme)
 
 ```
 
+`r date()`
 
 `r citet(bib[["windram_arabidopsis_2012"]])` assayed leaves at 24 time points
 in 2 conditions.
