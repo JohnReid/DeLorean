@@ -209,7 +209,7 @@ plot.profiles <- function(dl,
             %>% left_join(dl$gene.map)
             %>% filter(gene %in% genes)
         )
-        # stopifnot(! any(is.na(profile.data %>% select(-cbRank, cbPeaktime))))
+        # stopifnot(! any(is.na(profile.data %>% select(-cbRank, -cbPeaktime))))
         gp <- (
             plot.add.mean.and.variance(
                 gp,

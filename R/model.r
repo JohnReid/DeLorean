@@ -376,10 +376,14 @@ format.for.stan <- function(
         stopifnot(! is.na(cell.map %>% dplyr::select(cell, capture, obstime)))
         #
         # Calculate the time points at which to make predictions
-        test.input <- (
-            time.range[1] - 2 * opts$sigma.tau
-            + (time.width + 4 * opts$sigma.tau)
-                * (0:(opts$num.test-1)) / (opts$num.test-1))
+        if (opts$periodic) {
+            test.input <- seq(0, opts$period, length.out=num.test)
+        } else {
+            test.input <- seq(
+                time.range[1] - 2 * opts$sigma.tau,
+                time.range[2] + 2 * opts$sigma.tau,
+                length.out=num.test)
+        }
         #
         # Gather all the data into one list
         stan.data <- c(
@@ -998,7 +1002,7 @@ analyse.noise.levels <- function(dl, num.high.psi=25) {
             %>% group_by(g)
             %>% summarise(omega=mean(omega), psi=mean(psi))
             %>% left_join(gene.map)
-            %>% arrange(1/psi))
+            %>% arrange(-psi/omega))
         genes.high.psi <- head(gene.noise.levels$gene, num.high.psi)
     })
 }
