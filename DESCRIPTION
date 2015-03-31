@@ -5,6 +5,7 @@ Authors@R: "John Reid <john.reid@mrc-bsu.cam.ac.uk> [aut, cre]"
 Description: Estimates pseudotimes for single cell expression data
 Depends:
     R (>= 3.0.2),
+    MASS (>= 7.3),
     parallel,
     functional,
     rstan (>= 2.4.0),

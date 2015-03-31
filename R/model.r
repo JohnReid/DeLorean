@@ -1,3 +1,24 @@
+#' Test fit for log normal and gamma
+#'
+test.fit <- function(vars) {
+    fit.gamma <- fitdistr(vars, 'gamma')
+    fit.lognormal <- fitdistr(vars, 'lognormal')
+    gp <- (
+        ggplot(data.frame(V=vars), aes(x=V))
+        + geom_density()
+        + stat_function(fun=Curry(dgamma,
+                                shape=fit.gamma$estimate['shape'],
+                                rate=fit.gamma$estimate['rate']),
+                        linetype='dashed')
+        + stat_function(fun=Curry(dlnorm,
+                                meanlog=fit.lognormal$estimate['meanlog'],
+                                sdlog=fit.lognormal$estimate['sdlog']),
+                        linetype='dotted')
+    )
+    list(gamma=fit.gamma, lognormal=fit.lognormal, gp=gp)
+}
+
+
 #' Update a factor based on the levels of another factor.
 #'
 #' @param .factor Factor
@@ -81,6 +102,12 @@ cast.expr <- function(expr.l) expr.l %>% acast(gene ~ cell, value.var="x")
 #' @export
 #'
 analyse.variance <- function(dl, adjust.cell.sizes) {
+    # Expected variance of samples from zero-mean Gaussian with covariance K.obs
+    V.obs <- with(dl,
+        expected.sample.var(
+            cov.matern.32(
+                cov.calc.dists(unique(dl$cell.meta$obstime)),
+                dl$opts$length.scale)))
     within(dl, {
         #
         # First melt expression data into long format
@@ -125,22 +152,28 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
         stopifnot(! is.na(gene.expr))
         stopifnot(nrow(gene.expr) > 0)  # Must have some rows left
         # Examine the variation within and between times for each gene
-        gene.time.expr <- (expr.l
+        gene.time.expr <- (
+            expr.l
             %>% left_join(cell.meta)
             %>% group_by(gene, capture)
             %>% summarise(x.mean=mean(x.hat),
                           x.var=mean((x.hat-mean(x.hat))**2),
-                          num.capture=n())
+                          num.capture=n(),
+                          Mgc=mean(x),
+                          Vgc=var(x))
             %>% filter(! is.na(x.var))
         )
         stopifnot(! is.na(gene.time.expr))
         stopifnot(nrow(gene.time.expr) > 0)  # Must have some rows left
         # Decomposition of variance within and between time.
-        gene.var <- (gene.time.expr
+        gene.var <- (
+            gene.time.expr
             %>% group_by(gene)
             %>% summarise(Omega=weighted.mean(x.var, num.capture, na.rm=TRUE),
                           Psi=weighted.mean((x.mean-mean(x.mean))**2,
-                                            num.capture, na.rm=TRUE))
+                                            num.capture, na.rm=TRUE),
+                          omega.hat=mean(Vgc),
+                          psi.hat=var(Mgc)/V.obs)
             %>% filter(! is.na(Psi), Omega > 0 | Psi > 0)
         )
         stopifnot(! is.na(gene.var))
@@ -197,43 +230,6 @@ estimate.hyper <- function(
     })
     dl <- analyse.variance(dl, dl$opts$adjust.cell.sizes)
     within(dl, {
-        #
-        # Work out the variance that would be expected from
-        # a sample from the GP using a sample of tau from the prior
-        #
-        # First, which cells are we using?
-        cells <- (
-            cell.meta
-            # Select cells in use
-            %>% filter(cell %in% colnames(expr))
-            # Sample tau from prior
-            %>% mutate(tau.sample=rnorm(n(), mean=obstime, sd=sigma.tau)))
-        # Calculate the covariance over the pseudotimes
-        K.psi <- cov.matern.32(cov.calc.dl.dists(dl,
-                                                 tau=cells$tau.sample,
-                                                 include.test=FALSE),
-                               opts$length.scale)
-        colnames(K.psi) <- rownames(K.psi) <- cells$cell
-        # The overall expected sample variance from the covariance over
-        # the pseudotimes
-        V.psi <- expected.sample.var(K.psi)
-        # message('V.psi: ', V.psi)
-        # The expected sample variance within each capture time
-        # var.capture <- (
-            # cells
-            # %>% group_by(capture)
-            # %>% summarise(exp.sample.var=expected.sample.var(K.psi[as.character(cell),as.character(cell)]),
-                          # num.capture=n()))
-        # V.omega <- with(var.capture, weighted.mean(exp.sample.var,
-                                                   # num.capture))
-        # message('V.omega: ', V.omega)
-        # message('V ratio: ', (V.psi - V.omega) / V.omega)
-        gene.var <- (
-            gene.var
-            %>% mutate(var.ratio=Omega/Psi,
-                       lambda=(1+var.ratio)/(V.psi+var.ratio),
-                       psi.hat=lambda*Psi,
-                       omega.hat=lambda*Omega))
         hyper <- list(
             mu_S=mean(cell.expr$S.hat),
             sigma_S=sd(cell.expr$S.hat),
@@ -359,7 +355,7 @@ format.for.stan <- function(
         stopifnot(! is.na(gene.map[
             c("g", "gene", "x.mean", "x.sd",
             "phi.hat", "x.hat.sd", "Omega", "Psi",
-            "omega.hat", "psi.hat")
+            "psi.hat", "omega.hat")
         ]))
         #
         # Rename phi.hat if we are not estimating phi
@@ -622,6 +618,12 @@ test.mh <- function(
 }
 
 
+#' The covariance function for the DeLorean object.
+cov.fn <- function(dl) {
+    cov.matern.32
+}
+
+
 #' Create a log likelihood function suitable for evaluating smooth orderings.
 #'
 #' @param dl de.lorean object
@@ -632,7 +634,7 @@ ordering.log.likelihood.fn <- function(
     dl,
     psi = mean(dl$gene.map$psi.hat),
     omega = mean(dl$gene.map$omega.hat),
-    cov.fn = cov.matern.32)
+    cov.fn = cov.matern(dl))
 {
     with(dl, {
         # Evenly spread tau over range of capture times
