@@ -102,12 +102,6 @@ cast.expr <- function(expr.l) expr.l %>% acast(gene ~ cell, value.var="x")
 #' @export
 #'
 analyse.variance <- function(dl, adjust.cell.sizes) {
-    # Expected variance of samples from zero-mean Gaussian with covariance K.obs
-    V.obs <- with(dl,
-        expected.sample.var(
-            cov.matern.32(
-                cov.calc.dists(unique(dl$cell.meta$obstime)),
-                dl$opts$length.scale)))
     within(dl, {
         #
         # First melt expression data into long format
@@ -161,7 +155,7 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
                           num.capture=n(),
                           Mgc=mean(x),
                           Vgc=var(x))
-            %>% filter(! is.na(x.var))
+            %>% filter(! is.na(x.var), ! is.na(Vgc))
         )
         stopifnot(! is.na(gene.time.expr))
         stopifnot(nrow(gene.time.expr) > 0)  # Must have some rows left
@@ -171,9 +165,7 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
             %>% group_by(gene)
             %>% summarise(Omega=weighted.mean(x.var, num.capture, na.rm=TRUE),
                           Psi=weighted.mean((x.mean-mean(x.mean))**2,
-                                            num.capture, na.rm=TRUE),
-                          omega.hat=mean(Vgc),
-                          psi.hat=var(Mgc)/V.obs)
+                                            num.capture, na.rm=TRUE))
             %>% filter(! is.na(Psi), Omega > 0 | Psi > 0)
         )
         stopifnot(! is.na(gene.var))
@@ -229,7 +221,21 @@ estimate.hyper <- function(
         # message("Length scale: ", opts$length.scale)
     })
     dl <- analyse.variance(dl, dl$opts$adjust.cell.sizes)
+    # Expected variance of samples from zero-mean Gaussian with covariance K.obs
+    V.obs <- with(dl,
+        expected.sample.var(
+            cov.matern.32(
+                cov.calc.dists(unique(dl$cell.meta$obstime)),
+                dl$opts$length.scale)))
     within(dl, {
+        gene.var <- gene.var %>% left_join(
+            gene.time.expr
+            %>% group_by(gene)
+            %>% summarise(omega.hat=mean(Vgc),
+                          psi.hat=var(Mgc)/V.obs)
+            %>% filter(! is.na(psi.hat), ! is.na(omega.hat),
+                       omega.hat > 0 | psi.hat > 0)
+        )
         hyper <- list(
             mu_S=mean(cell.expr$S.hat),
             sigma_S=sd(cell.expr$S.hat),
@@ -243,8 +249,6 @@ estimate.hyper <- function(
             l=opts$length.scale
         )
         stopifnot(all(! sapply(hyper, is.na)))
-        # No longer needed
-        rm(V.psi, K.psi, cells)
     })
 }
 
@@ -619,7 +623,7 @@ test.mh <- function(
 
 
 #' The covariance function for the DeLorean object.
-cov.fn <- function(dl) {
+cov.fn.for <- function(dl) {
     cov.matern.32
 }
 
@@ -634,7 +638,7 @@ ordering.log.likelihood.fn <- function(
     dl,
     psi = mean(dl$gene.map$psi.hat),
     omega = mean(dl$gene.map$omega.hat),
-    cov.fn = cov.matern(dl))
+    cov.fn = cov.fn.for(dl))
 {
     with(dl, {
         # Evenly spread tau over range of capture times
