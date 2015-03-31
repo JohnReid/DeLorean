@@ -117,17 +117,224 @@ windram.cell.meta$capture <- (
 Just consider the *Botrytis* cells and select some at random if we have
 too many.
 ```{r eval=fit.model}
-set.seed(1)
 dl <- de.lorean(
     windram.expr,
     windram.gene.meta,
     windram.cell.meta)
+botrytis.cells <- dl$cell.meta %>% filter(condition == "Botrytis")
+dl <- filter.cells(dl, cells=botrytis.cells$cell)
+
+```
+
+
+```{r checkNewHyper, eval=fit.model}
+expr.l <- melt.expr(dl) %>% left_join(dl$cell.meta
+                                      %>% dplyr::select(cell, capture))
+sigma.tau <- 3
+length.scale <- 24
+num.tau.samples <- 100
+# Covariance for observed times. Will use to estimate psi.
+K.obs <- cov.matern.32(cov.calc.dists(unique(cell.meta$obstime)),
+                       length.scale)
+# Expected variance of samples from zero-mean Gaussian with covariance K.obs
+V.obs <- expected.sample.var(K.obs)
+sample.V.tau <- function(sigma.tau, length.scale) {
+    with(dl, {
+        cell.meta <- (
+            cell.meta
+            %>% filter(cell %in% colnames(expr))
+            %>% mutate(c=1:n(),
+                       tau=rnorm(n(), mean=obstime, sd=sigma.tau)))
+        stopifnot(all(colnames(expr) == cell.meta$cell))
+        K <- cov.matern.32(cov.calc.dists(cell.meta$tau), length.scale)
+        (
+            cell.meta
+            %>% group_by(capture)
+            %>% summarise(V.tau.c=expected.sample.var(K[c,c]))
+            %>% mutate(V.tau=expected.sample.var(K))
+        )
+    })
+}
+V.tau <- do.call(rbind,
+                 lapply(1:num.tau.samples,
+                        function(i) sample.V.tau(sigma.tau, length.scale)))
+V.tau.mean <- mean(V.tau$V.tau)
+expr.gene.capture <- (
+    expr.l
+    %>% group_by(gene, capture)
+    %>% filter(n() > 1)
+    %>% summarise(Mgc=mean(x), Vgc=mean((x-Mgc)^2))
+    %>% ungroup()
+)
+qplot(log(expr.gene.capture$Vgc))
+expr.gene <- (
+    expr.l
+    %>% group_by(gene)
+    %>% summarise(Vg=mean((x-mean(x))^2))
+)
+var.estimates <- (
+    expr.gene.capture
+    %>% group_by(gene)
+    %>% summarise(psi=var(Mgc)/V.obs, omega=mean(Vgc))
+)
+qplot(var.estimates$omega)
+qplot(var.estimates$psi) + scale_x_log10()
+
+test.fit <- function(vars) {
+    fit.gamma <- fitdistr(vars, 'gamma')
+    fit.lognormal <- fitdistr(vars, 'lognormal')
+    gp <- (
+        ggplot(data.frame(V=vars), aes(x=V))
+        + geom_density()
+        + stat_function(fun=Curry(dgamma,
+                                shape=fit.gamma$estimate['shape'],
+                                rate=fit.gamma$estimate['rate']),
+                        linetype='dashed')
+        + stat_function(fun=Curry(dlnorm,
+                                meanlog=fit.lognormal$estimate['meanlog'],
+                                sdlog=fit.lognormal$estimate['sdlog']),
+                        linetype='dotted')
+    )
+    list(gamma=fit.gamma, lognormal=fit.lognormal, gp=gp)
+}
+fits.omega <- test.fit(var.estimates$omega)
+print(fits.omega$gp)
+fits.psi <- test.fit(var.estimates$psi)
+print(fits.psi$gp)
+
+ggplot(expr.gene, aes(x=log(Vg), y=log(Vgc))) + geom_point()
+sample_n(expr.gene, 15)
+stopifnot(all(! is.na(expr.gene)))
+with(expr.gene, mean(Vg < Vgc))
+expr.gene %>% filter(Vg < Vgc)
+ggplot(V.tau, aes(x=log(V.tau), y=log(V.tau.c))) + geom_point()
+ggplot(V.tau, aes(x=log(V.tau))) + geom_histogram()
+ggplot(V.tau, aes(x=log(V.tau.c))) + geom_histogram()
+V.tau.capture <- (
+    V.tau
+    %>% group_by(capture)
+    %>% summarise(M=mean(log(V.tau.c)),
+                  V=var(log(V.tau.c)))
+)
+V.tau.capture
+ggplot(V.tau, aes(x=V.tau.c, color=capture)) + geom_density() + scale_x_log10()
+
+stopifnot(all(! is.na(V.tau)))
+names(V.tau)
+# Try quadratic programming to find best alpha and omega
+library(quadprog)
+gene.test <- 'CATMA1a15390'
+solve.alpha.omega <- function(gene.test) {
+    expr.test <- (
+        expr.gene
+        %>% filter(gene.test == gene)
+        %>% left_join(V.tau, by="capture")
+    )
+    Q <- with(expr.test, matrix(c(sum(V.tau.c**2) + sum(V.tau**2) / 4,
+                                  - sum(V.tau.c*Vgc) - sum(V.tau*Vg) / 4,
+                                  - sum(V.tau.c*Vgc) - sum(V.tau*Vg) / 4,
+                                  sum(Vgc**2) + sum(Vg**2) / 4),
+                                nrow=2))
+    d <- with(expr.test, -c(sum(V.tau.c) + sum(V.tau) / 4,
+                            - sum(Vgc) - sum(Vg) / 4))
+    A <- diag(1, 2)
+    b0 <- c(0, 0)
+    QP <- solve.QP(Q, d, Amat=diag(1,2), bvec=rep(0,2))
+    alpha <- QP$solution[1]
+    omega <- 1/QP$solution[2]
+    c(alpha, omega)
+}
+test.genes <- unique(expr.gene$gene)
+emp.alpha.omega.m <- sapply(test.genes, solve.alpha.omega)
+emp.alpha.omega <- (
+    as.data.frame(t(emp.alpha.omega.m))
+    %>% mutate(gene=test.genes)
+)
+colnames(emp.alpha.omega) <- c('alpha', 'omega', 'gene')
+emp.alpha.omega
+names(emp.alpha.omega)
+ggplot(emp.alpha.omega, aes(x=alpha, y=omega, label=gene)) + geom_text()
+# ggplot(emp.alpha.omega, aes(x=alpha)) + geom_histogram() + scale_x_log10()
+
+# Test expectation of moment under Gaussian and relation to Gamma
+alpha <- 2
+beta <- .7
+a <- 1.2
+a2 <- a**2
+b <- 1.8
+N <- 10000
+gamma.samples <- (
+    data.frame(tau=rgamma(N, shape=alpha, rate=beta))
+    %>% mutate(value=exp(-.5*(a2*tau**2+b*tau))))
+mean(gamma.samples$value)
+gaussian.mu <- (2*beta+b)/(2*a2)
+gaussian.samples <- (
+    data.frame(tau=rnorm(N, mean=gaussian.mu, sd=1/a))
+    %>% mutate(tmp=tau**(alpha-1), value=exp(-gaussian.mu**2)*tau**(alpha-1)))
+mean(gaussian.samples$value)
+
+alpha.dist <- (
+    expr.gene
+    %>% left_join(V.tau)
+    %>% mutate(Vg.diff=Vg-Vgc,
+               V.diff=V.tau*Vgc-V.tau.c*Vg,
+               alpha=(Vg-Vgc)/(V.tau*Vgc-V.tau.c*Vg),
+               log.alpha=log(alpha))
+)
+alpha.gene <- (
+    alpha.dist
+    %>% group_by(gene)
+    %>% summarise(alpha.mean=mean(alpha), alpha.sd=sd(alpha))
+)
+qplot(alpha.dist$log.alpha)
+nrow(alpha.dist)
+sum(alpha.dist$alpha < 0)
+sum(alpha.dist$Vg.diff < 0)
+sum(alpha.dist$V.diff < 0)
+mean(alpha.dist$log.alpha, na.rm=TRUE)
+exp(mean(alpha.dist$log.alpha, na.rm=TRUE))
+
+log.estimate <- (
+    expr.gene
+    %>% left_join(V.tau)
+    %>% mutate(log.alpha=log(Vg)-log(Vgc)-log(V.tau-V.tau.c))
+)
+sum(is.na(log.estimate$log.alpha))
+qplot(log.estimate$log.alpha)
+log.estimate.gene <- (
+    log.estimate
+    %>% group_by(gene)
+    %>% summarise(log.alpha.mean=mean(log.alpha), log.alpha.sd=sd(log.alpha))
+)
+ggplot(log.estimate.gene, aes(x=log.alpha.mean, y=log.alpha.sd)) + geom_point()
+qplot(log.estimate.gene$log.alpha.mean)
+
+ggplot(expr.gene, aes(x=Mgc, y=sqrt(Vgc))) + geom_point()
+ggplot(expr.gene, aes(x=sqrt(Vg), y=sqrt(Vgc))) + geom_point()
+ggplot(expr.gene, aes(x=Vg, y=Vgc)) + geom_point()
+
+# create 3x3 covariance matrix
+library(MASS)
+set.seed(1000)
+m1 <- c( 100.1 , 100.1, 100.1 )
+S1 <- matrix( c( .1 , .05 , .02 , .05 , .1 , .03 , .02 , .03 , .1 ), nrow = 3 )
+# draw 10,000 times from covariance matrix
+draws <- MASS::mvrnorm(10000,mu=m1,Sigma=S1)
+# measure the "cross-sectional" dispersion at each row
+rowDispersion <- apply( draws , 1 , function(x) mean((x-mean(x))^2))
+# measure the mean cross-sectional dispersion
+mean( rowDispersion )
+# measure the variance of cross-sectional dispersion
+var( rowDispersion )
+expected.sample.var(S1)
+
+```
+
+
+```{r sampleCells, eval=fit.model}
+set.seed(1)
 max.cells <- min(getOption("Windram.max.cells", 24))
-botrytis.cells <- sample(
-    filter(dl$cell.meta, condition == "Botrytis")$cell,
-    max.cells)
-cell.filter <- function(cells) cells %in% botrytis.cells
-dl <- filter.cells(dl, cell.filter)
+dl <- filter.cells(dl, number=max.cells)
 
 ```
 
