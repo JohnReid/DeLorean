@@ -121,14 +121,6 @@ Within time variation by gene:
 
 ### Variation comparisons
 
-How much noise is ascribed to temporal variation, $\delta$.
-```{r posteriorDelta}
-(ggplot(samples.l$delta, aes(x=delta))
-    + geom_density()
-    + geom_rug()
-)
-```
-
 The within time variation compared to the temporal variation:
 ```{r noiseScatter}
 (ggplot(noise.levels,
