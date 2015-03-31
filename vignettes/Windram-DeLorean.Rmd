@@ -117,17 +117,20 @@ windram.cell.meta$capture <- (
 Just consider the *Botrytis* cells and select some at random if we have
 too many.
 ```{r eval=fit.model}
-set.seed(1)
 dl <- de.lorean(
     windram.expr,
     windram.gene.meta,
     windram.cell.meta)
+botrytis.cells <- dl$cell.meta %>% filter(condition == "Botrytis")
+dl <- filter.cells(dl, cells=botrytis.cells$cell)
+
+```
+
+
+```{r sampleCells, eval=fit.model}
+set.seed(1)
 max.cells <- min(getOption("Windram.max.cells", 24))
-botrytis.cells <- sample(
-    filter(dl$cell.meta, condition == "Botrytis")$cell,
-    max.cells)
-cell.filter <- function(cells) cells %in% botrytis.cells
-dl <- filter.cells(dl, cell.filter)
+dl <- filter.cells(dl, number=max.cells)
 
 ```
 
@@ -153,6 +156,10 @@ dl <- estimate.hyper(
     sigma.tau=group.size / 2,
     delta=.5,
     model.name='simplest-model')
+fits.omega <- test.fit(dl$gene.var$Omega)
+print(fits.omega$gp)
+fits.psi <- test.fit(dl$gene.var$Psi)
+print(fits.psi$gp)
 
 ```
 

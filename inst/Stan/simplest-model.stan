@@ -146,18 +146,12 @@ parameters {
     row_vector[C] tau;    # Pseudotime
     row_vector<lower=0>[G] psi;    # Between time variance
     row_vector<lower=0>[G] omega;  # Within time variance
-    real<lower=0, upper=1> delta;  # How much noise is ascribed to
-                                   # temporal variance
 }
 model {
     #
-    # How much noise is ascribed to temporal variance
-    # p(delta) = 1
-    #
     # Sample gene-specific factors
-    psi ~ lognormal(mu_psi+delta*mu_omega,
-                    sqrt(pow(sigma_psi,2)+pow(delta*sigma_omega,2)));
-    omega ~ lognormal((1-delta)*mu_omega, (1-delta)*sigma_omega);
+    psi ~ lognormal(mu_psi, sigma_psi);
+    omega ~ lognormal(mu_omega, sigma_omega);
     #
     # Sample pseudotime
     tau ~ normal(time, sigma_tau);  # Pseudotime
