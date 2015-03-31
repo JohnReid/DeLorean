@@ -509,8 +509,23 @@ is.positive.definite(Sigma)
 x <- mvrnorm(n=1e6, mu=rep(0, 10), Sigma=Sigma)
 dim(x)
 x.centre <- t(scale(t(x), scale=F, center=T))
-x2 <- x.centre ** 2
-mean(rowSums(x2)/10)
+vars <- rowSums(x.centre**2)/10
+fit.gamma <- fitdistr(vars, 'gamma')
+fit.lognormal <- fitdistr(vars, 'lognormal')
+(
+    ggplot(data.frame(V=vars), aes(x=V))
+    + geom_density()
+    + stat_function(fun=Curry(dgamma,
+                              shape=fit.gamma$estimate['shape'],
+                              rate=fit.gamma$estimate['rate']),
+                    linetype='dashed')
+    + stat_function(fun=Curry(dlnorm,
+                              meanlog=fit.lognormal$estimate['meanlog'],
+                              sdlog=fit.lognormal$estimate['sdlog']),
+                    linetype='dotted')
+)
+mean(log(vars))
+sd(log(vars))
 mean(diag(Sigma)) - mean(as.vector(Sigma))
 
 ```
