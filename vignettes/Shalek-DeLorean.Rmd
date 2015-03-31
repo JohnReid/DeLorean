@@ -545,8 +545,7 @@ exp(dl$stan.data$mu_psi) + exp(dl$stan.data$mu_omega)
 ```
 
 
-Test Law of Total Variance
-```{r totalVar}
+```{r totalVar, echo=FALSE, eval=FALSE}
 expr.l <- (
     dl$expr
     %>% melt(varnames=c("gene", "cell"), value.name="x")
