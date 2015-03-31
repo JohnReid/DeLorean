@@ -468,7 +468,6 @@ make.chain.init.fn <- function(dl) {
         with(dl$stan.data, {
             # message("Creating initialisation")
             init <- list(
-                delta=runif(1),
                 S=dl$cell.map$S.hat,
                 tau=rnorm(C, mean=time, sd=sigma_tau),
                 psi=rlnorm(G, meanlog=mu_psi, sdlog=sigma_psi),
@@ -701,8 +700,7 @@ init.chain.sample.tau <- function(dl) {
             tau=rnorm(C, time, sd=sigma_tau),
             phi=dl$gene.map$phi.hat[1:G],
             psi=dl$gene.map$psi.hat[1:G],
-            omega=dl$gene.map$omega.hat[1:G],
-            delta=.5
+            omega=dl$gene.map$omega.hat[1:G]
         )
         # If not estimating phi, don't include it.
         if (! dl$opts$estimate.phi) {
@@ -838,7 +836,6 @@ examine.convergence <- function(dl) {
 model.parameter.dimensions <- function(dl) {
     sample.dims <- list(
         lp__=c(),
-        delta=c(),
         S=c("c"),
         tau=c("c"),
         phi=c("g"),
