@@ -252,7 +252,7 @@ tau.S.lower <- tau.S %>% tail(9000) %>% mutate(tau=tau-dl$opts$period)
 tau.S.upper <- tau.S %>% head(9000) %>% mutate(tau=tau+dl$opts$period)
 tau.S <- rbind(tau.S.lower, tau.S, tau.S.upper)
 # Fit loess
-lo <- loess(S ~ tau, tau.S)
+lo <- loess(S ~ tau, tau.S, span=.33)
 tau.S$loess <- predict(lo, tau.S)
 # Make predictions at times used in predictedmean
 prediction.times <- (
