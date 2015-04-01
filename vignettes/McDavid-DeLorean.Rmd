@@ -287,6 +287,8 @@ if (dl$opts$estimate.phi) {
     ggsave('McDavid-cell-size-vs-pseudotime.png', plot=gp,
         width=fig.width, height=fig.height,
         units='in', dpi=72*2)
+} else {
+    prediction.times$S <- 0
 }
 
 ```
@@ -294,7 +296,6 @@ if (dl$opts$estimate.phi) {
 # Examine peak times
 
 ```{r peakTimes}
-
 # Plot cbPeaktime against best sample max predicted mean time
 # print(plot.profiles(dl, genes="CDCA8"))
 # Distance between two points on unit interval where 0 is connected to 1
@@ -460,33 +461,35 @@ ggsave('McDavid-capture-peaks.png', plot=gp,
 
 Plot the profiles adjusted for the cell size.
 ```{r}
-gp <- plot(dl, type="profiles", cell.size.adj=F, adjust.model=lo)
-print(gp)
-ggsave('McDavid-profiles-adj.pdf', plot=gp,
-       width=fig.width*2, height=fig.height*2)
-gp <- (
-    plot(dl, type="profiles")
-    + scale_x_continuous(name='Pseudotime', limits=c(0, 3))
-)
-add.peak.times <- function(dl, gp) {
-    plot.peaktimes <- (
-        dl$gene.meta
-        %>% filter(gene %in% gp$data[['gene']], ! is.na(cbPeaktime))
-        %>% mutate(tau=periodise(cbtime.to.tau(cbPeaktime/100))))
-    (
-        gp
-        + geom_vline(data=plot.peaktimes,
-                     aes(xintercept=tau, color=expPeaktime),
-                     linetype='dashed',
-                     alpha=.7)
+if (dl$opts$estimate.phi) {
+    gp <- plot(dl, type="profiles", cell.size.adj=F, adjust.model=lo)
+    print(gp)
+    ggsave('McDavid-profiles-adj.pdf', plot=gp,
+        width=fig.width*2, height=fig.height*2)
+    gp <- (
+        plot(dl, type="profiles")
+        + scale_x_continuous(name='Pseudotime', limits=c(0, 3))
     )
+    add.peak.times <- function(dl, gp) {
+        plot.peaktimes <- (
+            dl$gene.meta
+            %>% filter(gene %in% gp$data[['gene']], ! is.na(cbPeaktime))
+            %>% mutate(tau=periodise(cbtime.to.tau(cbPeaktime/100))))
+        (
+            gp
+            + geom_vline(data=plot.peaktimes,
+                        aes(xintercept=tau, color=expPeaktime),
+                        linetype='dashed',
+                        alpha=.7)
+        )
+    }
+    gp <- add.peak.times(dl, gp)
+    print(gp)
+    ggsave('McDavid-profiles.png', plot=gp,
+        width=fig.width*3.5, height=fig.height*3,
+        units="in", dpi=100)
+    ggsave('McDavid-profiles.pdf', plot=gp, width=fig.width*2, height=fig.height*2)
 }
-gp <- add.peak.times(dl, gp)
-print(gp)
-ggsave('McDavid-profiles.png', plot=gp,
-       width=fig.width*3.5, height=fig.height*3,
-       units="in", dpi=100)
-ggsave('McDavid-profiles.pdf', plot=gp, width=fig.width*2, height=fig.height*2)
 
 ```
 
@@ -497,6 +500,9 @@ saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "McDavid.rds")
 ```
 
 
+```{r date}
+date()
+```
 R version and packages used:
 ```{r Rversion}
 sessionInfo()
