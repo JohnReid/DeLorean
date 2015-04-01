@@ -454,48 +454,6 @@ ggsave('Shalek-roughnesses.png', gp)
 ```
 
 
-# Fit GPs
-
-We fit GPs to the data with two covariance functions. We use the
-same covariance structure as the model.
-$$
-    \Sigma(c_1, c_2) = \mu_\bar{\psi} \Sigma_t(c_1, c_2) + \mu_\bar{\omega}
-$$
-In one case we use the pseudotimes from the best sample for $\Sigma_t$. The
-marginal likelihood from this model is a proxy for how well the pseudotimes
-smooth the expression values.
-$$
-    \Sigma_t(c_1, c_2) = \Sigma_t(r=|\tau_{c_1} - \tau_{c_2}|)
-$$
-in the other case, we use the cell capture times. The marginal likelihood
-for this model is a proxy for how well the expression values are smoothed
-by the capture times.
-$$
-    \Sigma_t(c_1, c_2) = \Sigma_t(r=|\kappa_{c_1} - \kappa_{c_2}|)
-$$
-```{r fitHeldOut}
-marg.lls <- fit.held.out(dl, held.out.expr)
-                         #sample.iter=dl$sample.optimised)
-                         #sample.iter=dl$best.sample)
-
-held.out.genes$marg.LL.tau <- marg.lls[1,]
-held.out.genes$marg.LL.capture <- marg.lls[2,]
-held.out.gp <- (
-    ggplot(held.out.genes,
-           aes(x=marg.LL.tau,
-               y=marg.LL.capture,
-               color=Psi))
-    + geom_point()
-    + scale_colour_gradient(high="red")
-    + geom_abline(intercept=0, slope=1))
-print(held.out.gp)
-ggsave('Shalek-held-out.png', held.out.gp)
-with(held.out.genes, t.test(marg.LL.tau, marg.LL.capture,
-                            paired=TRUE, alternative="greater"))
-
-```
-
-
 ```{r checkSampleVar, echo=FALSE, eval=FALSE}
 # Check calculations are correct for expected sample variance from a
 # Gaussian
@@ -530,7 +488,7 @@ mean(diag(Sigma)) - mean(as.vector(Sigma))
 
 ```
 
-```{r tauPosteriorOffset.2}
+```{r tauPosteriorOffset.2, echo=FALSE}
 gp <- (
     ggplot(dl$samples.l$tau,
             aes(x=tau.offset, color=capture))
@@ -541,21 +499,6 @@ gp <- (
                     color="black")
 )
 ggsave('Shalek-tau-offset.png', gp)
-
-```
-
-
-Look at expected sample variance given different parameters.
-```{r expSampleVar}
-lambda <- 3
-K <- cov.calc.gene(dl,
-                   include.test=F,
-                   tau="capture",
-                   psi=lambda * exp(dl$stan.data$mu_psi),
-                   omega=lambda * exp(dl$stan.data$mu_omega))
-expected.sample.var <- function(K) mean(diag(K)) - mean(K)
-expected.sample.var(K)
-exp(dl$stan.data$mu_psi) + exp(dl$stan.data$mu_omega)
 
 ```
 
