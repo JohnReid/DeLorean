@@ -191,7 +191,7 @@ Format the data for Stan and fit the model.
 ```{r fitModel, eval=fit.model}
 dl <- format.for.stan(dl)
 dl <- compile.model(dl)
-dl <- find.best.tau(dl)
+dl <- find.smooth.tau(dl)
 system.time(dl <- fit.model(dl))
 
 ```

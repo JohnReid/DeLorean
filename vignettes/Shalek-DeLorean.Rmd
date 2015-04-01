@@ -251,40 +251,7 @@ Format the data for Stan and fit the model.
 ```{r fitModel, eval=fit.model}
 dl <- format.for.stan(dl)
 system.time(dl <- find.smooth.tau(dl, num.tau.to.try=detectCores()*2))
-# system.time(dl <- find.smooth.tau(dl, num.cores=3, num.tau.to.try=8))
-# system.time(dl <- find.smooth.tau(dl, num.tau.to.try=45))
 dl <- compile.model(dl)
-
-# library(devtools)
-# load_all('..')
-# test.dl <- readRDS(file='test-dl.rds')
-# # orderings <- test.mh(test.dl, use.parallel=F)
-# orderings <- test.mh(test.dl)
-# orderings.list <- lapply(orderings, function(o) o$chain)
-
-# set.seed(1)
-# which.tau <- 4
-# test.dl <- find.smooth.tau(dl, method="metropolis")
-# saveRDS(test.dl, file='test-dl.rds')
-# times <- data.frame(c=1:test.dl$stan.data$C,
-                    # tau=test.dl$tau.inits[[which.tau]]$tau)
-# expr.l <- with(test.dl,
-    # expr
-    # %>% melt(varnames=c("gene", "cell"), value.name="x")
-    # %>% mutate(gene=factor(gene, levels=levels(gene.meta$gene)),
-               # cell=factor(cell, levels=levels(cell.meta$cell)))
-    # %>% left_join(test.dl$cell.map %>% dplyr::select(cell, c, capture, obstime))
-    # %>% left_join(times)
-# )
-# # qplot(x=times$tau, y=dl$stan.data$time)
-# gp <- (ggplot(expr.l, aes(x=tau, y=x, color=capture))
-    # + geom_point()
-    # + geom_line(aes(color=NULL), alpha=.5)
-    # + facet_wrap(~ gene))
-# pdf('smoothed-tau.pdf', width=10)
-# print(gp)
-# dev.off()
-
 system.time(dl <- fit.model(dl))
 
 ```
