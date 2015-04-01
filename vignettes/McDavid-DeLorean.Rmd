@@ -251,6 +251,14 @@ periodise <- function(tau, period=3) {
     wave = floor(tau/period)
     tau - wave * period
 }
+# Make predictions at times used in predictedmean
+prediction.times <- (
+    dl$predictions
+    %>% filter(dl$best.sample == iter,
+                1 == g,
+                0 <= tau,
+                tau <= dl$opts$period)
+    %>% select(t, tau))
 if (dl$opts$estimate.phi) {
     tau.S <- (
         dl$samples$tau
@@ -264,11 +272,6 @@ if (dl$opts$estimate.phi) {
     # Fit loess
     lo <- loess(S ~ tau, tau.S, span=.33)
     tau.S$loess <- predict(lo, tau.S)
-    # Make predictions at times used in predictedmean
-    prediction.times <- (
-        dl$predictions
-        %>% filter(dl$best.sample == iter, 1 == g, 0 <= tau, tau <= dl$opts$period)
-        %>% select(t, tau))
     prediction.times$S <- predict(lo, prediction.times)
     # Plot data + fit
     gp <- (ggplot(tau.S, aes(x=tau, y=S, color=capture))
