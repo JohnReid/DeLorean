@@ -339,42 +339,6 @@ ggsave('Windram-roughnesses.png', gp)
 ```
 
 
-## Fit GPs
-
-```{r fitHeldOut}
-held.out.fits <- fit.held.out(dl, held.out.expr)
-#held.out.fits$loess[[1]]$tau
-#held.out.fits$loess[[1]]$capture
-
-#loess.fit.tau <- held.out.fits$loess[[1]]$tau
-#loess.fit.tau
-
-#.pdata <- data.frame(tau=dl$stan.data$testinput)
-#pred <- predict(gam.fit.tau, .pdata, type = "response", se.fit = TRUE)
-#names(pred)
-#.pdata$x <- pred$fit
-#ggplot(.pdata, aes(x=tau, y=x)) + geom_path()
-
-
-
-held.out.genes$marg.LL.tau <- held.out.fits[1,]
-held.out.genes$marg.LL.capture <- held.out.fits[2,]
-held.out.gp <- (
-    ggplot(held.out.genes,
-           aes(x=marg.LL.tau,
-               y=marg.LL.capture,
-               color=Psi))
-    + geom_point()
-    + scale_colour_gradient(high="red")
-    + geom_abline(intercept=0, slope=1))
-print(held.out.gp)
-ggsave('Windram-held-out.png', held.out.gp)
-with(held.out.genes, t.test(marg.LL.tau, marg.LL.capture,
-                            paired=TRUE, alternative="greater"))
-
-```
-
-
 ```{r echo=FALSE}
 # Save DeLorean object without fit component
 saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Windram.rds")
