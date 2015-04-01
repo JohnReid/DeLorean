@@ -251,38 +251,40 @@ periodise <- function(tau, period=3) {
     wave = floor(tau/period)
     tau - wave * period
 }
-tau.S <- (
-    dl$samples$tau
-    %>% left_join(dl$samples$S)
-    %>% mutate(tau=periodise(tau, dl$opts$period))
-    %>% arrange(tau))
-# Copy data to beginning and end to ensure periodic loess estimate
-tau.S.lower <- tau.S %>% tail(9000) %>% mutate(tau=tau-dl$opts$period)
-tau.S.upper <- tau.S %>% head(9000) %>% mutate(tau=tau+dl$opts$period)
-tau.S <- rbind(tau.S.lower, tau.S, tau.S.upper)
-# Fit loess
-lo <- loess(S ~ tau, tau.S, span=.33)
-tau.S$loess <- predict(lo, tau.S)
-# Make predictions at times used in predictedmean
-prediction.times <- (
-    dl$predictions
-    %>% filter(dl$best.sample == iter, 1 == g, 0 <= tau, tau <= dl$opts$period)
-    %>% select(t, tau))
-prediction.times$S <- predict(lo, prediction.times)
-# Plot data + fit
-gp <- (ggplot(tau.S, aes(x=tau, y=S, color=capture))
-    + geom_point(alpha=.4)
-    + geom_line(aes(y=loess), color='black')
-    + scale_x_continuous(name="pseudotime")
-    + scale_y_continuous(name="cell size")
-    + scale_color_discrete(name="phase")
-    + coord_cartesian(xlim = c(0, 3))
-    + guides(colour=guide_legend(override.aes=list(alpha=1)))
-)
-print(gp)
-ggsave('McDavid-cell-size-vs-pseudotime.png', plot=gp,
-       width=fig.width, height=fig.height,
-       units='in', dpi=72*2)
+if (dl$opts$estimate.phi) {
+    tau.S <- (
+        dl$samples$tau
+        %>% left_join(dl$samples$S)
+        %>% mutate(tau=periodise(tau, dl$opts$period))
+        %>% arrange(tau))
+    # Copy data to beginning and end to ensure periodic loess estimate
+    tau.S.lower <- tau.S %>% tail(9000) %>% mutate(tau=tau-dl$opts$period)
+    tau.S.upper <- tau.S %>% head(9000) %>% mutate(tau=tau+dl$opts$period)
+    tau.S <- rbind(tau.S.lower, tau.S, tau.S.upper)
+    # Fit loess
+    lo <- loess(S ~ tau, tau.S, span=.33)
+    tau.S$loess <- predict(lo, tau.S)
+    # Make predictions at times used in predictedmean
+    prediction.times <- (
+        dl$predictions
+        %>% filter(dl$best.sample == iter, 1 == g, 0 <= tau, tau <= dl$opts$period)
+        %>% select(t, tau))
+    prediction.times$S <- predict(lo, prediction.times)
+    # Plot data + fit
+    gp <- (ggplot(tau.S, aes(x=tau, y=S, color=capture))
+        + geom_point(alpha=.4)
+        + geom_line(aes(y=loess), color='black')
+        + scale_x_continuous(name="pseudotime")
+        + scale_y_continuous(name="cell size")
+        + scale_color_discrete(name="phase")
+        + coord_cartesian(xlim = c(0, 3))
+        + guides(colour=guide_legend(override.aes=list(alpha=1)))
+    )
+    print(gp)
+    ggsave('McDavid-cell-size-vs-pseudotime.png', plot=gp,
+        width=fig.width, height=fig.height,
+        units='in', dpi=72*2)
+}
 
 ```
 
