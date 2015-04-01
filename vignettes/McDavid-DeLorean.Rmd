@@ -136,6 +136,15 @@ ggplot(pc.scores, aes(x=PC1, y=PC3, color=capture)) + geom_point()
 ```
 
 
+## Adjust by cell sizes
+
+```{r testCellSize}
+dl <- adjust.by.cell.sizes(dl)
+ggplot(dl$cell.sizes, aes(x=capture, y=size)) + geom_boxplot()
+
+```
+
+
 # Choose genes and cells
 
 Choose a few cells from the PC3 cell line.
@@ -170,7 +179,7 @@ dl <- estimate.hyper(
     sigma.tau=.5,
     length.scale=5,
     delta=.5,
-    model.name='simple-model')
+    model.name=getOption("McDavid.model", 'simple-model'))
 
 ```
 
