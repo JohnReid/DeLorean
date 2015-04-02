@@ -203,7 +203,8 @@ Define and compile the model, find the best initialisation, and fit the model.
 ```{r model}
 dl <- format.for.stan(dl, period=3, hold.out=3)
 dl <- compile.model(dl)
-dl <- find.smooth.tau(dl)
+dl <- find.best.tau(dl)
+# dl <- find.smooth.tau(dl)
 system.time(dl <- fit.model(dl))
 
 ```
@@ -367,6 +368,7 @@ dl <- within(dl, {
                       rmse.adj=calc.rmse(cbPeaktime/100,
                                          predicted.peak.adj)))
 })
+best.peak.dist <- with(dl, filter(peak.max.dist, best.sample == iter)$rmse)
 sample_n(dl$peak.max.dist, 15)
 gp <- (
     ggplot(dl$peak.max.dist, aes(x=rmse, y=rmse.adj))
@@ -387,12 +389,14 @@ ggsave('McDavid-rmse-vs-rmse-adj.png', plot=gp,
 # Test for normality
 with(dl$peak.max.dist, shapiro.test(rmse.adj))
 with(dl$peak.max.dist, shapiro.test(rmse))
+# Plot distribution
 gp <- (
     ggplot(dl$peak.max.dist, aes(x=rmse.adj))
     + geom_density()
     + geom_rug()
     + geom_vline(x=capture.RMSE, linetype='dashed')
-    + scale_x_continuous(name="RMSE (cell size adjusted)"))
+    + geom_vline(x=best.peak.dist, linetype='dotted')
+    + scale_x_continuous(name="RMSE"))
 print(gp)
 ggsave('McDavid-rmse-adj.pdf', plot=gp,
        width=fig.width, height=fig.height)
