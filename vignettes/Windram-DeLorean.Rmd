@@ -128,7 +128,7 @@ dl <- filter.cells(dl, cells=botrytis.cells$cell)
 
 
 ```{r sampleCells, eval=fit.model}
-set.seed(1)
+set.seed(getOption("Windram.seed", 1))
 max.cells <- min(getOption("Windram.max.cells", 24))
 dl <- filter.cells(dl, number=max.cells)
 

@@ -205,7 +205,7 @@ qplot(genes.for.stan$cluster)
 
 Choose a few cells but make sure we have the precocious cells.
 ```{r filterCells, eval=fit.model}
-set.seed(1)
+set.seed(getOption("Shalek.seed", 1))
 max.cells <- getOption("Shalek.max.cells", 12)
 sampled.cells <- sample(colnames(dl$expr), max.cells)
 if (! "LPS_1h_S51" %in% sampled.cells) {

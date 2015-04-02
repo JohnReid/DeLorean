@@ -150,7 +150,7 @@ ggplot(dl$cell.sizes, aes(x=capture, y=size)) + geom_boxplot()
 Choose a few cells from the PC3 cell line.
 ```{r filterCells}
 dl <- filter.cells(dl, cells=cells.PC3$cell)
-set.seed(1)
+set.seed(getOption("McDavid.seed", 1))
 max.cells <- min(getOption("McDavid.max.cells", 17))
 dl <- filter.cells(dl, number=max.cells)
 
@@ -385,7 +385,6 @@ ggsave('McDavid-rmse-vs-rmse-adj.pdf', plot=gp,
 ggsave('McDavid-rmse-vs-rmse-adj.png', plot=gp,
        width=fig.width*1.75, height=fig.height*1.5,
        units="in", dpi=200)
-
 # Test for normality
 with(dl$peak.max.dist, shapiro.test(rmse.adj))
 with(dl$peak.max.dist, shapiro.test(rmse))
