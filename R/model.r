@@ -495,7 +495,6 @@ even.tau.spread <- function(dl) {
 #' expression profiles over this ordering.
 #'
 #' @param dl de.lorean object
-#' @param use.parallel Calculate in parallel
 #' @param num.cores Number of cores to run on.
 #'          Defaults to getOption("DL.num.cores", max(detectCores()-1, 1))
 #' @param num.tau.to.keep How many initialisations to keep.
@@ -507,7 +506,6 @@ find.smooth.tau <- function(
     dl,
     psi = exp(dl$hyper$mu_psi),
     omega = exp(dl$hyper$mu_omega),
-    use.parallel = TRUE,
     num.cores = getOption("DL.num.cores", max(detectCores() - 1, 1)),
     num.tau.to.try = num.cores,
     num.tau.to.keep = num.cores,
@@ -552,7 +550,7 @@ find.smooth.tau <- function(
         # Choose seeds
         seeds <- sample.int(.Machine$integer.max, num.tau.to.try)
         # Run in parallel or not?
-        if (use.parallel) {
+        if (num.cores > 1) {
             orderings <- mclapply(seeds,
                                   mc.cores=num.cores,
                                   ordering.search)
@@ -577,7 +575,6 @@ find.smooth.tau <- function(
 #' Test ordering Metropolis-Hastings sampler.
 #'
 #' @param dl de.lorean object
-#' @param use.parallel Calculate in parallel
 #' @param num.cores Number of cores to run on.
 #'          Defaults to getOption("DL.num.cores", max(detectCores()-1, 1))
 #'
@@ -587,7 +584,6 @@ test.mh <- function(
     dl,
     psi = mean(dl$gene.map$psi.hat),
     omega = mean(dl$gene.map$omega.hat),
-    use.parallel = TRUE,
     num.cores = getOption("DL.num.cores", max(detectCores() - 1, 1)),
     iterations = 1000,
     thin = 15
@@ -609,7 +605,7 @@ test.mh <- function(
         # Choose seeds
         seeds <- sample.int(.Machine$integer.max, num.cores)
         # Run in parallel or not?
-        if (use.parallel) {
+        if (num.cores > 1) {
             orderings <- mclapply(seeds,
                                   mc.cores=num.cores,
                                   ordering.search)
@@ -717,7 +713,6 @@ init.chain.sample.tau <- function(dl) {
 #' @param dl de.lorean object
 #' @param num.tau.candidates How many candidates to examine. Defaults to 6000.
 #' @param num.tau.to.keep How many candidates to keep. Defaults to num.cores.
-#' @param use.parallel Calculate in parallel
 #' @param num.cores Number of cores to run on.
 #'          Defaults to getOption("DL.num.cores", max(detectCores()-1, 1))
 #'
@@ -725,36 +720,33 @@ init.chain.sample.tau <- function(dl) {
 #'
 find.best.tau <- function(dl,
                           num.tau.candidates = 6000,
-                          num.tau.to.keep = NULL,
-                          use.parallel = TRUE,
+                          num.tau.to.keep = num.cores,
                           num.cores = getOption("DL.num.cores",
                                                 max(detectCores() - 1, 1))
 ) {
-    if (is.null(num.tau.to.keep)) {
-        num.tau.to.keep <- num.cores
-    }
     within(dl, {
-           # Define a function that calculates log probability for random seeded tau
-           try.tau.init <- function(i) {
-               set.seed(i)
-               pars <- init.chain.sample.tau(dl)
-               list(lp=log_prob(fit, unconstrain_pars(fit, pars)),
-                    tau=pars$tau)
-           }
-           # Choose tau several times and calculate log probability
-           if (use.parallel) {
-               tau.inits <- mclapply(1:num.tau.candidates,
-                                     mc.cores=num.cores,
-                                     try.tau.init)
-           } else {
-               tau.inits <- lapply(1:num.tau.candidates, try.tau.init)
-           }
-           # qplot(sapply(tau.inits, function(init) init$lp))
-           # Which tau gave highest log probability?
-           tau.inits.order <- order(sapply(tau.inits, function(init) -init$lp))
-           # Just keep so many best tau inits
-           tau.inits <- tau.inits[tau.inits.order[1:num.tau.to.keep]]
-           rm(tau.inits.order, try.tau.init)
+        # Define a function that calculates log probability for
+        # random seeded tau
+        try.tau.init <- function(i) {
+            set.seed(i)
+            pars <- init.chain.sample.tau(dl)
+            lp <- log_prob(fit, unconstrain_pars(fit, pars))
+            list(lp=lp, tau=pars$tau)
+        }
+        # Choose tau several times and calculate log probability
+        if (num.cores > 1) {
+            tau.inits <- mclapply(1:num.tau.candidates,
+                                  mc.cores=num.cores,
+                                  try.tau.init)
+        } else {
+            tau.inits <- lapply(1:num.tau.candidates, try.tau.init)
+        }
+        # qplot(sapply(tau.inits, function(init) init$lp))
+        # Which tau gave highest log probability?
+        tau.inits.order <- order(sapply(tau.inits, function(init) -init$lp))
+        # Just keep so many best tau inits
+        tau.inits <- tau.inits[tau.inits.order[1:num.tau.to.keep]]
+        rm(tau.inits.order, try.tau.init)
     })
 }
 
