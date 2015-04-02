@@ -55,7 +55,7 @@ if (file.exists("config.R")) {
 #
 # Widths for saving figures
 #
-text.width <- 4.79  # LaTeX width in inches
+text.width <- 4.7  # LaTeX width in inches
 golden.ratio <- 1.618  # Pleasing ratio
 fig.width <- text.width
 fig.height <- text.width / golden.ratio
