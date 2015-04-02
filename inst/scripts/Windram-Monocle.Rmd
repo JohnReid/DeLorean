@@ -1,11 +1,3 @@
-```{r build, echo=FALSE, eval=FALSE}
-library(devtools)
-load_all('..')
-library(rmarkdown)
-render('Windram-McDavid.Rmd')
-
-```
-
 ---
 title: Monocle analysis of Windram et al. arabidopsis data
 author: John Reid
@@ -13,6 +5,14 @@ bibliography: DeLorean.bib
 output: html_document
 ---
 
+
+```{r build, echo=FALSE, eval=FALSE}
+library(devtools)
+load_all('..')
+library(rmarkdown)
+render('../inst/scripts/Windram-Monocle.Rmd')
+
+```
 
 ```{r config, echo=FALSE, message=FALSE}
 library(knitr)
@@ -39,7 +39,7 @@ cite_options(
     cite.style = "numeric",
     check.entries = TRUE)
     # hyperlink = TRUE)
-bib <- read.bibtex("DeLorean.bib")
+bib <- read.bibtex("../../vignettes/DeLorean.bib")
 if (file.exists("config.R")) {
     source("config.R")
 }
@@ -74,7 +74,7 @@ Load the data that we used for the DeLorean analysis and create a
 `CellDataSet` for use with `Monocle`.
 ```{r loadLib}
 library(monocle)
-.data <- readRDS('Windram-input.rds')
+.data <- readRDS('../../vignettes/Windram-input.rds')
 colnames(.data$expr) <- rownames(.data$cell.meta) <- .data$cell.meta$cell
 rownames(.data$expr) <- rownames(.data$gene.meta) <- .data$gene.meta$gene
 cds <- new("CellDataSet",
