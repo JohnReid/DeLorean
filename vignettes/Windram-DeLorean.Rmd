@@ -57,7 +57,7 @@ if (file.exists("config.R")) {
 #
 # Widths for saving figures
 #
-text.width <- 4.79  # LaTeX width in inches
+text.width <- 4.7  # LaTeX width in inches
 golden.ratio <- 1.618  # Pleasing ratio
 fig.width <- text.width
 fig.height <- text.width / golden.ratio
@@ -251,15 +251,22 @@ gp.pseudo <- with(dl, {
 })
 print(gp.pseudo)
 # png('pseudotime-vs-obfuscated.png')
+ggsave('Windram-pseudotime-vs-obfuscated.pdf', gp.pseudo,
+       width=text.width, height=text.width,
+       dpi=300, units="in")
 ggsave('Windram-pseudotime-vs-obfuscated.png', gp.pseudo,
        width=slide.fig.width, height=slide.fig.width / html5$ratio,
        dpi=300, units="in")
-# Save profiles as well
+# Save convergence as well
 ggsave('Windram-Rhat.png', plot(dl, type="convergence"),
        width=slide.fig.width, height=slide.fig.width / html5$ratio,
        dpi=300, units="in")
 # Save profiles as well
-ggsave('Windram-profiles.png', plot(dl, type="profiles"),
+gp.profiles <- plot(dl, type="profiles")
+ggsave('Windram-profiles.pdf', gp.profiles,
+       width=text.width * 2, height=text.width * 2,
+       dpi=150, units="in")
+ggsave('Windram-profiles.png', gp.profiles,
        width=slide.fig.width * 2, height=slide.fig.width * 2/ html5$ratio,
        dpi=150, units="in")
 # Save tau posterior
@@ -272,7 +279,18 @@ gp.tau.posterior <- (
     + scale_y_continuous(name="pseudotime")
     + scale_color_discrete(name="model\ncapture\ntime")
     + coord_flip())
+ggsave('Windram-tau-posterior.pdf', gp.tau.posterior,
+       width=text.width, height=text.width,
+       dpi=300, units="in")
 ggsave('Windram-tau-posterior.png', gp.tau.posterior,
+       width=slide.fig.width, height=slide.fig.width / html5$ratio,
+       dpi=300, units="in")
+# Save best tau
+gp.tau.best <- plot(dl, type="pseudotime")
+ggsave('Windram-tau-best.pdf', gp.tau.best,
+       width=text.width, height=text.width,
+       dpi=300, units="in")
+ggsave('Windram-tau-best.png', gp.tau.best,
        width=slide.fig.width, height=slide.fig.width / html5$ratio,
        dpi=300, units="in")
 
