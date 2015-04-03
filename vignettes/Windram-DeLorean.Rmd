@@ -179,17 +179,12 @@ dl <- filter.genes(dl, gene.filter)
 ```
 
 
-Save expression data and meta data.
-```{r eval=fit.model}
-saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
-        file='Windram-input.rds')
-
-```
-
-
 Format the data for Stan and fit the model.
 ```{r fitModel, eval=fit.model}
 dl <- format.for.stan(dl)
+# Save for input to Monocle
+saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
+        file='Windram-input.rds')
 dl <- compile.model(dl)
 # dl <- find.smooth.tau(dl)
 dl <- find.best.tau(dl)
@@ -306,7 +301,9 @@ posterior.cor <- (
     %>% summarise(pseudotime.capture.cor=cor(tau, obstime.orig,
                                              method="spearman"))
 )
-mean(posterior.cor$pseudotime.capture.cor)
+posterior.cor.mean <- mean(posterior.cor$pseudotime.capture.cor)
+posterior.cor.best <- filter(posterior.cor,
+                             dl$best.sample == iter)$pseudotime.capture.cor
 gp.post.cor <- (ggplot(posterior.cor, aes(x=pseudotime.capture.cor))
     + geom_histogram()
     + geom_vline(x=.94, linetype='dashed', color='red')
