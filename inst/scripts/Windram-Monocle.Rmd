@@ -158,13 +158,10 @@ gp.monocle.pseudo <- (
     + scale_x_continuous(name="pseudotime")
     + scale_y_continuous(name="capture time"))
 print(gp.monocle.pseudo)
-pdf('Windram-Monocle-compare.pdf', width=fig.width, height=fig.height)
-print(gp.monocle.pseudo)
-dev.off()
-png('Windram-Monocle-compare.png', width=fig.width, height=fig.height,
-    units="in", res=300)
-print(gp.monocle.pseudo)
-dev.off()
+ggsave('Windram-Monocle-compare.pdf', gp.monocle.pseudo,
+       width=text.width, height=text.width)
+ggsave('Windram-Monocle-compare.png', gp.monocle.pseudo,
+       width=fig.width, height=fig.height, units="in", dpi=300)
 # What is the correlation?
 with(.data, cor(obstime.orig, Pseudotime, method="spearman"))
 
