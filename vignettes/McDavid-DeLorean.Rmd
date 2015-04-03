@@ -245,45 +245,6 @@ periodise <- function(tau, period=3) {
     wave = floor(tau/period)
     tau - wave * period
 }
-# Make predictions at times used in predictedmean
-prediction.times <- (
-    dl$predictions
-    %>% filter(dl$best.sample == iter,
-                1 == g,
-                0 <= tau,
-                tau <= dl$opts$period)
-    %>% select(t, tau))
-if (dl$opts$estimate.phi) {
-    tau.S <- (
-        dl$samples$tau
-        %>% left_join(dl$samples$S)
-        %>% mutate(tau=periodise(tau, dl$opts$period))
-        %>% arrange(tau))
-    # Copy data to beginning and end to ensure periodic loess estimate
-    tau.S.lower <- tau.S %>% tail(9000) %>% mutate(tau=tau-dl$opts$period)
-    tau.S.upper <- tau.S %>% head(9000) %>% mutate(tau=tau+dl$opts$period)
-    tau.S <- rbind(tau.S.lower, tau.S, tau.S.upper)
-    # Fit loess
-    lo <- loess(S ~ tau, tau.S, span=.33)
-    tau.S$loess <- predict(lo, tau.S)
-    prediction.times$S <- predict(lo, prediction.times)
-    # Plot data + fit
-    gp <- (ggplot(tau.S, aes(x=tau, y=S, color=capture))
-        + geom_point(alpha=.4)
-        + geom_line(aes(y=loess), color='black')
-        + scale_x_continuous(name="pseudotime")
-        + scale_y_continuous(name="cell size")
-        + scale_color_discrete(name="phase")
-        + coord_cartesian(xlim = c(0, 3))
-        + guides(colour=guide_legend(override.aes=list(alpha=1)))
-    )
-    print(gp)
-    ggsave('McDavid-cell-size-vs-pseudotime.png', plot=gp,
-        width=fig.width, height=fig.height,
-        units='in', dpi=72*2)
-} else {
-    prediction.times$S <- 0
-}
 
 ```
 
@@ -333,6 +294,11 @@ peaks <- (
     %>% left_join(dl$cell.map)
     %>% mutate(capture.dist=peak.distance(cbPeaktime/100,
                                           tau.to.cbtime(as.integer(capture)))))
+# Test peak times are correct. Use MKI67 as test case.
+gene.test <- 'MKI67'
+expr.test <- dl$expr[gene.test,]
+expr.test
+gene.map.test <- filter(dl$gene.map, gene.test == gene)
 capture.RMSE <- calc.rms(peaks$capture.dist)
 capture.RMSE
 
@@ -344,10 +310,8 @@ dl <- within(dl, {
     # Find the peaks in the predicted profiles
     peak.vs.max <- (
         predictions
-        %>% left_join(prediction.times %>% select(-tau))
         %>% group_by(iter, g)
-        %>% summarise(predicted.peak=tau.to.cbtime(tau[which.max(predictedmean)]),
-                      predicted.peak.adj=tau.to.cbtime(tau[which.max(predictedmean+S)]))
+        %>% summarise(predicted.peak=tau.to.cbtime(tau[which.max(predictedmean)]))
         %>% left_join(gene.map)
         %>% filter(! is.na(cbPeaktime)))
     # Calculate the distance between the peaks and the CycleBase peaktimes
@@ -355,70 +319,52 @@ dl <- within(dl, {
         peak.vs.max
         %>% group_by(iter)
         %>% summarise(rmse=calc.rmse(cbPeaktime/100,
-                                     predicted.peak),
-                      rmse.adj=calc.rmse(cbPeaktime/100,
-                                         predicted.peak.adj)))
+                                     predicted.peak)))
 })
 best.peak.dist <- with(dl, filter(peak.max.dist, best.sample == iter)$rmse)
 sample_n(dl$peak.max.dist, 15)
-gp <- (
-    ggplot(dl$peak.max.dist, aes(x=rmse, y=rmse.adj))
-    + geom_point()
-    + scale_x_continuous(name="RMSE (not adjusted)")
-    + scale_y_continuous(name="RMSE (cell size adjusted)")
-    + geom_abline(alpha=.5)
-    + geom_hline(y=capture.RMSE, linetype='dashed')
-    + geom_vline(x=capture.RMSE, linetype='dashed')
-)
-print(gp)
-ggsave('McDavid-rmse-vs-rmse-adj.pdf', plot=gp,
-       width=fig.width, height=fig.height)
-ggsave('McDavid-rmse-vs-rmse-adj.png', plot=gp,
-       width=fig.width*1.75, height=fig.height*1.5,
-       units="in", dpi=200)
 # Test for normality
-with(dl$peak.max.dist, shapiro.test(rmse.adj))
 with(dl$peak.max.dist, shapiro.test(rmse))
+gp <- (
+    ggplot(dl$peak.max.dist, aes(sample=rmse))
+    + stat_qq())
+ggsave('McDavid-rmse-qq.pdf', plot=gp,
+       width=text.width, height=text.width)
+# Assuming normality, what is chance of seeing capture RMSE or greater?
+with(dl$peak.max.dist,
+     pnorm(capture.RMSE, mean=mean(rmse), sd=sd(rmse), lower.tail=F))
 # Plot distribution
 gp <- (
-    ggplot(dl$peak.max.dist, aes(x=rmse.adj))
+    ggplot(dl$peak.max.dist, aes(x=rmse))
     + geom_density()
     + geom_rug()
-    + geom_vline(x=capture.RMSE, linetype='dashed')
-    + geom_vline(x=best.peak.dist, linetype='dotted')
+    + geom_vline(x=capture.RMSE, linetype='dashed', color='red')
+    + geom_vline(x=best.peak.dist, linetype='dashed', color='blue')
     + scale_x_continuous(name="RMSE"))
-print(gp)
-ggsave('McDavid-rmse-adj.pdf', plot=gp,
-       width=fig.width, height=fig.height)
-ggsave('McDavid-rmse-adj.png', plot=gp,
+ggsave('McDavid-rmse.pdf', plot=gp,
+       width=text.width, height=text.width)
+ggsave('McDavid-rmse.png', plot=gp,
        width=fig.width*1.75, height=fig.height*1.5,
     units="in", dpi=200)
-
-gp <- (
-    ggplot(dl$peak.max.dist, aes(sample=rmse.adj))
-    + stat_qq())
-ggsave('McDavid-rmse-adj-qq.pdf', plot=gp,
-       width=fig.width, height=fig.height)
+print(gp)
 # t-test for differences
 # Don't know which test to do yet.
 # with(dl$peak.max.dist, t.test(x=rmse,
-                              # y=rmse.adj,
+                              # y=rmse,
                               # paired=TRUE,
                               # alternative="greater"))
 # Mean of both RMSEs
 mean(dl$peak.max.dist$rmse)
-mean(dl$peak.max.dist$rmse.adj)
 gp <- (
     ggplot(dl$peak.vs.max %>% filter(dl$best.sample == iter),
            aes(x=cbPeaktime, y=predicted.peak, label=gene))
     + geom_point(alpha=.7, size=2)
     + scale_x_continuous(name="CycleBase peak time")
     + scale_y_continuous(name="estimated peak time")
-    + geom_point(aes(y=predicted.peak.adj), alpha=.7, size=2, color="blue")
 )
 print(gp)
 ggsave('McDavid-peak-vs-max.pdf', plot=gp,
-       width=fig.width, height=fig.height)
+       width=text.width, height=text.width)
 ggsave('McDavid-peak-vs-max.png', plot=gp,
        width=fig.width*1.75, height=fig.height*1.5,
        units="in", dpi=200)
@@ -429,15 +375,14 @@ ggsave('McDavid-peak-vs-max.png', plot=gp,
 # Haven't decided which test to do yet.
 # t-test
 #with(dl$peak.max.dist, t.test(x=capture.RMSE,
-                              #y=rmse.adj,
+                              #y=rmse,
                               #alternative="greater"))
-
 # Assuming a normal distribution for the adjusted RMSE, what is
 # the likelihood of observing at least as extreme as the
 # peak capture RMSE.
 with(dl$peak.max.dist, pnorm(capture.RMSE,
-                             mean=mean(rmse.adj),
-                             sd=sd(rmse.adj),
+                             mean=mean(rmse),
+                             sd=sd(rmse),
                              lower.tail=F))
 gp <- (
     ggplot(peaks %>% filter(! is.na(cbPeaktime)), aes(x=capture, y=cbPeaktime))
@@ -447,7 +392,7 @@ gp <- (
     + coord_flip())
 print(gp)
 ggsave('McDavid-capture-peaks.pdf', plot=gp,
-       width=fig.width, height=fig.height)
+       width=text.width, height=text.width)
 ggsave('McDavid-capture-peaks.png', plot=gp,
        width=fig.width*3.5, height=fig.height*3,
        units="in", dpi=100)
@@ -457,35 +402,41 @@ ggsave('McDavid-capture-peaks.png', plot=gp,
 
 Plot the profiles adjusted for the cell size.
 ```{r}
-if (dl$opts$estimate.phi) {
-    gp <- plot(dl, type="profiles", cell.size.adj=F, adjust.model=lo)
-    print(gp)
-    ggsave('McDavid-profiles-adj.pdf', plot=gp,
-        width=fig.width*2, height=fig.height*2)
-}
+genes.for.profiles <- with(dl,
+    samples.l$psi
+    %>% filter(best.sample == iter)
+    %>% left_join(samples.l$omega)
+    %>% arrange(-psi/omega)
+    %>% head(12)
+    %>% left_join(gene.map)
+)
 gp <- (
-    plot(dl, type="profiles")
+    plot(dl, type="profiles", genes=genes.for.profiles$gene)
     + scale_x_continuous(name='Pseudotime', limits=c(0, 3))
 )
+calc.peak.times
 add.peak.times <- function(dl, gp) {
     plot.peaktimes <- (
         dl$gene.meta
         %>% filter(gene %in% gp$data[['gene']], ! is.na(cbPeaktime))
         %>% mutate(tau=periodise(cbtime.to.tau(cbPeaktime/100))))
+    print(plot.peaktimes)
     (
         gp
         + geom_vline(data=plot.peaktimes,
-                    aes(xintercept=tau, color=expPeaktime),
-                    linetype='dashed',
-                    alpha=.7)
+                     aes(xintercept=tau, color=expPeaktime),
+                     linetype='dashed', alpha=.7)
     )
 }
+add.peak.times(dl, gp)
+
 gp <- add.peak.times(dl, gp)
 print(gp)
 ggsave('McDavid-profiles.png', plot=gp,
     width=fig.width*3.5, height=fig.height*3,
     units="in", dpi=100)
-ggsave('McDavid-profiles.pdf', plot=gp, width=fig.width*2, height=fig.height*2)
+ggsave('McDavid-profiles.pdf', plot=gp,
+       width=2*text.width, height=2*text.width/golden.ratio)
 
 ```
 
