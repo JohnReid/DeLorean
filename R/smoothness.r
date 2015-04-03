@@ -11,7 +11,7 @@ calc.roughness <- function(x) {
     if (0 == N) return(0)
     S <- sd(x)
     if (S == 0) return(0)
-    sqrt(sum((x[1:(N-1)] - x[2:N])**2)) / S / (N-1)
+    sqrt(sum((x[1:(N-1)] - x[2:N])**2) / (N-1)) / S
 }
 
 
@@ -19,7 +19,7 @@ calc.roughness <- function(x) {
 #' factor that the order of the permutation should respect.
 #'
 #' @param .df Data frame
-#' @param group.col Name of an ordered factor that the permuation
+#' @param group.col Name of an ordered factor that the permutation
 #'    should respect.
 #'
 #' @export
@@ -132,5 +132,5 @@ plot.roughnesses <- function(dl) with(dl, (
     + geom_histogram(aes(y=..density..), position='dodge')
     + geom_rug()
     + geom_vline(x=filter(roughnesses, dl$best.sample==sample.iter)$roughness,
-                          linetype='dashed')
+                          linetype='dashed', color='blue')
 ))
