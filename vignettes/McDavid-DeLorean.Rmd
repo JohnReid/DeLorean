@@ -257,6 +257,11 @@ periodise <- function(tau, period=3) {
 tau.to.cbtime <- function(tau) 100*periodise((tau - .5)/3, 1)
 # and vice versa
 cbtime.to.tau <- function(cbtime) periodise(cbtime/100*3+.5, 3)
+# Test mapping functions
+tau.test <- seq(-.5, 3.5, by=.5)
+sum(abs(periodise(tau.test) - cbtime.to.tau(tau.to.cbtime(tau.test))))
+cbtime.test <- seq(-5, 105, by=5)
+sum(abs(periodise(cbtime.test, 100) - tau.to.cbtime(cbtime.to.tau(cbtime.test))))
 # Plot cbPeaktime against best sample max predicted mean time
 # print(plot.profiles(dl, genes="CDCA8"))
 #
@@ -275,9 +280,7 @@ peak.distance <- function(peak.1, peak.2) {
 # RMSE functions
 #
 # Calculate the root mean square of d
-calc.rms <- function(d) sqrt(sum(d**2))/length(d)
-# Calculate the root mean square error between xhat and x.
-calc.rmse <- function(xhat, x) calc.rms(peak.distance(xhat, x))
+calc.rms <- function(d) sqrt(sum(d**2)/length(d))
 
 ```
 
@@ -285,20 +288,37 @@ calc.rmse <- function(xhat, x) calc.rms(peak.distance(xhat, x))
 Calculate distance between peak time and capture time.
 Capture times are as defined in
 [CycleBase](http://www.cyclebase.org/About "CycleBase").
+This is the naive method we compare our predicted peaks against.
 ```{r peakTimeDistances}
-peaks <- (
+naive.peaks <- (
     melt.expr(dl)
     %>% left_join(dl$cell.map %>% select(cell, capture, obstime))
     %>% group_by(gene)
     %>% summarise(peak.idx=which.max(x),  # Find index of maximal expression
                   cell=cell[peak.idx],
                   capture=capture[peak.idx],
-                  obstime=obstime[peak.idx])
+                  peak.tau=obstime[peak.idx])
     %>% left_join(dl$gene.map %>% select(gene, cbPeaktime))
     %>% filter(! is.na(cbPeaktime))
     %>% mutate(capture.dist=peak.distance(cbPeaktime,
-                                          tau.to.cbtime(obstime))))
-peaks
+                                          tau.to.cbtime(peak.tau))))
+naive.peaks
+# Calculate RMSE for naive method
+capture.RMSE <- calc.rms(naive.peaks$capture.dist)
+capture.RMSE
+# Plot the naive peaks
+gp.capture.peaks <- (
+    ggplot(naive.peaks, aes(x=capture, y=cbPeaktime))
+    + geom_boxplot()
+    + scale_y_continuous(name="CycleBase peak time")
+    + scale_x_discrete(name="cell cycle phase")
+    + coord_flip())
+print(gp.capture.peaks)
+ggsave('McDavid-capture-peaks.pdf', plot=gp.capture.peaks,
+       width=text.width, height=text.width)
+ggsave('McDavid-capture-peaks.png', plot=gp.capture.peaks,
+       width=fig.width*3.5, height=fig.height*3,
+       units="in", dpi=100)
 # Check peak times are correct with random gene.
 gene.test <- sample(rownames(dl$expr), 1)
 gene.test
@@ -310,12 +330,12 @@ cell.max <- names(which.max(expr.test))
 cell.max
 cell.map.test <- filter(dl$cell.map, cell.max == cell)
 cell.map.test
-filter(peaks, gene.test == gene) %>% select(cbPeaktime,
-                                            cell, capture, capture.dist)
-stopifnot(cell.max == filter(peaks, gene.test == gene)$cell)
-# Calculate RMSE for naive method
-capture.RMSE <- calc.rms(peaks$capture.dist)
-capture.RMSE
+(
+    naive.peaks
+    %>% filter(gene.test == gene)
+    %>% select(cbPeaktime, cell, capture, capture.dist)
+)
+stopifnot(cell.max == filter(naive.peaks, gene.test == gene)$cell)
 
 ```
 
@@ -327,16 +347,23 @@ dl <- within(dl, {
         predictions
         %>% group_by(iter, g)
         %>% summarise(predicted.peak=tau.to.cbtime(tau[which.max(predictedmean)]))
-        %>% left_join(gene.map)
-        %>% filter(! is.na(cbPeaktime)))
+        %>% left_join(gene.map %>% select(g, gene, cbRank, cbPeaktime, expPeaktime))
+        %>% filter(! is.na(cbPeaktime))
+        %>% mutate(dist=peak.distance(predicted.peak, cbPeaktime))
+        %>% left_join(naive.peaks %>% select(gene,
+                                             naive.peak=peak.tau,
+                                             naive.capture=capture,
+                                             naive.peak.cell=cell,
+                                             naive.dist=capture.dist))
+    )
     # Calculate the distance between the peaks and the CycleBase peaktimes
     peak.max.dist <- (
         peak.vs.max
         %>% group_by(iter)
-        %>% summarise(rmse=calc.rmse(cbPeaktime/100,
-                                     predicted.peak)))
+        %>% summarise(rmse=calc.rms(dist))
+    )
 })
-best.peak.dist <- with(dl, filter(peak.max.dist, best.sample == iter)$rmse)
+best.peak.rmse <- with(dl, filter(peak.max.dist, best.sample == iter)$rmse)
 sample_n(dl$peak.max.dist, 15)
 # Plot distribution
 gp.RMSE <- (
@@ -344,7 +371,7 @@ gp.RMSE <- (
     + geom_density()
     + geom_rug()
     + geom_vline(x=capture.RMSE, linetype='dashed', color='red')
-    + geom_vline(x=best.peak.dist, linetype='dashed', color='blue')
+    + geom_vline(x=best.peak.rmse, linetype='dashed', color='blue')
     + scale_x_continuous(name="RMSE"))
 ggsave('McDavid-rmse.pdf', plot=gp.RMSE,
        width=text.width, height=text.width)
@@ -352,6 +379,38 @@ ggsave('McDavid-rmse.png', plot=gp.RMSE,
        width=fig.width*1.75, height=fig.height*1.5,
     units="in", dpi=200)
 print(gp.RMSE)
+# Plot naive distances against predicted
+gp.naive.vs.predicted <- (
+    ggplot(dl$peak.vs.max %>% filter(dl$best.sample == iter),
+           aes(x=dist, y=naive.dist, label=gene))
+    + geom_text()
+)
+ggsave('McDavid-naive-vs-predicted.pdf', plot=gp.naive.vs.predicted,
+       width=2*text.width, height=2*text.width)
+# Plot profiles of worst predicted peaks
+add.peak.times <- function(dl, gp) {
+    plot.peaktimes <- (
+        dl$gene.meta
+        %>% filter(gene %in% gp$data[['gene']], ! is.na(cbPeaktime))
+        %>% mutate(peak.tau=cbtime.to.tau(cbPeaktime))
+    )
+    (
+        gp
+        + geom_vline(data=plot.peaktimes,
+                     aes(xintercept=peak.tau),
+                     linetype='dashed', alpha=.7)
+    )
+}
+worst.peaks <- (
+    dl$peak.vs.max
+    %>% filter(dl$best.sample == iter)
+    %>% arrange(naive.dist - dist)
+    %>% head(12)
+)
+gp.worst.profiles <- plot(dl, type='profiles', genes=worst.peaks$gene)
+gp.worst.profiles <- add.peak.times(dl, gp.worst.profiles)
+ggsave('McDavid-worst-profiles.pdf', plot=gp.worst.profiles,
+       width=2*text.width, height=2*text.width)
 # Mean of RMSE
 posterior.RMSE.mean <- mean(dl$peak.max.dist$rmse)
 posterior.RMSE.mean
@@ -385,18 +444,6 @@ ggsave('McDavid-rmse-qq.pdf', plot=gp.qq,
 # peak capture RMSE.
 with(dl$peak.max.dist,
      1-pnorm(capture.RMSE, mean=mean(rmse), sd=sd(rmse), lower.tail=F))
-gp.capture.peaks <- (
-    ggplot(peaks, aes(x=capture, y=cbPeaktime))
-    + geom_boxplot()
-    + scale_y_continuous(name="CycleBase peak time")
-    + scale_x_discrete(name="cell cycle phase")
-    + coord_flip())
-print(gp.capture.peaks)
-ggsave('McDavid-capture-peaks.pdf', plot=gp.capture.peaks,
-       width=text.width, height=text.width)
-ggsave('McDavid-capture-peaks.png', plot=gp.capture.peaks,
-       width=fig.width*3.5, height=fig.height*3,
-       units="in", dpi=100)
 
 ```
 
@@ -411,19 +458,6 @@ genes.for.profiles <- with(dl,
     %>% head(12)
     %>% left_join(gene.map)
 )
-add.peak.times <- function(dl, gp) {
-    plot.peaktimes <- (
-        dl$gene.meta
-        %>% filter(gene %in% gp$data[['gene']], ! is.na(cbPeaktime))
-        %>% mutate(peak.tau=cbtime.to.tau(cbPeaktime))
-    )
-    (
-        gp
-        + geom_vline(data=plot.peaktimes,
-                     aes(xintercept=peak.tau),
-                     linetype='dashed', alpha=.7)
-    )
-}
 gp.profiles <- (
     plot(dl, type="profiles", genes=genes.for.profiles$gene)
     + scale_x_continuous(name='Pseudotime', limits=c(0, 3))
