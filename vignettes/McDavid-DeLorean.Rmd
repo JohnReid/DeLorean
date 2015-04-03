@@ -222,7 +222,6 @@ dl <- process.posterior(dl)
 dl <- analyse.noise.levels(dl)
 
 ```
-
 ```{r child=report.file("posterior")}
 ```
 
@@ -233,49 +232,52 @@ Calculate expression profiles.
 ```{r makePredictions}
 dl <- make.predictions(dl)
 ```
-
 ```{r child=report.file("profiles")}
 ```
 
 
-# Cell size vs. pseudotime
+# Examine peak times
 
-```{r}
+```{r peakTimeFns}
+# A function to make times periodic
 periodise <- function(tau, period=3) {
     wave = floor(tau/period)
     tau - wave * period
 }
-
-```
-
-# Examine peak times
-
-```{r peakTimes}
-# Plot cbPeaktime against best sample max predicted mean time
-# print(plot.profiles(dl, genes="CDCA8"))
-# Distance between two points on unit interval where 0 is connected to 1
-peak.distance <- function(peak.1, peak.2) {
-    stopifnot(all(peak.1 >= 0.))
-    stopifnot(all(peak.1 <= 1.))
-    stopifnot(all(peak.2 >= 0.))
-    stopifnot(all(peak.2 <= 1.))
-    dist <- abs(peak.1 - peak.2)
-    ifelse(dist > .5, 1 - dist, dist)
-}
-# Test peak distances
-# peak.distance(c(.1, .2, .1, .9, .5, .5), c(.2, .1, .9, .1, .5, .4))
-# Calculate the root mean square of d
-calc.rms <- function(d) sqrt(sum(d**2))/length(d)
-# Calculate the root mean square error between xhat and x.
-calc.rmse <- function(xhat, x) calc.rms(peak.distance(xhat, x))
+# tau.test <- seq(-.5, 3.5, by=.5)
+# tau.test
+# periodise(tau.test)
+# Set up some functions to map between pseudotimes and peak times
+#
 # cbPeaktimes of 0 (equiv. 100) correspond to the transition
 # between M and G1.
 # (http://cyclebase2.jensenlab.org/methods.jsp#peaktime-uncertainty)
 # Hence cbPeaktime = 0 corresponds to a pseudotime of .5
 # A function to map from pseudotimes (tau) to cbPeaktimes
-tau.to.cbtime <- function(tau) periodise((tau - .5)/3, 1)
+tau.to.cbtime <- function(tau) 100*periodise((tau - .5)/3, 1)
 # and vice versa
-cbtime.to.tau <- function(cbtime) cbtime*3+.5
+cbtime.to.tau <- function(cbtime) periodise(cbtime/100*3+.5, 3)
+# Plot cbPeaktime against best sample max predicted mean time
+# print(plot.profiles(dl, genes="CDCA8"))
+#
+# Distance between two points on interval [0, 100] where 0 is connected to 100
+peak.distance <- function(peak.1, peak.2) {
+    stopifnot(all(peak.1 >= 0.))
+    stopifnot(all(peak.1 <= 100.))
+    stopifnot(all(peak.2 >= 0.))
+    stopifnot(all(peak.2 <= 100.))
+    dist <- abs(peak.1 - peak.2)
+    ifelse(dist > 50, 100 - dist, dist)
+}
+# Test peak distances
+# peak.distance(c(.1, .2, .1, .9, .5, .5), c(.2, .1, .9, .1, .5, .4))
+#
+# RMSE functions
+#
+# Calculate the root mean square of d
+calc.rms <- function(d) sqrt(sum(d**2))/length(d)
+# Calculate the root mean square error between xhat and x.
+calc.rmse <- function(xhat, x) calc.rms(peak.distance(xhat, x))
 
 ```
 
@@ -283,18 +285,21 @@ cbtime.to.tau <- function(cbtime) cbtime*3+.5
 Calculate distance between peak time and capture time.
 Capture times are as defined in
 [CycleBase](http://www.cyclebase.org/About "CycleBase").
-```{r}
-expr.l <- melt(unname(dl$expr), varnames=c("g", "c"), value.name="x")
+```{r peakTimeDistances}
 peaks <- (
-    expr.l
-    %>% group_by(g)
-    %>% summarise(c=c[which.max(x)])
-    %>% left_join(dl$gene.map)
+    melt.expr(dl)
+    %>% left_join(dl$cell.map %>% select(cell, capture, obstime))
+    %>% group_by(gene)
+    %>% summarise(peak.idx=which.max(x),  # Find index of maximal expression
+                  cell=cell[peak.idx],
+                  capture=capture[peak.idx],
+                  obstime=obstime[peak.idx])
+    %>% left_join(dl$gene.map %>% select(gene, cbPeaktime))
     %>% filter(! is.na(cbPeaktime))
-    %>% left_join(dl$cell.map)
-    %>% mutate(capture.dist=peak.distance(cbPeaktime/100,
-                                          tau.to.cbtime(as.integer(capture)))))
-# Test peak times are correct. Use MKI67 as test case.
+    %>% mutate(capture.dist=peak.distance(cbPeaktime,
+                                          tau.to.cbtime(obstime))))
+peaks
+# Check peak times are correct with random gene.
 gene.test <- sample(rownames(dl$expr), 1)
 gene.test
 gene.map.test <- filter(dl$gene.map, gene.test == gene)
@@ -305,9 +310,10 @@ cell.max <- names(which.max(expr.test))
 cell.max
 cell.map.test <- filter(dl$cell.map, cell.max == cell)
 cell.map.test
-filter(peaks, gene.test == gene) %>% select(g, c, cbRank, cbPeaktime,
+filter(peaks, gene.test == gene) %>% select(cbPeaktime,
                                             cell, capture, capture.dist)
-# Calculate RMSE
+stopifnot(cell.max == filter(peaks, gene.test == gene)$cell)
+# Calculate RMSE for naive method
 capture.RMSE <- calc.rms(peaks$capture.dist)
 capture.RMSE
 
@@ -332,77 +338,63 @@ dl <- within(dl, {
 })
 best.peak.dist <- with(dl, filter(peak.max.dist, best.sample == iter)$rmse)
 sample_n(dl$peak.max.dist, 15)
-# Test for normality
-with(dl$peak.max.dist, shapiro.test(rmse))
-gp <- (
-    ggplot(dl$peak.max.dist, aes(sample=rmse))
-    + stat_qq())
-ggsave('McDavid-rmse-qq.pdf', plot=gp,
-       width=text.width, height=text.width)
-# Assuming normality, what is chance of seeing capture RMSE or greater?
-with(dl$peak.max.dist,
-     pnorm(capture.RMSE, mean=mean(rmse), sd=sd(rmse), lower.tail=F))
 # Plot distribution
-gp <- (
+gp.RMSE <- (
     ggplot(dl$peak.max.dist, aes(x=rmse))
     + geom_density()
     + geom_rug()
     + geom_vline(x=capture.RMSE, linetype='dashed', color='red')
     + geom_vline(x=best.peak.dist, linetype='dashed', color='blue')
     + scale_x_continuous(name="RMSE"))
-ggsave('McDavid-rmse.pdf', plot=gp,
+ggsave('McDavid-rmse.pdf', plot=gp.RMSE,
        width=text.width, height=text.width)
-ggsave('McDavid-rmse.png', plot=gp,
+ggsave('McDavid-rmse.png', plot=gp.RMSE,
        width=fig.width*1.75, height=fig.height*1.5,
     units="in", dpi=200)
-print(gp)
-# t-test for differences
-# Don't know which test to do yet.
-# with(dl$peak.max.dist, t.test(x=rmse,
-                              # y=rmse,
-                              # paired=TRUE,
-                              # alternative="greater"))
-# Mean of both RMSEs
-mean(dl$peak.max.dist$rmse)
-gp <- (
+print(gp.RMSE)
+# Mean of RMSE
+posterior.RMSE.mean <- mean(dl$peak.max.dist$rmse)
+posterior.RMSE.mean
+gp.peak.vs.max <- (
     ggplot(dl$peak.vs.max %>% filter(dl$best.sample == iter),
            aes(x=cbPeaktime, y=predicted.peak, label=gene))
     + geom_point(alpha=.7, size=2)
     + scale_x_continuous(name="CycleBase peak time")
     + scale_y_continuous(name="estimated peak time")
 )
-print(gp)
-ggsave('McDavid-peak-vs-max.pdf', plot=gp,
+print(gp.peak.vs.max)
+ggsave('McDavid-peak-vs-max.pdf', plot=gp.peak.vs.max,
        width=text.width, height=text.width)
-ggsave('McDavid-peak-vs-max.png', plot=gp,
+ggsave('McDavid-peak-vs-max.png', plot=gp.peak.vs.max,
        width=fig.width*1.75, height=fig.height*1.5,
        units="in", dpi=200)
 
 ```
 
 ```{r testPeaks}
-# Haven't decided which test to do yet.
-# t-test
-#with(dl$peak.max.dist, t.test(x=capture.RMSE,
-                              #y=rmse,
-                              #alternative="greater"))
-# Assuming a normal distribution for the adjusted RMSE, what is
+# Test for normality
+with(dl$peak.max.dist, shapiro.test(rmse))
+gp.qq <- (
+    ggplot(dl$peak.max.dist, aes(sample=rmse))
+    + stat_qq())
+print(gp.qq)
+ggsave('McDavid-rmse-qq.pdf', plot=gp.qq,
+       width=text.width, height=text.width)
+# Assuming a normal distribution for the posterior RMSE, what is
 # the likelihood of observing at least as extreme as the
 # peak capture RMSE.
-with(dl$peak.max.dist, pnorm(capture.RMSE,
-                             mean=mean(rmse),
-                             sd=sd(rmse),
-                             lower.tail=F))
-gp <- (
-    ggplot(peaks %>% filter(! is.na(cbPeaktime)), aes(x=capture, y=cbPeaktime))
+with(dl$peak.max.dist,
+     1-pnorm(capture.RMSE, mean=mean(rmse), sd=sd(rmse), lower.tail=F))
+gp.capture.peaks <- (
+    ggplot(peaks, aes(x=capture, y=cbPeaktime))
     + geom_boxplot()
     + scale_y_continuous(name="CycleBase peak time")
     + scale_x_discrete(name="cell cycle phase")
     + coord_flip())
-print(gp)
-ggsave('McDavid-capture-peaks.pdf', plot=gp,
+print(gp.capture.peaks)
+ggsave('McDavid-capture-peaks.pdf', plot=gp.capture.peaks,
        width=text.width, height=text.width)
-ggsave('McDavid-capture-peaks.png', plot=gp,
+ggsave('McDavid-capture-peaks.png', plot=gp.capture.peaks,
        width=fig.width*3.5, height=fig.height*3,
        units="in", dpi=100)
 
@@ -419,28 +411,29 @@ genes.for.profiles <- with(dl,
     %>% head(12)
     %>% left_join(gene.map)
 )
-gp <- (
-    plot(dl, type="profiles", genes=genes.for.profiles$gene)
-    + scale_x_continuous(name='Pseudotime', limits=c(0, 3))
-)
 add.peak.times <- function(dl, gp) {
     plot.peaktimes <- (
         dl$gene.meta
         %>% filter(gene %in% gp$data[['gene']], ! is.na(cbPeaktime))
-        %>% mutate(tau=periodise(cbtime.to.tau(cbPeaktime/100))))
+        %>% mutate(peak.tau=cbtime.to.tau(cbPeaktime))
+    )
     (
         gp
         + geom_vline(data=plot.peaktimes,
-                     aes(xintercept=tau, color=expPeaktime),
+                     aes(xintercept=peak.tau),
                      linetype='dashed', alpha=.7)
     )
 }
-gp <- add.peak.times(dl, gp)
-print(gp)
-ggsave('McDavid-profiles.png', plot=gp,
+gp.profiles <- (
+    plot(dl, type="profiles", genes=genes.for.profiles$gene)
+    + scale_x_continuous(name='Pseudotime', limits=c(0, 3))
+)
+gp.profiles <- add.peak.times(dl, gp.profiles)
+print(gp.profiles)
+ggsave('McDavid-profiles.png', plot=gp.profiles,
     width=fig.width*3.5, height=fig.height*3,
     units="in", dpi=100)
-ggsave('McDavid-profiles.pdf', plot=gp,
+ggsave('McDavid-profiles.pdf', plot=gp.profiles,
        width=2*text.width, height=2*text.width/golden.ratio)
 
 ```
