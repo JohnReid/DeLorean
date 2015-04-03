@@ -311,6 +311,7 @@ cell.map.test <- filter(dl$cell.map, cell.max == cell)
 cell.map.test
 filter(peaks, gene.test == gene) %>% select(g, c, cbRank, cbPeaktime,
                                             cell, capture, capture.dist)
+
 # Calculate RMSE
 capture.RMSE <- calc.rms(peaks$capture.dist)
 capture.RMSE
