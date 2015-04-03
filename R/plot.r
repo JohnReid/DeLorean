@@ -224,7 +224,9 @@ plot.profiles <- function(dl,
             expr.data <- (
                 gene.map
                 %>% filter(gene %in% genes)
-                %>% left_join(melt(unname(stan.m), varnames=c("g", "c"), value.name="expr"))
+                %>% left_join(melt(unname(expr),
+                                   varnames=c("g", "c"),
+                                   value.name="expr"))
                 %>% left_join(samples.l$tau
                               %>% filter(sample.iter == iter)
                               %>% mutate(tau=modulo.period(tau))))

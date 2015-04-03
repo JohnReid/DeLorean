@@ -325,16 +325,17 @@ format.for.stan <- function(
         .C <- ncol(expr)
         #
         # Permute genes to make held out genes random
-        stan.m <- expr[sample(.G+hold.out),]
+        expr <- expr[sample(.G+hold.out),]
         #
         # Calculate the map from gene indices to genes and their meta data
-        gene.map <- (data.frame(g=1:(.G+hold.out),
-                                gene=factor(rownames(stan.m),
-                                            levels=levels(gene.meta$gene)))
-                    %>% mutate(is.held.out=g>.G)
-                    %>% left_join(gene.expr)
-                    %>% left_join(gene.var)
-                    %>% left_join(gene.meta))
+        gene.map <- (
+            data.frame(g=1:(.G+hold.out),
+                       gene=factor(rownames(expr),
+                                   levels=levels(gene.meta$gene)))
+            %>% mutate(is.held.out=g>.G)
+            %>% left_join(gene.expr)
+            %>% left_join(gene.var)
+            %>% left_join(gene.meta))
         stopifnot(! is.na(gene.map[
             c("g", "gene", "x.mean", "x.sd",
             "phi.hat", "x.hat.sd", "Omega", "Psi",
@@ -348,7 +349,7 @@ format.for.stan <- function(
         #
         # Calculate the map from cell indices to genes and their meta data
         cell.map <- (data.frame(c=1:.C,
-                                cell=factor(colnames(stan.m),
+                                cell=factor(colnames(expr),
                                             levels=levels(cell.meta$cell)))
                     %>% left_join(cell.meta)
                     %>% left_join(cell.expr))
@@ -375,7 +376,7 @@ format.for.stan <- function(
                 H=hold.out,
                 # Data
                 time=cell.map$obstime,
-                expr=stan.m,
+                expr=expr,
                 # Held out parameters
                 heldout_psi=filter(gene.map, g > .G)$psi.hat,
                 heldout_omega=filter(gene.map, g > .G)$omega.hat,

@@ -49,6 +49,8 @@ check.de.lorean.consistent <- function(dl) with(dl, {
         # Check gene map is in correct order
         stopifnot(all(arrange(gene.map, g)$g == 1:nrow(gene.map)))
         gene.names <- as.character(gene.map$gene)
+        print(gene.names)
+        print(expr.row.names)
         stopifnot(all(expr.row.names == gene.names))
     }
 })
