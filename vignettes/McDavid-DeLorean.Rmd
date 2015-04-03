@@ -401,7 +401,7 @@ ggsave('McDavid-capture-peaks.png', plot=gp.capture.peaks,
 ```
 
 
-Plot the profiles adjusted for the cell size.
+Plot the profiles.
 ```{r}
 genes.for.profiles <- with(dl,
     samples.l$psi
