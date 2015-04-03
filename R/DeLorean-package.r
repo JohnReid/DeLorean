@@ -39,6 +39,20 @@ de.lorean <- function(expr, gene.meta, cell.meta) {
 #'
 is.de.lorean <- function(dl) inherits(dl, "de.lorean")
 
+#' Is internally consistent?
+#'
+#' @export
+#'
+check.de.lorean.consistent <- function(dl) with(dl, {
+    expr.row.names <- rownames(expr)
+    if (exists('gene.map')) {
+        # Check gene map is in correct order
+        stopifnot(all(arrange(gene.map, g)$g == 1:nrow(gene.map)))
+        gene.names <- as.character(gene.map$gene)
+        stopifnot(all(expr.row.names == gene.names))
+    }
+})
+
 #' Print details of DeLorean object
 #'
 #' @export

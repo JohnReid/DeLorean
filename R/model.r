@@ -1,24 +1,3 @@
-#' Test fit for log normal and gamma
-#'
-test.fit <- function(vars) {
-    fit.gamma <- fitdistr(vars, 'gamma')
-    fit.lognormal <- fitdistr(vars, 'lognormal')
-    gp <- (
-        ggplot(data.frame(V=vars), aes(x=V))
-        + geom_density()
-        + stat_function(fun=Curry(dgamma,
-                                shape=fit.gamma$estimate['shape'],
-                                rate=fit.gamma$estimate['rate']),
-                        linetype='dashed')
-        + stat_function(fun=Curry(dlnorm,
-                                meanlog=fit.lognormal$estimate['meanlog'],
-                                sdlog=fit.lognormal$estimate['sdlog']),
-                        linetype='dotted')
-    )
-    list(gamma=fit.gamma, lognormal=fit.lognormal, gp=gp)
-}
-
-
 #' Update a factor based on the levels of another factor.
 #'
 #' @param .factor Factor
@@ -1105,6 +1084,27 @@ sample.parameters <- function(dl,
                                     iter == sample.iter)[[param]])
     names(parameters) <- param.names
     parameters
+}
+
+
+#' Test fit for log normal and gamma
+#'
+test.fit <- function(vars) {
+    fit.gamma <- fitdistr(vars, 'gamma')
+    fit.lognormal <- fitdistr(vars, 'lognormal')
+    gp <- (
+        ggplot(data.frame(V=vars), aes(x=V))
+        + geom_density()
+        + stat_function(fun=Curry(dgamma,
+                                shape=fit.gamma$estimate['shape'],
+                                rate=fit.gamma$estimate['rate']),
+                        linetype='dashed')
+        + stat_function(fun=Curry(dlnorm,
+                                meanlog=fit.lognormal$estimate['meanlog'],
+                                sdlog=fit.lognormal$estimate['sdlog']),
+                        linetype='dotted')
+    )
+    list(gamma=fit.gamma, lognormal=fit.lognormal, gp=gp)
 }
 
 
