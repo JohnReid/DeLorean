@@ -302,15 +302,19 @@ posterior.cor <- (
                                              method="spearman"))
 )
 posterior.cor.mean <- mean(posterior.cor$pseudotime.capture.cor)
+posterior.cor.mean
 posterior.cor.best <- filter(posterior.cor,
                              dl$best.sample == iter)$pseudotime.capture.cor
+posterior.cor.best
+monocle.cor <- 0.9269565
 gp.post.cor <- (ggplot(posterior.cor, aes(x=pseudotime.capture.cor))
-    + geom_histogram()
-    + geom_vline(x=.94, linetype='dashed', color='red')
+    + geom_histogram(alpha=.7)
+    + geom_vline(x=monocle.cor, linetype='dashed', color='red')
+    + geom_vline(x=posterior.cor.best, linetype='dashed', color='blue')
     + scale_x_continuous(name="correlation"))
 print(gp.post.cor)
 ggsave('Windram-posterior-cor.pdf', plot=gp.post.cor,
-       width=fig.width, height=fig.height)
+       width=text.width, height=text.width)
 ggsave('Windram-posterior-cor.png', gp.post.cor,
        width=slide.fig.width / 2, height=slide.fig.width / 2 / html5$ratio,
        dpi=300, units="in")
@@ -348,9 +352,11 @@ Permutation test for roughness.
 dl <- roughness.test(dl, held.out.expr)
 print(dl$roughness.test)
 # Plot the roughnesses
-gp <- plot(dl, type="roughnesses")
-print(gp)
-ggsave('Windram-roughnesses.png', gp)
+gp.roughnesses <- plot(dl, type="roughnesses")
+print(gp.roughnesses)
+ggsave('Windram-roughnesses.pdf', gp.roughnesses,
+       width=text.width * 2, height=text.width)
+ggsave('Windram-roughnesses.png', gp.roughnesses)
 
 ```
 
