@@ -44,14 +44,17 @@ is.de.lorean <- function(dl) inherits(dl, "de.lorean")
 #' @export
 #'
 check.de.lorean.consistent <- function(dl) with(dl, {
-    expr.row.names <- rownames(expr)
     if (exists('gene.map')) {
         # Check gene map is in correct order
         stopifnot(all(arrange(gene.map, g)$g == 1:nrow(gene.map)))
         gene.names <- as.character(gene.map$gene)
-        print(gene.names)
-        print(expr.row.names)
-        stopifnot(all(expr.row.names == gene.names))
+        stopifnot(all(rownames(expr) == gene.names))
+    }
+    if (exists('cell.map')) {
+        # Check cell map is in correct order
+        stopifnot(all(arrange(cell.map, c)$c == 1:nrow(cell.map)))
+        cell.names <- as.character(cell.map$cell)
+        stopifnot(all(colnames(expr) == cell.names))
     }
 })
 

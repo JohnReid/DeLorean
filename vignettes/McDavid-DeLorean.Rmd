@@ -141,11 +141,9 @@ ggplot(pc.scores, aes(x=PC1, y=PC3, color=capture)) + geom_point()
 Choose a few cells from the PC3 cell line.
 ```{r filterCells}
 dl <- filter.cells(dl, cells=cells.PC3$cell)
-check.de.lorean.consistent(dl)
 set.seed(getOption("McDavid.seed", 1))
 max.cells <- min(getOption("McDavid.max.cells", 17))
 dl <- filter.cells(dl, number=max.cells)
-check.de.lorean.consistent(dl)
 
 ```
 
@@ -159,7 +157,6 @@ genes.for.stan <- (
     %>% filter(pvalue > 10)
     %>% sample_n(max.genes))
 dl <- filter.genes(dl, genes=genes.for.stan$gene)
-check.de.lorean.consistent(dl)
 
 ```
 
@@ -196,7 +193,6 @@ saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
 Define and compile the model, find the best initialisation, and fit the model.
 ```{r model}
 dl <- format.for.stan(dl, period=3, hold.out=3)
-check.de.lorean.consistent(dl)
 dl <- compile.model(dl)
 dl <- find.best.tau(dl)
 # dl <- find.smooth.tau(dl)
@@ -311,7 +307,6 @@ cell.map.test <- filter(dl$cell.map, cell.max == cell)
 cell.map.test
 filter(peaks, gene.test == gene) %>% select(g, c, cbRank, cbPeaktime,
                                             cell, capture, capture.dist)
-
 # Calculate RMSE
 capture.RMSE <- calc.rms(peaks$capture.dist)
 capture.RMSE
@@ -428,13 +423,11 @@ gp <- (
     plot(dl, type="profiles", genes=genes.for.profiles$gene)
     + scale_x_continuous(name='Pseudotime', limits=c(0, 3))
 )
-calc.peak.times
 add.peak.times <- function(dl, gp) {
     plot.peaktimes <- (
         dl$gene.meta
         %>% filter(gene %in% gp$data[['gene']], ! is.na(cbPeaktime))
         %>% mutate(tau=periodise(cbtime.to.tau(cbPeaktime/100))))
-    print(plot.peaktimes)
     (
         gp
         + geom_vline(data=plot.peaktimes,
@@ -442,8 +435,6 @@ add.peak.times <- function(dl, gp) {
                      linetype='dashed', alpha=.7)
     )
 }
-add.peak.times(dl, gp)
-
 gp <- add.peak.times(dl, gp)
 print(gp)
 ggsave('McDavid-profiles.png', plot=gp,
