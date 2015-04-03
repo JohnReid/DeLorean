@@ -296,9 +296,17 @@ peaks <- (
                                           tau.to.cbtime(as.integer(capture)))))
 # Test peak times are correct. Use MKI67 as test case.
 gene.test <- 'MKI67'
+gene.map.test <- filter(dl$gene.map, gene.test == gene)
 expr.test <- dl$expr[gene.test,]
 expr.test
-gene.map.test <- filter(dl$gene.map, gene.test == gene)
+which.max(expr.test)
+cell.max <- names(which.max(expr.test))
+cell.max
+cell.map.test <- filter(dl$cell.map, cell.max == cell)
+cell.map.test
+filter(peaks, gene.test == gene) %>% select(g, c, cbRank, cbPeaktime,
+                                            cell, capture, capture.dist)
+
 capture.RMSE <- calc.rms(peaks$capture.dist)
 capture.RMSE
 
