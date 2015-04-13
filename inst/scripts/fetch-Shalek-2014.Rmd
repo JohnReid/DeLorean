@@ -239,7 +239,7 @@ gene.meta.B <- data.frame(gene=factor(genes.B, levels=genes.B))
 
 Define some key genes mentioned in the paper.
 ```{r keyGenes}
-shalek.key.genes <- toupper(c(
+shalek.key.genes <- unique(toupper(c(
     #
     # Cluster I d (core antiviral module; enriched for annotated antiviral and
     #             interferon response genes; for example, 
@@ -266,7 +266,7 @@ shalek.key.genes <- toupper(c(
     #
     # Figure 4: core antiviral targets.
     "Rsad2", "Stat2"
-))
+)))
 # shalek.key.genes %in% genes.A
 stopifnot(0 == sum(! shalek.key.genes %in% genes.A))
 
