@@ -45,7 +45,7 @@ adjust.by.cell.sizes <- function(dl) within(dl, {
     expr.l <- melt.expr(dl)
     cell.sizes <- estimate.capture.cell.sizes(
         expr.l
-        %>% left_join(cell.meta %>% select(cell, capture)))
+        %>% left_join(cell.meta %>% dplyr::select(cell, capture)))
     expr.before.adj <- expr
     expr <- cast.expr(
         expr.l
