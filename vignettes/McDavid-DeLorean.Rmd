@@ -239,6 +239,13 @@ dl <- make.predictions(dl)
 # Examine peak times
 
 ```{r peakTimeFns}
+# Set up some functions to map between pseudotimes and peak times
+#
+# cbPeaktimes of 0 (equiv. 100) correspond to the transition
+# between M and G1.
+# (http://cyclebase2.jensenlab.org/methods.jsp#peaktime-uncertainty)
+# Hence cbPeaktime = 0 corresponds to a pseudotime of .5
+#
 # A function to make times periodic
 periodise <- function(tau, period=3) {
     wave = floor(tau/period)
@@ -247,12 +254,6 @@ periodise <- function(tau, period=3) {
 # tau.test <- seq(-.5, 3.5, by=.5)
 # tau.test
 # periodise(tau.test)
-# Set up some functions to map between pseudotimes and peak times
-#
-# cbPeaktimes of 0 (equiv. 100) correspond to the transition
-# between M and G1.
-# (http://cyclebase2.jensenlab.org/methods.jsp#peaktime-uncertainty)
-# Hence cbPeaktime = 0 corresponds to a pseudotime of .5
 # A function to map from pseudotimes (tau) to cbPeaktimes
 tau.to.cbtime <- function(tau) 100*periodise((tau - .5)/3, 1)
 # and vice versa
@@ -262,6 +263,10 @@ tau.test <- seq(-.5, 3.5, by=.5)
 sum(abs(periodise(tau.test) - cbtime.to.tau(tau.to.cbtime(tau.test))))
 cbtime.test <- seq(-5, 105, by=5)
 sum(abs(periodise(cbtime.test, 100) - tau.to.cbtime(cbtime.to.tau(cbtime.test))))
+
+```
+
+```{r peakAgainstMaxPredicted}
 # Plot cbPeaktime against best sample max predicted mean time
 # print(plot.profiles(dl, genes="CDCA8"))
 #
