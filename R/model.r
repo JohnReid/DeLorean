@@ -344,7 +344,7 @@ format.for.stan <- function(
         #
         # Rename phi.hat if we are not estimating phi
         if (! opts$estimate.phi) {
-            gene.map <- gene.map %>% rename(phi=phi.hat)
+            gene.map <- gene.map %>% dplyr::rename(phi=phi.hat)
         }
         #
         # Calculate the map from cell indices to genes and their meta data
