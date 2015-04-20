@@ -99,6 +99,9 @@ roughness.test <- function(
     expr.held.out=dl$expr.held.out,
     num.perms=1000)
 within(dl, {
+    message('Performing roughness test on ', nrow(expr.held.out),
+            ' genes and ', ncol(expr.held.out),
+            ' cells. Using ', num.perms, ' permutations.')
     # Combine both types into a dataframe
     roughnesses <- rbind(
         data.frame(type="pseudotime", sample.iter=sample.iters(dl))

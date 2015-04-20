@@ -303,20 +303,15 @@ saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Shalek.rds")
 
 ```{r clusterAnalysis}
 clustered <- dl$gene.meta %>% filter(! is.na(cluster))
-clustered.expr <- shalek.A.expr[clustered$gene,time.course.cells$cell]
+fitted.time.course.cells <- (
+    time.course.cells
+    %>% filter(cell %in% dl$cell.map[['cell']])
+)$cell
+clustered.expr <- shalek.A.expr[as.character(clustered$gene),
+                                as.character(fitted.time.course.cells)]
 # rownames(clustered.expr)
 # colnames(clustered.expr)
-melt.expr <- function(dl, expr=dl$expr) {
-    (
-        expr
-        %>% melt(varnames=c("gene", "cell"), value.name="x")
-        %>% mutate(gene=factor(gene, levels=levels(dl$gene.meta[["gene"]])),
-                   cell=factor(cell, levels=levels(dl$cell.meta[["cell"]])))
-    )
-}
-clustered.expr.l <- (
-    melt.expr(dl, clustered.expr)
-    %>% left_join(dl$gene.meta))
+clustered.expr.l <- melt.expr(dl, clustered.expr) %>% left_join(dl$gene.meta)
 names(clustered.expr.l)
 # sample_n(clustered.expr.l, 14)
 module.scores <- (
@@ -326,6 +321,8 @@ module.scores <- (
     %>% left_join(dl$samples.l$tau
                   %>% filter(dl$best.sample == iter)
                   %>% dplyr::select(cell, tau)))
+module.scores
+stopifnot(all(! is.na(module.scores)))
 # Find the precocious cells
 core.antiviral <- (
     module.scores
@@ -335,29 +332,51 @@ core.antiviral <- (
 precocious <- core.antiviral %>% filter("1h" == capture) %>% head(2)
 precocious
 precocious$cell
-module.scores <- module.scores %>% mutate(precocious=cell %in% precocious$cell)
-(ggplot(core.antiviral, aes(x=module.score, color=capture)) + geom_density())
+module.scores <- (
+    module.scores %>% mutate(type=ifelse(cell %in% precocious$cell,
+                                         "precocious",
+                                         "not precocious"))
+)
+gp.core.antiviral <- (
+    ggplot(core.antiviral,
+           aes(x=module.score, color=capture))
+    + geom_density()
+)
+print(gp.core.antiviral)
+ggsave('Shalek-core-antiviral.pdf', gp.core.antiviral,
+       width=2*fig.width, height=2*fig.height)
 # Plot the core antiviral, the maturity, the peaked inflammation and
 # the sustained inflammation module scores against pseudotime.
-(ggplot(module.scores
-        %>% filter(! is.na(tau),
-                   cluster %in% c("Id", "IIIb", "IIIc", "IIId")),
-        aes(x=tau, y=module.score, colour=cluster))
+gp.module <- (
+    ggplot(module.scores
+           %>% filter(! is.na(tau),
+                      cluster %in% c("Id", "IIIb", "IIIc", "IIId")),
+           aes(x=tau, y=module.score, colour=cluster))
     + stat_smooth()
-    + geom_point())
+    + geom_point()
+)
+ggsave('Shalek-module.pdf', gp.module,
+       width=2*fig.width, height=2*fig.height)
+print(gp.module)
 # Same with just core antiviral coloured by capture
-(ggplot(module.scores
-        %>% left_join(dl$cell.meta %>% dplyr::select(cell, capture))
-        %>% filter(! is.na(tau),
-                   cluster == "Id"),
-        aes(x=tau, y=module.score, colour=capture, shape=precocious))
-    + stat_smooth(aes(group=""))
-    + geom_point())
-
+gp.core <- (
+    ggplot(module.scores
+           %>% left_join(dl$cell.meta %>% dplyr::select(cell, capture))
+           %>% filter(! is.na(tau),
+                      cluster == "Id"),
+           aes(x=tau, y=module.score, colour=capture, shape=type))
+    + stat_smooth(aes(group="", color=NULL))
+    + geom_point()
+)
+print(gp.core)
+ggsave('Shalek-core.pdf', gp.core,
+       width=2*fig.width, height=2*fig.height)
 # Examine what pseudotimes the model estimated for the precocious genes
-( dl$samples.l$tau
+(
+    dl$samples.l$tau
     %>% filter(dl$best.sample == iter,
-               cell %in% precocious$cell))
+               cell %in% precocious$cell)
+)
 
 ```
 
@@ -415,9 +434,11 @@ Permutation test for roughness.
 dl <- roughness.test(dl, held.out.expr)
 print(dl$roughness.test)
 # Plot the roughnesses
-gp <- plot(dl, type="roughnesses")
-print(gp)
-ggsave('Shalek-roughnesses.png', gp)
+gp.roughnesses <- plot(dl, type="roughnesses")
+print(gp.roughnesses)
+ggsave('Shalek-roughnesses.png', gp.roughnesses)
+ggsave('Shalek-roughnesses.pdf', gp.roughnesses,
+       width=2*fig.width, height=2*fig.height)
 
 ```
 

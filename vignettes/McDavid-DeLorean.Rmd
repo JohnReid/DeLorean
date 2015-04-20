@@ -361,8 +361,16 @@ dl <- within(dl, {
         %>% summarise(rmse=calc.rms(dist))
     )
 })
-best.peak.rmse <- with(dl, filter(peak.max.dist, best.sample == iter)$rmse)
 sample_n(dl$peak.max.dist, 15)
+best.peak.rmse <- with(dl, filter(peak.max.dist, best.sample == iter)$rmse)
+
+```
+
+The RMSE for our model's peak time estimates was `r best.peak.rmse`. The
+RMSE for the naive method's peak time estimates was `r capture.RMSE` an
+increase of `r (capture.RMSE - best.peak.rmse) / best.peak.rmse * 100`%.
+
+```{r plotRMSE}
 # Plot distribution
 gp.RMSE <- (
     ggplot(dl$peak.max.dist, aes(x=rmse))
@@ -466,7 +474,13 @@ gp.profiles <- (
     plot(dl, type="profiles", genes=genes.for.profiles$gene)
     + scale_x_continuous(name='Pseudotime', limits=c(0, 3))
 )
-gp.profiles <- add.peak.times(dl, gp.profiles)
+gp.profiles <- (
+    add.peak.times(dl, gp.profiles)
+    + scale_x_continuous(name='Pseudotime',
+                         breaks=c(0,1,2,3),
+                         labels=c('G2/M', 'G0/G1', 'S', 'G2/M'))
+    + theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1))
+)
 print(gp.profiles)
 ggsave('McDavid-profiles.png', plot=gp.profiles,
     width=fig.width*3.5, height=fig.height*3,
