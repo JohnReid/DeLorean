@@ -3,10 +3,13 @@
 attach(dl)
 ```
 
+
 This data set contains expression data, $x_{g,c}$, for
 $G=`r nrow(dl$gene.meta)`$ genes and $C=`r nrow(dl$cell.meta)`$ cells.
 The expression values are distributed as
 ```{r dataDist, echo=FALSE, message=FALSE}
+stopifnot(ncol(expr) > 0)
+stopifnot(nrow(expr) > 0)
 qplot(as.vector(expr))
 
 ```
@@ -19,7 +22,7 @@ plot(dl, type="expr.data")
 ```
 
 
-The cells were captured at `r length(unique(cell.meta$capture))` distinct
+The cells were captured at `r length(levels(cell.meta$capture))` distinct
 time points.
 ```{r cellCaptureTimes, echo=FALSE}
 ggplot(cell.meta, aes(capture)) + geom_bar()
@@ -29,7 +32,6 @@ ggplot(cell.meta, aes(capture)) + geom_bar()
 We have the following meta data for the cells:
 ```{r cellMetaData, echo=FALSE}
 summary(cell.meta)
-# sapply(cell.meta, class)
 
 ```
 
@@ -37,7 +39,6 @@ summary(cell.meta)
 We have the following meta data for the genes:
 ```{r geneMeta, echo=FALSE}
 summary(gene.meta)
-# sapply(cell.meta, class)
 
 ```
 

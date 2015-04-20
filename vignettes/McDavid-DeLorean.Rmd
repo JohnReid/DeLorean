@@ -207,7 +207,6 @@ system.time(dl <- fit.model(dl))
 dl <- examine.convergence(dl)
 
 ```
-
 ```{r child=report.file("convergence")}
 ```
 
@@ -263,12 +262,6 @@ tau.test <- seq(-.5, 3.5, by=.5)
 sum(abs(periodise(tau.test) - cbtime.to.tau(tau.to.cbtime(tau.test))))
 cbtime.test <- seq(-5, 105, by=5)
 sum(abs(periodise(cbtime.test, 100) - tau.to.cbtime(cbtime.to.tau(cbtime.test))))
-
-```
-
-```{r peakAgainstMaxPredicted}
-# Plot cbPeaktime against best sample max predicted mean time
-# print(plot.profiles(dl, genes="CDCA8"))
 #
 # Distance between two points on interval [0, 100] where 0 is connected to 100
 peak.distance <- function(peak.1, peak.2) {
@@ -400,13 +393,17 @@ gp.naive.vs.predicted <- (
 )
 ggsave('McDavid-naive-vs-predicted.pdf', plot=gp.naive.vs.predicted,
        width=2*text.width, height=2*text.width)
-# Plot profiles of worst predicted peaks
+#
+# Add the peak times to a profile plot.
 add.peak.times <- function(dl, gp) {
     plot.peaktimes <- (
         dl$gene.meta
+        # Only use those genes that are in the plot and have a peak time
         %>% filter(gene %in% gp$data[['gene']], ! is.na(cbPeaktime))
+        # Convert the CycleBase peak time to pseudotime
         %>% mutate(peak.tau=cbtime.to.tau(cbPeaktime))
     )
+    # Add the peak times as vertical lines to the plot
     (
         gp
         + geom_vline(data=plot.peaktimes,
@@ -414,6 +411,8 @@ add.peak.times <- function(dl, gp) {
                      linetype='dashed', alpha=.7)
     )
 }
+#
+# Plot profiles of worst predicted peaks
 worst.peaks <- (
     dl$peak.vs.max
     %>% filter(dl$best.sample == iter)
