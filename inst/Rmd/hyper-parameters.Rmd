@@ -5,99 +5,24 @@ attach(dl)
 
 ## Fixed hyperparameters
 
-$$ \begin{eqnarray*}
-\sigma_\tau &=& `r opts$sigma.tau` \\
-\delta &=& `r opts$delta` \\
-l &=& `r hyper$l` \\
-\end{eqnarray*} $$
-
-
-## Estimation of cell size factors: $S_c$
-
-The cell size factors represent the relative amount of biological material in
-each cell. They are used to account for effects such as sequencing depth or
-lysis efficiency.
-First we calculate the mean expression for each gene, that is the average of
-all its expression values.
+The standard deviation of cell pseudotimes around the cell capture times has been set as
 $$
-\mu_g = \textrm{Mean}_c (x_{g,c})
+    \sigma_\tau = `r opts$sigma.tau`
 $$
-which has this density over genes:
-```{r geneMean}
-(ggplot(gene.expr, aes(x=x.mean)) + geom_density() + geom_rug())
-```
-
-Now we estimate the cell size factors. We use the median for robustness and
-examine every gene's relative expression levels in each cell
+The length scale of the gene expression profiles has been set as
 $$
-\hat{S}_c = \textrm{Median}_g (x_{g,c} - \mu_g)
-$$
-We estimate the hyperparameters for the cell size factors by fitting a normal
-distribution. The estimated cell size factors have this density
-(we show the empirical Bayes prior in dotted blue):
-```{r cellSizeFactors}
-(ggplot(cell.expr, aes(x=S.hat)) + geom_density() + geom_rug()
-    + stat_function(fun=function(x) dnorm(x,
-                                          mean=hyper$mu_S,
-                                          sd=hyper$sigma_S),
-                    colour="blue", alpha=.7, linetype="dashed")
-)
-
-```
-```{r cellSizeFactorsByCapture}
-(ggplot(cell.expr %>% left_join(cell.meta),
-        aes(x=capture, y=S.hat))
-    + geom_boxplot())
-
-```
-
-
-
-## Estimation of expression variation: $\phi_g$, $\psi_g$, $\omega_g$
-
-Given the estimated cell size factors, we can adjust our gene
-measurements, accounting for the different cell sizes
-$$
-\hat{x}_{g,c} = x_{g,c} - \hat{S}_c
+l = `r hyper$l`
 $$
 
-We expect this should reduce the variation in the expression levels on average.
-We check this by plotting the standard deviation of the adjusted versus
-the unadjusted.
-```{r adjVsUnadj}
-(ggplot(gene.expr,
-        aes(x=x.sd, y=x.hat.sd))
-    + geom_point()
-    + geom_abline(intercept=0, slope=1, alpha=.4)
-)
 
-```
+## Variance decomposition into temporal variation and noise
 
-
-From these adjusted expression measurements, we can reestimate the genes' means
-$$
-\hat{\mu}_g = \textrm{Mean}_c (\hat{x}_{g,c})
-$$
-which have this density (again we show the hyperparameters as a
-dotted blue line):
-```{r geneAdjMean}
-(ggplot(gene.expr, aes(x=phi.hat)) + geom_density() + geom_rug()
-    + stat_function(fun=function(x) dnorm(x,
-                                          mean=hyper$mu_phi,
-                                          sd=hyper$sigma_phi),
-                    colour="blue", alpha=.7, linetype="dashed")
-)
-
-```
-
-Having estimated the gene expression means, we can decompose the observed
-variance.  We examine the variance both between and within time points. We
-expect some of the variance within a time point to be associated with noise in
-the temporal dimension, that is estimating the pseudotime correctly should
-reduce the within time variance. The estimation procedure has a parameter
-$\delta$ (which in this example was `r opts$delta`) that allows the user to
-determine how much of the within time variance they wish to ascribe to
-between time variance.
+We examine the variance both between- and within-time points. We expect some of
+the variation within a time point to be associated with noise in the temporal
+dimension, that is estimating the pseudotime correctly should reduce the
+within-time variance. The rest of the variation within a time point will be due
+to noise.  Conversely we expect most of the variation between time points to be
+due to temporal variation although some will be due to noise.
 
 Let
 $$
@@ -108,81 +33,85 @@ by their captured time points indexed by $1 \le t \le T$:
 $$
 \mathcal{K}_t = \{c: k_c = \kappa_t\}
 $$
-We group the expression measurements by gene and observed time to
+We group the expression measurements by gene and observed capture time to
 calculate means and variances:
 $$
 \begin{align}
-\mu_{g,t} &= \text{Mean}(\{\hat{x}_{g,c}:z_{g,c} = 1, c \in \mathcal{K}_t\}) \\\\
-\mathbb{V}_{g,t} &= \text{Var}(\{\hat{x}_{g,c}:z_{g,c} = 1, c \in \mathcal{K}_t\})
+\mathbb{M}_{g,t} &= \text{Mean}_{c \in \mathcal{K}_t}\{x_{g,c}\} \\\\
+\mathbb{V}_{g,t} &= \text{Var}_{c \in \mathcal{K}_t}\{x_{g,c}\}
 \end{align}
 $$
-The standard deviations have this distribution:
-```{r geneWithinVar}
-(ggplot(gene.time.expr, aes(x=sqrt(x.var))) + geom_density() + geom_rug())
 
+### Noise estimates
+
+We estimate the gene-specific noise levels by assuming that all the within-time
+variation in the data is due to noise. This should be a slight overestimate as
+some will be due to noise in the pseudotemporal dimension.
+$$
+  \hat{\omega}_g = \textrm{Mean}_t\{\mathbb{V}_{g,t}\}
+$$
+The estimated standard deviations $\sqrt{\hat{\omega}_g}$ have this distribution:
+```{r geneWithinVar}
+(ggplot(gene.var, aes(x=sqrt(omega.hat))) + geom_density() + geom_rug())
 ```
 
-Mean expression by time:
-```{r geneTimeMean}
-(ggplot(gene.time.expr,
-        aes(x=x.mean, y=sqrt(x.var), color=capture))
-    + geom_point(alpha=.4)
+Giving us this fit for our empirical Bayes prior on the $\log \hat{\omega}_g$
+```{r omegaPrior}
+(ggplot(gene.var, aes(x=log(omega.hat))) + geom_density() + geom_rug()
+    + stat_function(fun=function(x) dnorm(x,
+                                          mean=hyper$mu_omega,
+                                          sd=hyper$sigma_omega),
+                    colour="blue", alpha=.7, linetype="dashed")
 )
 
 ```
 
 
-We estimate the gene variation between time as the variation of the within
-time mean:
-$$
-\bar{\psi}_g = \text{Var}_t(\mu_{g,t})
-$$
-and the gene variation within time as the average of the variation
-within the times:
-$$
-\bar{\omega}_g = \text{Mean}_t(\mathbb{V}_{g,t})
-$$
+### Temporal variation estimates
 
-Gene variation between and within time:
-```{r geneVarBetweenWithin}
-(ggplot(gene.var,
-        aes(x=sqrt(Omega),
-            y=sqrt(Psi)))
-    + geom_point(alpha=.5)
-    + geom_rug(alpha=.05)
+We estimate the temporal variation by calculating the expected variance of samples
+at the capture times from the expression profile of a gene $g$. These depend on
+our fixed length scale and unknown temporal variance $\psi_g$. The
+covariance of these samples will be $\psi_g \hat{\Sigma}$ where
+$$
+  \hat{\Sigma}_{t_1,t_2} = \Sigma_\tau(\kappa_{t_1}, \kappa_{t_2})
+$$
+The expected variance of our samples is $\psi_g V_{\hat{\Sigma}}$ where
+$$
+  V_{\hat{\Sigma}} = \textrm{Mean}\{\textrm{Diag}(\hat{\Sigma})\} - \textrm{Mean}\{\hat{\Sigma}\}
+$$
+and we can slightly overestimate the temporal variances $\psi_g$ by ignoring the
+noise in our data
+$$
+  \hat{\psi}_g = \frac{\textrm{Var}_t\{\mathbb{M}_{g,t}\}}{V_{\hat{\Sigma}}}
+$$
+The estimated standard deviations $\sqrt{\hat{\psi}_g}$ have this distribution:
+```{r geneBetweenVar}
+(ggplot(gene.var, aes(x=sqrt(psi.hat))) + geom_density() + geom_rug())
+```
+
+Giving us this fit for our empirical Bayes prior on the temporal variation
+$\log \hat{\psi}_g$
+```{r psiPrior}
+(ggplot(gene.var, aes(x=log(psi.hat))) + geom_density() + geom_rug()
+    + stat_function(fun=function(x) dnorm(x,
+                                          mean=hyper$mu_psi,
+                                          sd=hyper$sigma_psi),
+                    colour="blue", alpha=.7, linetype="dashed")
+)
+```
+
+### Correlation between temporal variation and noise
+
+The correlation between the temporal variation and noise estimates is
+`r with(gene.var, cor(psi.hat, omega.hat))`.
+Plotting the estimated noise levels against temporal variation gives:
+```{r geneWithinVsBetweenVar}
+(
+    ggplot(gene.var, aes(x=sqrt(psi.hat), y=sqrt(omega.hat)))
+    + geom_point()
     + geom_abline(intercept=0, slope=1, linetype="dashed", alpha=.7)
 )
-
-```
-
-We expect some of the variance within a time point to be associated with noise
-in the temporal dimension so we adjust the estimated between and within
-time variances using a scaling factor $\delta$:
-$$
-\begin{align}
-\hat{\psi}_g &= \bar{\psi}_g + \delta \bar{\omega}_g \\\\
-\hat{\omega}_g &= \bar{\omega}_g - \delta \bar{\omega}_g
-\end{align}
-$$
-giving this density for the between time variation:
-```{r geneVarBetweenAdj}
-(ggplot(gene.var, aes(x=psi.hat)) + geom_density() + geom_rug()
-    + stat_function(fun=function(x) dlnorm(x,
-                                           mean=hyper$mu_psi,
-                                           sd=hyper$sigma_psi),
-                    colour="blue", alpha=.7, linetype="dashed")
-)
-```
-
-and this density for the within time variation:
-```{r geneVarWithinAdj}
-(ggplot(gene.var, aes(x=omega.hat)) + geom_density() + geom_rug()
-    + stat_function(fun=function(x) dlnorm(x,
-                                           mean=hyper$mu_omega,
-                                           sd=hyper$sigma_omega),
-                    colour="blue", alpha=.7, linetype="dashed")
-)
-
 ```
 
 ```{r hyperDetach, include=FALSE}

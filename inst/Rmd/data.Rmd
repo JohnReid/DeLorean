@@ -5,7 +5,7 @@ attach(dl)
 
 
 This data set contains expression data, $x_{g,c}$, for
-$G=`r nrow(dl$gene.meta)`$ genes and $C=`r nrow(dl$cell.meta)`$ cells.
+$G=`r nrow(dl$expr)`$ genes and $C=`r ncol(dl$expr)`$ cells.
 The expression values are distributed as
 ```{r dataDist, echo=FALSE, message=FALSE}
 stopifnot(ncol(expr) > 0)
@@ -15,15 +15,19 @@ qplot(as.vector(expr))
 ```
 
 
-Some randomly sampled genes varying genes.
+Boxplots of expression over capture time of some randomly sampled genes. The
+red lines show the mean expression at each capture time.
 ```{r plotGeneData}
 plot(dl, type="expr.data")
 
 ```
 
 
-The cells were captured at `r length(levels(cell.meta$capture))` distinct
-time points.
+## Cell meta data
+
+Meta data exists for `r nrow(dl$cell.meta)` cells. These were captured at
+`r length(levels(cell.meta$capture))` distinct time points.
+
 ```{r cellCaptureTimes, echo=FALSE}
 ggplot(cell.meta, aes(capture)) + geom_bar()
 
@@ -35,6 +39,8 @@ summary(cell.meta)
 
 ```
 
+
+## Gene meta data
 
 We have the following meta data for the genes:
 ```{r geneMeta, echo=FALSE}
