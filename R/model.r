@@ -276,6 +276,30 @@ filter.cells <- function(dl,
 }
 
 
+
+
+#' Sample so many cells per capture time.
+#'
+#' @param dl de.lorean object
+#' @param number Number to sample from each capture time
+#'
+#' @export
+#'
+sample.per.capture <- function(dl, cells.per.capture) {
+    sample.at.most <- function(.df, number) {
+        sample_n(.df, min(number, nrow(.df)))
+    }
+    sampled.cells <- (
+        dl$cell.meta
+        %>% filter(cell %in% colnames(dl$expr))
+        %>% group_by(capture)
+        # %>% do(sample_n(., min(cells.per.capture, length(cell))))
+        %>% do(sample.at.most(., cells.per.capture))
+    )
+    filter.cells(dl, cells=sampled.cells$cell)
+}
+
+
 #' Sample genes and cells
 #'
 #' @param dl de.lorean object
