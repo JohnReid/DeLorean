@@ -138,39 +138,40 @@ plot.S.posteriors <- function(dl) {
 #' @export
 #'
 plot.cmp.profiles <- function(...,
-                              sample.iter = NULL,
                               genes = NULL) {
-    if (is.null(sample.iter)) {
-        sample.iter <- dl$best.sample
-    }
     dls <- list(...)
     dl.levels <- names(dls)
+    stopifnot(! is.null(dl.levels))  # Must have names for de.lorean objects
     if (is.null(genes)) {
         genes <- dls[[1]]$genes.high.psi
     }
-    stopifnot(! is.null(names(dls)))  # Must have names for de.lorean objects
     get.mean <- function(.name) {
         with(dls[[.name]], (
             predictions
-            %>% filter(sample.iter == iter)
+            %>% filter(best.sample == iter)
             %>% left_join(gene.map)
             %>% filter(gene %in% genes)
             %>% mutate(name=factor(.name, levels=dl.levels))
         ))
     }
-    means <- do.call(rbind, lapply(names(dls), get.mean))
+    means <- do.call(rbind, lapply(dl.levels, get.mean))
     gp <- ggplot(mutate.profile.data(means),
                  aes(x=tau),
                  environment=environment())
-    gp <- plot.add.mean.and.variance(gp,
-                                     color=name,
-                                     line.alpha=8,
-                                     ribbon.alpha=.2)
+    line.alpha <- .8
+    ribbon.alpha <- .2
     (
         gp
+        + geom_line(aes(x=x, y=mean, color=name),
+                    alpha=line.alpha)
+        + geom_ribbon(aes(x=x,
+                          ymin=mean-2*sqrt(var),
+                          ymax=mean+2*sqrt(var),
+                          fill=name),
+                      alpha=ribbon.alpha)
         + facet_wrap(~ gene)
         + scale_x_continuous(name="Pseudotime",
-                             breaks=unique(dls[[1]]$obstime))
+                             breaks=unique(dls[[1]]$cell.meta$obstime))
         + scale_y_continuous(name="Expression")
     )
 }
