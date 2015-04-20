@@ -817,6 +817,10 @@ examine.convergence <- function(dl) {
         ignore.names <- str_detect(rownames(summ),
                                    "^(predictedvar|predictedmean)")
         rhat.sorted <- sort(summ[! ignore.names, "Rhat"])
+        rhat.df <- data.frame(
+            rhat=rhat.sorted,
+            param=names(rhat.sorted),
+            parameter=str_match(names(rhat.sorted), "^[[:alpha:]]+"))
         rm(summ)
         rm(pars)
     })

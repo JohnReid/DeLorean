@@ -5,3 +5,11 @@ We plot the $\hat{R}$ statistics calculated by `Stan`.
 plot(dl, type="convergence")
 
 ```
+
+### Pseudotime convergence
+
+How many of the pseudotime $\hat{R}$ were below a particular level?
+
+```{r tauConvergence}
+ggplot(dl$rhat.df %>% filter(parameter == "tau"), aes(rhat)) + stat_ecdf()
+```
