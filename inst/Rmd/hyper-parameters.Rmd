@@ -46,7 +46,7 @@ $$
 
 We estimate the gene-specific noise levels by assuming that all the within-time
 variation in the data is due to noise. This should be a slight overestimate as
-some will be due to noise in the pseudotemporal dimension.
+some variation will be due to noise in the pseudotemporal dimension.
 $$
   \hat{\omega}_g = \textrm{Mean}_t\{\mathbb{V}_{g,t}\}
 $$
@@ -104,7 +104,7 @@ $\log \hat{\psi}_g$
 ### Correlation between temporal variation and noise
 
 The correlation between the temporal variation and noise estimates is
-`r with(gene.var, cor(psi.hat, omega.hat))`.
+`r with(gene.var, round(cor(psi.hat, omega.hat), digits=2))`.
 Plotting the estimated noise levels against temporal variation gives:
 ```{r geneWithinVsBetweenVar}
 (

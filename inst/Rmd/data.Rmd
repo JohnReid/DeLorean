@@ -1,8 +1,11 @@
 ```{r dataAttach, include=FALSE}
 # Attach the DeLorean data frame to access members
+dl <- analyse.variance(dl, adjust.cell.sizes=FALSE)
 attach(dl)
 ```
 
+
+## Expression
 
 This data set contains expression data, $x_{g,c}$, for
 $G=`r nrow(dl$expr)`$ genes and $C=`r ncol(dl$expr)`$ cells.
@@ -15,15 +18,7 @@ qplot(as.vector(expr))
 ```
 
 
-Boxplots of expression over capture time of some randomly sampled genes. The
-red lines show the mean expression at each capture time.
-```{r plotGeneData}
-plot(dl, type="expr.data")
-
-```
-
-
-## Cell meta data
+## Cells
 
 Meta data exists for `r nrow(dl$cell.meta)` cells. These were captured at
 `r length(levels(cell.meta$capture))` distinct time points.
@@ -39,8 +34,27 @@ summary(cell.meta)
 
 ```
 
+### Cell sizes
 
-## Gene meta data
+Estimates of cell sizes by capture time are:
+```{r cellSizeEstimates}
+(
+    ggplot(cell.expr %>% left_join(cell.meta),
+           aes(x=capture, y=S.hat))
+    + geom_boxplot()
+)
+```
+
+
+## Genes
+
+Boxplots of expression over capture time of some randomly sampled genes. The
+red lines show the mean expression at each capture time.
+```{r plotGeneData}
+plot(dl, type="expr.data")
+
+```
+
 
 We have the following meta data for the genes:
 ```{r geneMeta, echo=FALSE}
