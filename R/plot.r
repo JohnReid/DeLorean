@@ -314,7 +314,7 @@ plot.expr.data <- function(dl, genes=NULL, num.genes=12) {
                  %>% group_by(gene)
                  %>% summarise(var=var(x))
                  %>% arrange(-var))
-             if (nrow(variation > num.genes)) {
+             if (nrow(variation) > num.genes) {
                  variation <- variation %>% head(num.genes)
              }
              genes <- variation$gene
