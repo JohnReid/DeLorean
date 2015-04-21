@@ -79,7 +79,7 @@ Within time variation by gene:
 
 ### Variation comparisons
 
-The within time variation compared to the temporal variation (on log scale):
+The within time variation compared to the temporal variation (on log-log scale):
 ```{r noiseScatter}
 (ggplot(noise.levels,
         aes(x=log(psi), y=log(omega), color=gene %in% genes.high.psi),
