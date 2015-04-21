@@ -80,7 +80,8 @@ plot.tau.offsets <- function(dl, rug.alpha=.3) {
          + geom_rug(alpha=rug.alpha)
          + stat_function(fun=Curry(dnorm, sd=hyper$sigma_tau),
                          linetype='dashed',
-                         color="black")
+                         alpha=.7,
+                         color='blue')
     )
 }
 
