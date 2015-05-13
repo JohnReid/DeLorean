@@ -499,7 +499,7 @@ expr.gene <- (
 
 Test plotting held out genes.
 ```{r heldOutPlot}
-held.out.genes <- held.out.select.genes(dl, shalek.A.expr, 12)
+held.out.genes <- held.out.select.genes(dl, shalek.A.expr, 25)
 held.out <- held.out.melt(dl, shalek.A.expr, held.out.genes)
 system.time(posterior <- held.out.posterior(dl, held.out))
 gp <- plot.held.out.posterior(dl, posterior)
