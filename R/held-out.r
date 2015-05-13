@@ -83,10 +83,10 @@ held.out.posterior <- function(
             # posterior$omega <- omega
             posterior.df <- (
                 gp.predictions.df(posterior)
-                %>% mutate(gene=held.out.gene)
+                %>% dplyr::mutate(gene=held.out.gene)
                 %>% left_join(gene.means)
-                %>% mutate(mean=mu + mean)
-                %>% rename(var=Sigma)
+                %>% dplyr::mutate(mean=mu + mean)
+                %>% dplyr::rename(var=Sigma)
             )
             posterior.df$x <- test.input
             posterior.df
