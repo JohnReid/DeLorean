@@ -142,15 +142,17 @@ held.out.melt <- function(dl, expr, held.out.genes) {
 
 #' Plot the posterior of held out genes
 #'
+#' @param dl de.lorean object
 #' @param posterior The posterior of some held out genes
+#' @param facets Variables to wrap facets on
 #'
 #' @export
 #'
-plot.held.out.posterior <- function(dl, posterior) (
+plot.held.out.posterior <- function(dl, posterior, facets=~ gene) (
     plot.add.mean.and.variance(
         ggplot(posterior$posterior %>% left_join(dl$gene.meta)))
     + geom_point(
         data=posterior$held.out %>% left_join(dl$cell.meta),
         aes(x=tau, y=x, color=capture))
-    + facet_wrap(~ name)
+    + facet_wrap(facets)
 )
