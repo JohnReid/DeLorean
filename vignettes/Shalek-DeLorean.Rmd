@@ -415,30 +415,9 @@ Evaluate the held out genes that weren't used to fit the model.
 held.out.genes <- with(dl, gene.variances
                            %>% left_join(gene.meta)
                            %>% filter(! gene %in% gene.map$gene)
-                           %>% filter(cluster %in% clusters)
-                           # %>% filter(cluster != "Id")
-                           %>% arrange(-Psi/Omega)
-                           %>% head(getOption('Shalek.held.out', 100))
-)
-# Get an expression matrix of held out genes in the cells of interest
-held.out.expr <- shalek.A.expr[as.character(held.out.genes$gene),
-                               as.character(dl$cell.map$cell)]
-
-```
-
-
-## Roughness permutation test
-
-Permutation test for roughness.
-```{r}
-dl <- roughness.test(dl, held.out.expr)
-print(dl$roughness.test)
-# Plot the roughnesses
-gp.roughnesses <- plot(dl, type="roughnesses")
-print(gp.roughnesses)
-ggsave('Shalek-roughnesses.png', gp.roughnesses)
-ggsave('Shalek-roughnesses.pdf', gp.roughnesses,
-       width=2*fig.width, height=2*fig.height)
+gp <- plot(dl, type="roughnesses")
+print(gp)
+ggsave('Shalek-roughnesses.png', gp)
 
 ```
 
@@ -517,6 +496,16 @@ expr.gene <- (
 
 ```
 
+
+Test plotting held out genes.
+```{r heldOutPlot}
+held.out.genes <- held.out.select.genes(dl, shalek.A.expr, 12)
+held.out <- held.out.melt(dl, held.out.genes)
+system.time(posterior <- held.out.posterior(dl, held.out))
+gp <- plot.held.out.posterior(dl, posterior)
+print(gp)
+
+```
 
 ```{r date}
 date()

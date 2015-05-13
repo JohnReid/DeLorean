@@ -651,7 +651,7 @@ ordering.log.likelihood.fn <- function(
         # Use the same kernel for each gene
         K <- (
             psi * cov.fn(r, stan.data$l)
-            + omega * identity.matrix(nrow(r)))
+            + omega * diag(nrow(r)))
         # Do Cholesky decomposition once and use in each subsequent smoothing
         U <- chol(K)
         # Make every gene zero mean

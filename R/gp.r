@@ -29,14 +29,11 @@ cov.matern.32 <- function(r, l) {
 #'
 #' @export
 #'
-cov.calc.dists <- function(tau.1, tau.2=NULL, period=NULL) {
-    if (is.null(tau.2)) {
-        tau.2 <- tau.1
-    }
+cov.calc.dists <- function(tau.1, tau.2=tau.1, period=NULL) {
     # Calculate the distances
     r <- outer(tau.1, tau.2, FUN="-")
     # Make periodic if necessary
-    if (! is.null(period)) {
+    if (! is.null(period) && period > 0) {
         r <- cov.periodise(r, period)
     }
     r
@@ -95,7 +92,7 @@ cov.calc.gene <- function(dl,
                                include.test=include.test)
         (
             psi * cov.fn(r, opts$length.scale)  # Structure
-            + omega * identity.matrix(nrow(r))  # Noise
+            + omega * diag(nrow(r))  # Noise
         )
     })
 }
@@ -152,16 +149,6 @@ cov.all.genes.conditioned <- function(dl,
            FUN.VALUE=matrix(0,
                             nrow=length(dl$test.input),
                             ncol=length(dl$test.input)))
-}
-
-#' Identity matrix
-#'
-#' @param N size of matrix
-#'
-identity.matrix <- function(N) {
-    result <- matrix(0, nrow=N, ncol=N)
-    diag(result) <- 1
-    result
 }
 
 

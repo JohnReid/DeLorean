@@ -1,0 +1,145 @@
+#' Calculate posterior covariance and estimate parameters for
+#' held out genes given pseudotimes estimated by DeLorean model.
+#'
+#' @param dl de.lorean object
+#' @param held.out Held out gene expression levels
+#'
+#' @export
+#'
+held.out.posterior <- function(
+    dl,
+    held.out,
+    posterior.sample=dl$best.sample)
+{
+    # Zero mean the genes
+    gene.means <- (
+        held.out
+        %>% group_by(gene)
+        %>% summarise(mean=mean(x))
+    )
+    held.out <- (
+        held.out
+        %>% left_join(gene.means)
+        %>% mutate(x.adj = x - mean)
+    )
+    with(dl, {
+        tau <- (
+            samples.l$tau
+            %>% filter(iter == posterior.sample)
+            %>% select(cell, tau)
+        )
+        held.out <- (
+            held.out
+            %>% left_join(tau)
+        )
+        cov.fn <- function(K.tau, psi, omega) {
+            psi * K.tau + omega * diag(nrow(K.tau))
+        }
+        calc.K <- function(.data, psi, omega) {
+            K.tau <- cov.matern.32(
+                cov.calc.dists(.data$tau, period=opts$period),
+                opts$length.scale)
+            stopifnot(is.positive.definite(K.tau))
+            K <- cov.fn(K.tau, psi, omega)
+            stopifnot(is.positive.definite(K))
+            K
+        }
+        optimise <- function(held.out.gene) {
+            .data <- held.out %>% filter(gene == held.out.gene)
+            likelihood <- function(par) {
+                psi <- exp(par[1])
+                omega <- exp(par[2])
+                K <- calc.K(.data, psi, omega)
+                gp.ll <- gp.log.marg.like(.data$x.adj, K=K)
+                return(
+                    gp.ll[1,1]
+                    + dlnorm(psi,
+                            meanlog=hyper$mu_psi,
+                            sdlog=sqrt(hyper$sigma_psi),
+                            log=TRUE)
+                    + dlnorm(omega,
+                            meanlog=hyper$mu_omega,
+                            sdlog=sqrt(hyper$sigma_omega),
+                            log=TRUE)
+                )
+            }
+            # Find the optimal values of psi and omega
+            optimum <- optim(
+                c(hyper$mu_psi, hyper$mu_omega),
+                likelihood,
+                control=list(fnscale=-1))
+            psi <- exp(optimum$par[1])
+            omega <- exp(optimum$par[2])
+            # Make posterior predictions on the test inputs
+            K <- calc.K(.data, psi, omega)
+            Kstar <- psi * cov.matern.32(
+                cov.calc.dists(.data$tau, test.input, period=opts$period),
+                opts$length.scale)
+            Kstarstar <- psi * cov.matern.32(
+                cov.calc.dists(test.input, period=opts$period),
+                opts$length.scale)
+            posterior <- gp.predict(.data$x.adj, K, Kstar, Kstarstar)
+            # posterior$psi <- psi
+            # posterior$omega <- omega
+            posterior.df <- (
+                gp.predictions.df(posterior)
+                %>% mutate(gene=held.out.gene)
+                %>% left_join(gene.means)
+                %>% mutate(mean=mu + mean)
+                %>% rename(var=Sigma)
+            )
+            posterior.df$x <- test.input
+            posterior.df
+        }
+        posterior <- do.call(rbind, lapply(held.out$gene, optimise))
+        return(list(posterior=posterior, held.out=held.out))
+    })
+}
+
+
+#' Select held out genes by those with highest variance
+#'
+#' @param dl de.lorean object
+#' @param expr Expression matrix of all genes
+#' @param num.held.out Number to select
+#'
+#' @export
+#'
+held.out.select.genes <- function(dl, expr, num.held.out) {
+    cells.fit <- as.character(dl$cell.map$cell)
+    genes.fit <- as.character(dl$gene.map$gene)
+    held.out.var <- apply(
+        expr[! rownames(shalek.A.expr) %in% genes.fit, cells.fit],
+        1,
+        var)
+    names(tail(sort(held.out.var), num.held.out))
+}
+
+
+#' Melt held out genes
+#'
+#' @param dl de.lorean object
+#' @param expr Expression matrix of all genes
+#' @param num.held.out Number to select
+#'
+#' @export
+#'
+held.out.melt <- function(dl, held.out.genes) {
+    cells.fit <- as.character(dl$cell.map$cell)
+    melt.expr(dl, shalek.A.expr[held.out.genes, cells.fit])
+}
+
+
+#' Plot the posterior of held out genes
+#'
+#' @param posterior The posterior of some held out genes
+#'
+#' @export
+#'
+plot.held.out.posterior <- function(dl, posterior) (
+    plot.add.mean.and.variance(ggplot(posterior$posterior))
+    + geom_point(
+        data=posterior$held.out %>% left_join(dl$cell.meta),
+        aes(x=tau, y=x, color=capture))
+    + facet_wrap(~ gene)
+)
