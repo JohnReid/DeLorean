@@ -124,9 +124,9 @@ held.out.select.genes <- function(dl, expr, num.held.out) {
 #'
 #' @export
 #'
-held.out.melt <- function(dl, held.out.genes) {
+held.out.melt <- function(dl, expr, held.out.genes) {
     cells.fit <- as.character(dl$cell.map$cell)
-    melt.expr(dl, shalek.A.expr[held.out.genes, cells.fit])
+    melt.expr(dl, expr[held.out.genes, cells.fit])
 }
 
 
