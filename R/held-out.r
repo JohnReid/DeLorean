@@ -39,9 +39,9 @@ held.out.posterior <- function(
             K.tau <- cov.matern.32(
                 cov.calc.dists(.data$tau, period=opts$period),
                 opts$length.scale)
-            stopifnot(is.positive.definite(K.tau))
+            # stopifnot(is.positive.definite(K.tau))
             K <- cov.fn(K.tau, psi, omega)
-            stopifnot(is.positive.definite(K))
+            # stopifnot(is.positive.definite(K))
             K
         }
         optimise <- function(held.out.gene) {
