@@ -26,7 +26,7 @@ held.out.posterior <- function(
         tau <- (
             samples.l$tau
             %>% filter(iter == posterior.sample)
-            %>% select(cell, tau)
+            %>% dplyr::select(cell, tau)
         )
         held.out <- (
             held.out
