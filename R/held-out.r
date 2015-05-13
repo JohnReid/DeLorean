@@ -44,8 +44,7 @@ held.out.posterior <- function(
             # stopifnot(is.positive.definite(K))
             K
         }
-        optimise <- function(held.out.gene) {
-            .data <- held.out %>% filter(gene == held.out.gene)
+        optimise <- function(.data) {
             likelihood <- function(par) {
                 psi <- exp(par[1])
                 omega <- exp(par[2])
@@ -70,20 +69,22 @@ held.out.posterior <- function(
                 control=list(fnscale=-1))
             psi <- exp(optimum$par[1])
             omega <- exp(optimum$par[2])
+            return(data.frame(psi=psi, omega=omega))
+        }
+        calc.posterior <- function(params) {
+            .data <- held.out %>% filter(gene == params$gene)
             # Make posterior predictions on the test inputs
-            K <- calc.K(.data, psi, omega)
-            Kstar <- psi * cov.matern.32(
+            K <- calc.K(.data, params$psi, params$omega)
+            Kstar <- params$psi * cov.matern.32(
                 cov.calc.dists(.data$tau, test.input, period=opts$period),
                 opts$length.scale)
-            Kstarstar <- psi * cov.matern.32(
+            Kstarstar <- params$psi * cov.matern.32(
                 cov.calc.dists(test.input, period=opts$period),
                 opts$length.scale)
             posterior <- gp.predict(.data$x.adj, K, Kstar, Kstarstar)
-            # posterior$psi <- psi
-            # posterior$omega <- omega
             posterior.df <- (
                 gp.predictions.df(posterior)
-                %>% dplyr::mutate(gene=held.out.gene)
+                %>% dplyr::mutate(gene=params$gene)
                 %>% left_join(gene.means)
                 %>% dplyr::mutate(mean=mu + mean)
                 %>% dplyr::rename(var=Sigma)
@@ -91,8 +92,17 @@ held.out.posterior <- function(
             posterior.df$x <- test.input
             posterior.df
         }
-        posterior <- do.call(rbind, lapply(held.out$gene, optimise))
-        return(list(posterior=posterior, held.out=held.out))
+        params <- (
+            held.out
+            %>% group_by(gene)
+            %>% do(optimise(.))
+        )
+        posterior <- (
+            params
+            %>% group_by(gene)
+            %>% do(calc.posterior(.))
+        )
+        return(list(held.out=held.out, params=params, posterior=posterior))
     })
 }
 
