@@ -183,7 +183,7 @@ dl <- estimate.hyper(
 Save expression data and meta data.
 ```{r}
 saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
-        file='McDavid-input.rds')
+        file='Data/McDavid-input.rds')
 
 ```
 
@@ -493,7 +493,7 @@ ggsave('McDavid-profiles.pdf', plot=gp.profiles,
 
 ```{r echo=FALSE}
 # Save DeLorean object without fit component
-saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "McDavid.rds")
+saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Data/McDavid.rds")
 ```
 
 

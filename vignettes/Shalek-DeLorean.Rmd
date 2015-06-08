@@ -240,7 +240,7 @@ dl <- estimate.hyper(
 Save expression data and meta data.
 ```{r saveInput, eval=fit.model}
 saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
-        file='Shalek-input.rds')
+        file='Data/Shalek-input.rds')
 
 ```
 

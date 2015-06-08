@@ -58,6 +58,7 @@ if (file.exists("config.R")) {
 # Widths for saving figures
 #
 text.width <- 4.7  # LaTeX width in inches
+plos.width <- 5.2  # LaTeX width for PLoS paper in inches
 golden.ratio <- 1.618  # Pleasing ratio
 fig.width <- text.width
 fig.height <- text.width / golden.ratio
@@ -184,7 +185,7 @@ Format the data for Stan and fit the model.
 dl <- format.for.stan(dl)
 # Save for input to Monocle
 saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
-        file='Windram-input.rds')
+        file='Data/Windram-input.rds')
 dl <- compile.model(dl)
 # dl <- find.smooth.tau(dl)
 dl <- find.best.tau(dl)
@@ -258,6 +259,9 @@ ggsave('Windram-Rhat.png', plot(dl, type="convergence"),
        dpi=300, units="in")
 # Save profiles as well
 gp.profiles <- plot(dl, type="profiles")
+ggsave('Windram-profiles.eps', gp.profiles,
+       width=plos.width * 2, height=plos.width * 2,
+       dpi=150, units="in")
 ggsave('Windram-profiles.pdf', gp.profiles,
        width=text.width * 2, height=text.width * 2,
        dpi=150, units="in")
@@ -363,8 +367,8 @@ ggsave('Windram-roughnesses.png', gp.roughnesses)
 
 ```{r echo=FALSE}
 # Save DeLorean object without fit component
-saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Windram.rds")
-# dl <- readRDS("Windram.rds")
+saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Data/Windram.rds")
+dl <- readRDS("Data/Windram.rds")
 
 ```
 
@@ -378,7 +382,7 @@ plots <- with(dl, list(
     ),
     profiles = plot(dl, type="profiles")
 ))
-saveRDS(plots, "Windram-plots.rds")
+saveRDS(plots, "Data/Windram-plots.rds")
 
 ```
 

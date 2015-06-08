@@ -167,7 +167,7 @@ dev.off()
 
 ```{r echo=FALSE}
 # Save DeLorean object without fit component
-saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Guo.rds")
+saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Data/Guo.rds")
 ```
 
 

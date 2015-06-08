@@ -152,7 +152,7 @@ dl <- filter.genes(dl, function(genes) genes %in% sampled.genes)
 Save expression data and meta data.
 ```{r}
 saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
-        file='Tang-input.rds')
+        file='Data/Tang-input.rds')
 
 ```
 
@@ -202,7 +202,7 @@ dl <- make.predictions(dl)
 
 ```{r echo=FALSE}
 # Save DeLorean object without fit component
-saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Tang.rds")
+saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Data/Tang.rds")
 # dl <- readRDS("Windram.rds")
 
 ```
