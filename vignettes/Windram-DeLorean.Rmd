@@ -54,17 +54,7 @@ bib <- read.bibtex("DeLorean.bib")
 if (file.exists("config.R")) {
     source("config.R")
 }
-#
-# Widths for saving figures
-#
-text.width <- 4.7  # LaTeX width in inches
-plos.width <- 5.2  # LaTeX width for PLoS paper in inches
-golden.ratio <- 1.618  # Pleasing ratio
-fig.width <- text.width
-fig.height <- text.width / golden.ratio
-html5 <- list(width=1300, height=700)  # in pixels
-html5$ratio <- with(html5, width / height)
-slide.fig.width <- 7
+source(system.file("vignettes/shared.R", package="DeLorean"))
 
 ```
 
@@ -247,9 +237,11 @@ gp.pseudo <- with(dl, {
 })
 print(gp.pseudo)
 # png('pseudotime-vs-obfuscated.png')
+ggsave('Windram-pseudotime-vs-obfuscated.eps', gp.pseudo + plos.theme,
+       width=plos.width / 2, height=plos.height / 2, units="in")
 ggsave('Windram-pseudotime-vs-obfuscated.pdf', gp.pseudo,
        width=text.width, height=text.width,
-       dpi=300, units="in")
+       units="in")
 ggsave('Windram-pseudotime-vs-obfuscated.png', gp.pseudo,
        width=slide.fig.width, height=slide.fig.width / html5$ratio,
        dpi=300, units="in")
@@ -259,12 +251,15 @@ ggsave('Windram-Rhat.png', plot(dl, type="convergence"),
        dpi=300, units="in")
 # Save profiles as well
 gp.profiles <- plot(dl, type="profiles")
-ggsave('Windram-profiles.eps', gp.profiles,
-       width=plos.width * 2, height=plos.width * 2,
-       dpi=150, units="in")
+ggsave('Windram-profiles.svg', gp.profiles + plos.theme,
+       width=plos.width, height=plos.height, units="in")
+ggsave('Windram-profiles.tiff', gp.profiles + plos.theme,
+       width=plos.width, height=plos.height, units="in", dpi=300)
+ggsave('Windram-profiles-plos.pdf', gp.profiles + plos.theme,
+       width=plos.width, height=plos.height, units="in")
 ggsave('Windram-profiles.pdf', gp.profiles,
        width=text.width * 2, height=text.width * 2,
-       dpi=150, units="in")
+       units="in")
 ggsave('Windram-profiles.png', gp.profiles,
        width=slide.fig.width * 2, height=slide.fig.width * 2/ html5$ratio,
        dpi=150, units="in")
@@ -278,9 +273,11 @@ gp.tau.posterior <- (
     + scale_y_continuous(name="pseudotime")
     + scale_color_discrete(name="model\ncapture\ntime")
     + coord_flip())
+ggsave('Windram-tau-posterior.eps', gp.tau.posterior + plos.theme,
+       width=plos.width / 2, height=plos.height / 2, units="in")
 ggsave('Windram-tau-posterior.pdf', gp.tau.posterior,
        width=text.width, height=text.width,
-       dpi=300, units="in")
+       units="in")
 ggsave('Windram-tau-posterior.png', gp.tau.posterior,
        width=slide.fig.width, height=slide.fig.width / html5$ratio,
        dpi=300, units="in")
@@ -288,7 +285,7 @@ ggsave('Windram-tau-posterior.png', gp.tau.posterior,
 gp.tau.best <- plot(dl, type="pseudotime")
 ggsave('Windram-tau-best.pdf', gp.tau.best,
        width=text.width, height=text.width,
-       dpi=300, units="in")
+       units="in")
 ggsave('Windram-tau-best.png', gp.tau.best,
        width=slide.fig.width, height=slide.fig.width / html5$ratio,
        dpi=300, units="in")
@@ -312,11 +309,13 @@ posterior.cor.best <- filter(posterior.cor,
 posterior.cor.best
 monocle.cor <- 0.9269565
 gp.post.cor <- (ggplot(posterior.cor, aes(x=pseudotime.capture.cor))
-    + geom_histogram(alpha=.7)
+    + geom_histogram()
     + geom_vline(x=monocle.cor, linetype='dashed', color='red')
     + geom_vline(x=posterior.cor.best, linetype='dashed', color='blue')
     + scale_x_continuous(name="correlation"))
 print(gp.post.cor)
+ggsave('Windram-posterior-cor.eps', gp.post.cor + plos.theme,
+       width=plos.width / 2, height=plos.height / 2, units="in")
 ggsave('Windram-posterior-cor.pdf', plot=gp.post.cor,
        width=text.width, height=text.width)
 ggsave('Windram-posterior-cor.png', gp.post.cor,
@@ -358,6 +357,8 @@ print(dl$roughness.test)
 # Plot the roughnesses
 gp.roughnesses <- plot(dl, type="roughnesses")
 print(gp.roughnesses)
+ggsave('Windram-roughnesses.eps', gp.roughnesses + plos.theme,
+       width=plos.width / 2, height=plos.height / 2, units="in")
 ggsave('Windram-roughnesses.pdf', gp.roughnesses,
        width=text.width * 2, height=text.width)
 ggsave('Windram-roughnesses.png', gp.roughnesses)

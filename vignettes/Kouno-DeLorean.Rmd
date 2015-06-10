@@ -53,13 +53,7 @@ bib <- read.bibtex("DeLorean.bib")
 if (file.exists("config.R")) {
     source("config.R")
 }
-#
-# Widths for saving figures
-#
-text.width <- 4.7  # LaTeX width in inches
-golden.ratio <- 1.618  # Pleasing ratio
-fig.width <- text.width
-fig.height <- text.width / golden.ratio
+source(system.file("vignettes/shared.R", package="DeLorean"))
 
 ```
 

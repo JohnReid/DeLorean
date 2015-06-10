@@ -53,13 +53,7 @@ bib <- read.bibtex("DeLorean.bib")
 if (file.exists("config.R")) {
     source("config.R")
 }
-#
-# Widths for saving figures
-#
-text.width <- 4.7  # LaTeX width in inches
-golden.ratio <- 1.618  # Pleasing ratio
-fig.width <- text.width
-fig.height <- text.width / golden.ratio
+source(system.file("vignettes/shared.R", package="DeLorean"))
 
 ```
 
@@ -304,17 +298,18 @@ naive.peaks
 # Calculate RMSE for naive method
 capture.RMSE <- calc.rms(naive.peaks$capture.dist)
 capture.RMSE
+plots <- list()
 # Plot the naive peaks
-gp.capture.peaks <- (
+plots$capture.peaks <- (
     ggplot(naive.peaks, aes(x=capture, y=cbPeaktime))
     + geom_boxplot()
     + scale_y_continuous(name="CycleBase peak time")
     + scale_x_discrete(name="cell cycle phase")
     + coord_flip())
-print(gp.capture.peaks)
-ggsave('McDavid-capture-peaks.pdf', plot=gp.capture.peaks,
+print(plots$capture.peaks)
+ggsave('McDavid-capture-peaks.pdf', plot=plots$capture.peaks,
        width=text.width, height=text.width)
-ggsave('McDavid-capture-peaks.png', plot=gp.capture.peaks,
+ggsave('McDavid-capture-peaks.png', plot=plots$capture.peaks,
        width=fig.width*3.5, height=fig.height*3,
        units="in", dpi=100)
 # Check peak times are correct with random gene.
@@ -372,26 +367,26 @@ increase of `r (capture.RMSE - best.peak.rmse) / best.peak.rmse * 100`%.
 
 ```{r plotRMSE}
 # Plot distribution
-gp.RMSE <- (
+plots$RMSE <- (
     ggplot(dl$peak.max.dist, aes(x=rmse))
     + geom_density()
     + geom_rug()
     + geom_vline(x=capture.RMSE, linetype='dashed', color='red')
     + geom_vline(x=best.peak.rmse, linetype='dashed', color='blue')
     + scale_x_continuous(name="RMSE"))
-ggsave('McDavid-rmse.pdf', plot=gp.RMSE,
+ggsave('McDavid-rmse.pdf', plot=plots$RMSE,
        width=text.width, height=text.width)
-ggsave('McDavid-rmse.png', plot=gp.RMSE,
+ggsave('McDavid-rmse.png', plot=plots$RMSE,
        width=fig.width*1.75, height=fig.height*1.5,
     units="in", dpi=200)
-print(gp.RMSE)
+print(plots$RMSE)
 # Plot naive distances against predicted
-gp.naive.vs.predicted <- (
+plots$naive.vs.predicted <- (
     ggplot(dl$peak.vs.max %>% filter(dl$best.sample == iter),
            aes(x=dist, y=naive.dist, label=gene))
     + geom_text()
 )
-ggsave('McDavid-naive-vs-predicted.pdf', plot=gp.naive.vs.predicted,
+ggsave('McDavid-naive-vs-predicted.pdf', plot=plots$naive.vs.predicted,
        width=2*text.width, height=2*text.width)
 #
 # Add the peak times to a profile plot.
@@ -419,24 +414,24 @@ worst.peaks <- (
     %>% arrange(naive.dist - dist)
     %>% head(12)
 )
-gp.worst.profiles <- plot(dl, type='profiles', genes=worst.peaks$gene)
-gp.worst.profiles <- add.peak.times(dl, gp.worst.profiles)
-ggsave('McDavid-worst-profiles.pdf', plot=gp.worst.profiles,
+plots$worst.profiles <- plot(dl, type='profiles', genes=worst.peaks$gene)
+plots$worst.profiles <- add.peak.times(dl, plots$worst.profiles)
+ggsave('McDavid-worst-profiles.pdf', plot=plots$worst.profiles,
        width=2*text.width, height=2*text.width)
 # Mean of RMSE
 posterior.RMSE.mean <- mean(dl$peak.max.dist$rmse)
 posterior.RMSE.mean
-gp.peak.vs.max <- (
+plots$peak.vs.max <- (
     ggplot(dl$peak.vs.max %>% filter(dl$best.sample == iter),
            aes(x=cbPeaktime, y=predicted.peak, label=gene))
     + geom_point(alpha=.7, size=2)
     + scale_x_continuous(name="CycleBase peak time")
     + scale_y_continuous(name="estimated peak time")
 )
-print(gp.peak.vs.max)
-ggsave('McDavid-peak-vs-max.pdf', plot=gp.peak.vs.max,
+print(plots$peak.vs.max)
+ggsave('McDavid-peak-vs-max.pdf', plot=plots$peak.vs.max,
        width=text.width, height=text.width)
-ggsave('McDavid-peak-vs-max.png', plot=gp.peak.vs.max,
+ggsave('McDavid-peak-vs-max.png', plot=plots$peak.vs.max,
        width=fig.width*1.75, height=fig.height*1.5,
        units="in", dpi=200)
 
@@ -445,11 +440,11 @@ ggsave('McDavid-peak-vs-max.png', plot=gp.peak.vs.max,
 ```{r testPeaks}
 # Test for normality
 with(dl$peak.max.dist, shapiro.test(rmse))
-gp.qq <- (
+plots$qq <- (
     ggplot(dl$peak.max.dist, aes(sample=rmse))
     + stat_qq())
-print(gp.qq)
-ggsave('McDavid-rmse-qq.pdf', plot=gp.qq,
+print(plots$qq)
+ggsave('McDavid-rmse-qq.pdf', plot=plots$qq,
        width=text.width, height=text.width)
 # Assuming a normal distribution for the posterior RMSE, what is
 # the likelihood of observing at least as extreme as the
@@ -470,22 +465,24 @@ genes.for.profiles <- with(dl,
     %>% head(12)
     %>% left_join(gene.map)
 )
-gp.profiles <- (
+plots$profiles <- (
     plot(dl, type="profiles", genes=genes.for.profiles$gene)
     + scale_x_continuous(name='Pseudotime', limits=c(0, 3))
 )
-gp.profiles <- (
-    add.peak.times(dl, gp.profiles)
+plots$profiles <- (
+    add.peak.times(dl, plots$profiles)
     + scale_x_continuous(name='Pseudotime',
                          breaks=c(0,1,2,3),
                          labels=c('G2/M', 'G0/G1', 'S', 'G2/M'))
     + theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1))
 )
-print(gp.profiles)
-ggsave('McDavid-profiles.png', plot=gp.profiles,
+print(plots$profiles)
+ggsave('McDavid-profiles.tiff', plots$profiles,
+       width=plos.width, height=plos.height, units="in", dpi=300)
+ggsave('McDavid-profiles.png', plot=plots$profiles,
     width=fig.width*3.5, height=fig.height*3,
     units="in", dpi=100)
-ggsave('McDavid-profiles.pdf', plot=gp.profiles,
+ggsave('McDavid-profiles.pdf', plot=plots$profiles,
        width=2*text.width, height=2*text.width/golden.ratio)
 
 ```
@@ -494,6 +491,10 @@ ggsave('McDavid-profiles.pdf', plot=gp.profiles,
 ```{r echo=FALSE}
 # Save DeLorean object without fit component
 saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Data/McDavid.rds")
+saveRDS(plots, "Data/McDavid-plots.rds")
+dl <- readRDS("Data/McDavid.rds")
+plots <- readRDS("Data/McDavid-plots.rds")
+
 ```
 
 

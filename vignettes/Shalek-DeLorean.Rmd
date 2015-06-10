@@ -58,13 +58,7 @@ bib <- read.bibtex("DeLorean.bib")
 if (file.exists("config.R")) {
     source("config.R")
 }
-#
-# Widths for saving figures
-#
-text.width <- 4.7  # LaTeX width in inches
-golden.ratio <- 1.618  # Pleasing ratio
-fig.width <- text.width
-fig.height <- text.width / golden.ratio
+source(system.file("vignettes/shared.R", package="DeLorean"))
 
 ```
 
@@ -294,8 +288,8 @@ dl <- make.predictions(dl)
 Save DeLorean object.
 ```{r echo=FALSE}
 # Remove large fit component
-saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Shalek.rds")
-# dl <- readRDS("Shalek.rds")
+saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Data/Shalek.rds")
+# dl <- readRDS("Data/Shalek.rds")
 ```
 
 
@@ -337,17 +331,18 @@ module.scores <- (
                                          "precocious",
                                          "not precocious"))
 )
-gp.core.antiviral <- (
+plots <- list()
+plots$core.antiviral <- (
     ggplot(core.antiviral,
            aes(x=module.score, color=capture))
     + geom_density()
 )
-print(gp.core.antiviral)
-ggsave('Shalek-core-antiviral.pdf', gp.core.antiviral,
+print(plots$core.antiviral)
+ggsave('Shalek-core-antiviral.pdf', plots$core.antiviral + plos.theme,
        width=2*fig.width, height=2*fig.height)
 # Plot the core antiviral, the maturity, the peaked inflammation and
 # the sustained inflammation module scores against pseudotime.
-gp.module <- (
+plots$module <- (
     ggplot(module.scores
            %>% filter(! is.na(tau),
                       cluster %in% c("Id", "IIIb", "IIIc", "IIId")),
@@ -355,11 +350,11 @@ gp.module <- (
     + stat_smooth()
     + geom_point()
 )
-ggsave('Shalek-module.pdf', gp.module,
+ggsave('Shalek-module.pdf', plots$module + plos.theme,
        width=2*fig.width, height=2*fig.height)
-print(gp.module)
+print(plots$module)
 # Same with just core antiviral coloured by capture
-gp.core <- (
+plots$core <- (
     ggplot(module.scores
            %>% left_join(dl$cell.meta %>% dplyr::select(cell, capture))
            %>% filter(! is.na(tau),
@@ -368,8 +363,15 @@ gp.core <- (
     + stat_smooth(aes(group="", color=NULL))
     + geom_point()
 )
-print(gp.core)
-ggsave('Shalek-core.pdf', gp.core,
+print(plots$core)
+ggsave('Shalek-core.svg', plots$core + plos.theme,
+       width=plos.width, height=plos.height, units="in")
+ggsave('Shalek-core.tiff', plots$core + plos.theme,
+       width=plos.width, height=plos.height, units="in", dpi=300)
+# Cannot use EPS as has transparency
+# ggsave('Shalek-core.eps', plots$core + plos.theme,
+#        width=plos.width, height=plos.height, units="in")
+ggsave('Shalek-core.pdf', plots$core,
        width=2*fig.width, height=2*fig.height)
 # Examine what pseudotimes the model estimated for the precocious genes
 (
@@ -415,9 +417,31 @@ Evaluate the held out genes that weren't used to fit the model.
 held.out.genes <- with(dl, gene.variances
                            %>% left_join(gene.meta)
                            %>% filter(! gene %in% gene.map$gene)
-gp <- plot(dl, type="roughnesses")
-print(gp)
-ggsave('Shalek-roughnesses.png', gp)
+                           %>% filter(cluster %in% clusters)
+                           # %>% filter(cluster != "Id")
+                           %>% arrange(-Psi/Omega)
+                           %>% head(getOption('Shalek.held.out', 100))
+)
+# Get an expression matrix of held out genes in the cells of interest
+held.out.expr <- shalek.A.expr[as.character(held.out.genes$gene),
+                               as.character(dl$cell.map$cell)]
+
+```
+
+
+## Roughness permutation test
+
+Permutation test for roughness.
+```{r}
+dl <- roughness.test(dl, held.out.expr)
+print(dl$roughness.test)
+plots$roughnesses <- plot(dl, type="roughnesses")
+print(plots$roughnesses)
+ggsave('Shalek-roughnesses.svg', plots$roughnesses + plos.theme,
+       width=plos.width, height=plos.height, units="in")
+ggsave('Shalek-roughnesses.tiff', plots$roughnesses + plos.theme,
+       width=plos.width, height=plos.height, units="in", dpi=300)
+ggsave('Shalek-roughnesses.png', plots$roughnesses)
 
 ```
 
@@ -457,7 +481,7 @@ mean(diag(Sigma)) - mean(as.vector(Sigma))
 ```
 
 ```{r tauPosteriorOffset.2, echo=FALSE}
-gp <- (
+plots$tau.offset <- (
     ggplot(dl$samples.l$tau,
             aes(x=tau.offset, color=capture))
     + geom_density()
@@ -466,7 +490,7 @@ gp <- (
                     linetype=2,
                     color="black")
 )
-ggsave('Shalek-tau-offset.png', gp)
+ggsave('Shalek-tau-offset.png', plots$tau.offset)
 
 ```
 
@@ -504,6 +528,12 @@ held.out <- held.out.melt(dl, shalek.A.expr, held.out.genes)
 system.time(posterior <- held.out.posterior(dl, held.out))
 gp <- plot.held.out.posterior(dl, posterior)
 print(gp)
+
+```
+
+Save plots.
+```{r savePlots}
+saveRDS(plots, "Data/Shalek-plots.rds")
 
 ```
 
