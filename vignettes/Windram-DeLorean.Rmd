@@ -222,7 +222,8 @@ dl <- make.predictions(dl)
 
 Did `DeLorean` learn the obfuscated pseudotime?
 ```{r pseudotime}
-gp.pseudo <- with(dl, {
+plots <- list()
+plots$pseudo <- with(dl, {
     (ggplot(samples.l$tau %>% filter(iter == best.sample),
                     aes(x=tau, y=obstime.orig, color=capture),
                     environment=environment())
@@ -235,14 +236,15 @@ gp.pseudo <- with(dl, {
         + scale_color_discrete(name="model\ncapture\ntime")
     )
 })
-print(gp.pseudo)
+print(plots$pseudo)
 # png('pseudotime-vs-obfuscated.png')
-ggsave('Windram-pseudotime-vs-obfuscated.eps', gp.pseudo + plos.theme,
+ggsave('Windram-pseudotime-vs-obfuscated.tiff', plots$pseudo + plos.theme,
        width=plos.width / 2, height=plos.height / 2, units="in")
-ggsave('Windram-pseudotime-vs-obfuscated.pdf', gp.pseudo,
-       width=text.width, height=text.width,
-       units="in")
-ggsave('Windram-pseudotime-vs-obfuscated.png', gp.pseudo,
+ggsave('Windram-pseudotime-vs-obfuscated.eps', plots$pseudo + plos.theme,
+       width=plos.width / 2, height=plos.height / 2, units="in")
+ggsave('Windram-pseudotime-vs-obfuscated.pdf', plots$pseudo,
+       width=text.width, height=text.width, units="in")
+ggsave('Windram-pseudotime-vs-obfuscated.png', plots$pseudo,
        width=slide.fig.width, height=slide.fig.width / html5$ratio,
        dpi=300, units="in")
 # Save convergence as well
@@ -250,21 +252,18 @@ ggsave('Windram-Rhat.png', plot(dl, type="convergence"),
        width=slide.fig.width, height=slide.fig.width / html5$ratio,
        dpi=300, units="in")
 # Save profiles as well
-gp.profiles <- plot(dl, type="profiles")
-ggsave('Windram-profiles.svg', gp.profiles + plos.theme,
+plots$profiles <- plot(dl, type="profiles")
+ggsave('Windram-profiles.svg', plots$profiles + plos.theme,
        width=plos.width, height=plos.height, units="in")
-ggsave('Windram-profiles.tiff', gp.profiles + plos.theme,
+ggsave('Windram-profiles.tiff', plots$profiles + plos.theme,
        width=plos.width, height=plos.height, units="in", dpi=300)
-ggsave('Windram-profiles-plos.pdf', gp.profiles + plos.theme,
-       width=plos.width, height=plos.height, units="in")
-ggsave('Windram-profiles.pdf', gp.profiles,
-       width=text.width * 2, height=text.width * 2,
-       units="in")
-ggsave('Windram-profiles.png', gp.profiles,
+ggsave('Windram-profiles.pdf', plots$profiles,
+       width=text.width * 2, height=text.width * 2, units="in")
+ggsave('Windram-profiles.png', plots$profiles,
        width=slide.fig.width * 2, height=slide.fig.width * 2/ html5$ratio,
        dpi=150, units="in")
 # Save tau posterior
-gp.tau.posterior <- (
+plots$tau.posterior <- (
     ggplot(dl$samples.l$tau, aes(x=capture.orig, y=tau, color=capture))
     + geom_boxplot()
     # + theme(axis.text.x = element_text(angle = 90, hjust = 1))
@@ -273,20 +272,21 @@ gp.tau.posterior <- (
     + scale_y_continuous(name="pseudotime")
     + scale_color_discrete(name="model\ncapture\ntime")
     + coord_flip())
-ggsave('Windram-tau-posterior.eps', gp.tau.posterior + plos.theme,
+ggsave('Windram-tau-posterior.tiff', plots$tau.posterior + plos.theme,
+       width=plos.width / 2, height=plos.height / 2, units="in", dpi=300)
+ggsave('Windram-tau-posterior.eps', plots$tau.posterior + plos.theme,
        width=plos.width / 2, height=plos.height / 2, units="in")
-ggsave('Windram-tau-posterior.pdf', gp.tau.posterior,
+ggsave('Windram-tau-posterior.pdf', plots$tau.posterior,
        width=text.width, height=text.width,
        units="in")
-ggsave('Windram-tau-posterior.png', gp.tau.posterior,
+ggsave('Windram-tau-posterior.png', plots$tau.posterior,
        width=slide.fig.width, height=slide.fig.width / html5$ratio,
        dpi=300, units="in")
 # Save best tau
-gp.tau.best <- plot(dl, type="pseudotime")
-ggsave('Windram-tau-best.pdf', gp.tau.best,
-       width=text.width, height=text.width,
-       units="in")
-ggsave('Windram-tau-best.png', gp.tau.best,
+plots$tau.best <- plot(dl, type="pseudotime")
+ggsave('Windram-tau-best.pdf', plots$tau.best,
+       width=text.width, height=text.width, units="in")
+ggsave('Windram-tau-best.png', plots$tau.best,
        width=slide.fig.width, height=slide.fig.width / html5$ratio,
        dpi=300, units="in")
 
@@ -308,17 +308,19 @@ posterior.cor.best <- filter(posterior.cor,
                              dl$best.sample == iter)$pseudotime.capture.cor
 posterior.cor.best
 monocle.cor <- 0.9269565
-gp.post.cor <- (ggplot(posterior.cor, aes(x=pseudotime.capture.cor))
+plots$post.cor <- (ggplot(posterior.cor, aes(x=pseudotime.capture.cor))
     + geom_histogram()
     + geom_vline(x=monocle.cor, linetype='dashed', color='red')
     + geom_vline(x=posterior.cor.best, linetype='dashed', color='blue')
     + scale_x_continuous(name="correlation"))
-print(gp.post.cor)
-ggsave('Windram-posterior-cor.eps', gp.post.cor + plos.theme,
+print(plots$post.cor)
+ggsave('Windram-posterior-cor.tiff', plots$post.cor + plos.theme,
+       width=plos.width / 2, height=plos.height / 2, units="in", dpi=300)
+ggsave('Windram-posterior-cor.eps', plots$post.cor + plos.theme,
        width=plos.width / 2, height=plos.height / 2, units="in")
-ggsave('Windram-posterior-cor.pdf', plot=gp.post.cor,
+ggsave('Windram-posterior-cor.pdf', plot=plots$post.cor,
        width=text.width, height=text.width)
-ggsave('Windram-posterior-cor.png', gp.post.cor,
+ggsave('Windram-posterior-cor.png', plots$post.cor,
        width=slide.fig.width / 2, height=slide.fig.width / 2 / html5$ratio,
        dpi=300, units="in")
 
@@ -355,13 +357,15 @@ Permutation test for roughness.
 dl <- roughness.test(dl, held.out.expr)
 print(dl$roughness.test)
 # Plot the roughnesses
-gp.roughnesses <- plot(dl, type="roughnesses")
-print(gp.roughnesses)
-ggsave('Windram-roughnesses.eps', gp.roughnesses + plos.theme,
+plots$roughnesses <- plot(dl, type="roughnesses")
+print(plots$roughnesses)
+ggsave('Windram-roughnesses.tiff', plots$roughnesses + plos.theme,
+       width=plos.width / 2, height=plos.height / 2, units="in", dpi=300)
+ggsave('Windram-roughnesses.eps', plots$roughnesses + plos.theme,
        width=plos.width / 2, height=plos.height / 2, units="in")
-ggsave('Windram-roughnesses.pdf', gp.roughnesses,
+ggsave('Windram-roughnesses.pdf', plots$roughnesses,
        width=text.width * 2, height=text.width)
-ggsave('Windram-roughnesses.png', gp.roughnesses)
+ggsave('Windram-roughnesses.png', plots$roughnesses)
 
 ```
 
@@ -373,16 +377,8 @@ dl <- readRDS("Data/Windram.rds")
 
 ```
 
-```{r savePlots, echo=FALSE, eval=FALSE}
-plots <- with(dl, list(
-    tau.posterior = (
-        ggplot(samples.l$tau %>% arrange(capture),
-            aes(x=cell, y=tau, color=capture))
-        + geom_boxplot()
-        + coord_flip()
-    ),
-    profiles = plot(dl, type="profiles")
-))
+Save plots.
+```{r savePlots}
 saveRDS(plots, "Data/Windram-plots.rds")
 
 ```
