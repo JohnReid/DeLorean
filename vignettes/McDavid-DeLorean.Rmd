@@ -477,7 +477,8 @@ plots$profiles <- (
     + theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1))
 )
 print(plots$profiles)
-ggsave('McDavid-profiles.tiff', plots$profiles,
+ggsave('McDavid-profiles.tiff', plots$profiles + plos.theme
+       + theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1)),
        width=plos.width, height=plos.height, units="in", dpi=300)
 ggsave('McDavid-profiles.png', plot=plots$profiles,
     width=fig.width*3.5, height=fig.height*3,
