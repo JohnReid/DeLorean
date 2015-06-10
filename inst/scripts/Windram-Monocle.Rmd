@@ -43,13 +43,7 @@ bib <- read.bibtex("../../vignettes/DeLorean.bib")
 if (file.exists("config.R")) {
     source("config.R")
 }
-#
-# Widths for saving figures
-#
-text.width <- 4.7  # LaTeX width in inches
-golden.ratio <- 1.618  # Pleasing ratio
-fig.width <- text.width
-fig.height <- text.width / golden.ratio
+source(system.file("vignettes/shared.R", package="DeLorean"))
 
 ```
 
@@ -158,6 +152,10 @@ gp.monocle.pseudo <- (
     + scale_x_continuous(name="pseudotime")
     + scale_y_continuous(name="capture time"))
 print(gp.monocle.pseudo)
+ggsave('Windram-Monocle-compare.tiff', gp.monocle.pseudo + plos.theme,
+       width=plos.width / 2, height=plos.height / 2, units="in", dpi=300)
+ggsave('Windram-Monocle-compare.eps', gp.monocle.pseudo + plos.theme,
+       width=plos.width / 2, height=plos.height / 2, units="in")
 ggsave('Windram-Monocle-compare.pdf', gp.monocle.pseudo,
        width=text.width, height=text.width)
 ggsave('Windram-Monocle-compare.png', gp.monocle.pseudo,

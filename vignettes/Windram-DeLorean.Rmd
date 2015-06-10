@@ -239,7 +239,7 @@ plots$pseudo <- with(dl, {
 print(plots$pseudo)
 # png('pseudotime-vs-obfuscated.png')
 ggsave('Windram-pseudotime-vs-obfuscated.tiff', plots$pseudo + plos.theme,
-       width=plos.width / 2, height=plos.height / 2, units="in")
+       width=plos.width / 2, height=plos.height / 2, units="in", dpi=300)
 ggsave('Windram-pseudotime-vs-obfuscated.eps', plots$pseudo + plos.theme,
        width=plos.width / 2, height=plos.height / 2, units="in")
 ggsave('Windram-pseudotime-vs-obfuscated.pdf', plots$pseudo,
