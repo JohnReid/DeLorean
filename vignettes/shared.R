@@ -1,4 +1,21 @@
 #
+# Install extrafont and import fonts from system.
+# We just need to do this once.
+#
+# install.packages("extrafont")
+# library(extrafont)
+# font_import()
+# fonts()
+
+# Load fonts for plotting
+library(extrafont)
+# loadfonts()
+loadfonts(device="postscript")
+
+# font_import(pattern="[A/a]rial")
+# loadfonts(device="win")
+
+#
 # Widths for saving figures
 #
 text.width <- 4.7  # LaTeX width in inches
@@ -14,4 +31,7 @@ slide.fig.width <- 7
 #
 # Theme for PLoS
 #
-plos.theme <- theme_classic(base_size=8)
+# base.family <- "Times"
+base.family <- "Arial"
+# base.family <- "Liberation Sans"
+plos.theme <- theme_classic(base_size=8, base_family=base.family)
