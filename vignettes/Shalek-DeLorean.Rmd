@@ -233,7 +233,10 @@ dl <- estimate.hyper(
 
 Save expression data and meta data.
 ```{r saveInput, eval=fit.model}
-saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
+saveRDS(list(expr=dl$expr,
+             cell.meta=dl$cell.map,
+             gene.meta=dl$gene.map,
+             gene.variances=gene.variances),
         file='Data/Shalek-input.rds')
 
 ```
@@ -372,7 +375,7 @@ ggsave('Shalek-core.tiff', plots$core + plos.theme,
 # ggsave('Shalek-core.eps', plots$core + plos.theme,
 #        width=plos.width, height=plos.height, units="in")
 ggsave('Shalek-core.pdf', plots$core + plos.theme,
-       width=2*fig.width, height=2*fig.height)
+       width=plos.width, height=plos.height)
 # Examine what pseudotimes the model estimated for the precocious genes
 (
     dl$samples.l$tau

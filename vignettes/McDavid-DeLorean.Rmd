@@ -378,7 +378,7 @@ ggsave('McDavid-rmse.pdf', plot=plots$RMSE,
        width=text.width, height=text.width)
 ggsave('McDavid-rmse.png', plot=plots$RMSE,
        width=fig.width*1.75, height=fig.height*1.5,
-    units="in", dpi=200)
+       units="in", dpi=200)
 print(plots$RMSE)
 # Plot naive distances against predicted
 plots$naive.vs.predicted <- (
@@ -477,12 +477,15 @@ plots$profiles <- (
     + theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1))
 )
 print(plots$profiles)
+ggsave('McDavid-profiles.svg', plots$profiles + plos.theme
+       + theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1)),
+       width=plos.width, height=plos.height, units="in")
 ggsave('McDavid-profiles.tiff', plots$profiles + plos.theme
        + theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1)),
        width=plos.width, height=plos.height, units="in", dpi=300)
 ggsave('McDavid-profiles.png', plot=plots$profiles,
-    width=fig.width*3.5, height=fig.height*3,
-    units="in", dpi=100)
+       width=fig.width*3.5, height=fig.height*3,
+       units="in", dpi=100)
 ggsave('McDavid-profiles.pdf', plot=plots$profiles,
        width=2*text.width, height=2*text.width/golden.ratio)
 

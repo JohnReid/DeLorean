@@ -9,7 +9,7 @@
 
 # Load fonts for plotting
 library(extrafont)
-# loadfonts()
+loadfonts()
 loadfonts(device="postscript")
 
 # font_import(pattern="[A/a]rial")
