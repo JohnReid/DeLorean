@@ -18,6 +18,7 @@ de.lorean <- function(expr, gene.meta, cell.meta) {
         is.factor(cell.meta$cell),
         is.factor(cell.meta$capture),
         is.numeric(cell.meta$obstime),
+        is.matrix(expr),
         nrow(expr) == nrow(gene.meta),
         ncol(expr) == nrow(cell.meta),
         ! is.null(rownames(expr)),
