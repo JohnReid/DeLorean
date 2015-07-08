@@ -233,7 +233,10 @@ dl <- estimate.hyper(
 
 Save expression data and meta data.
 ```{r saveInput, eval=fit.model}
-saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
+saveRDS(list(expr=dl$expr,
+             cell.meta=dl$cell.map,
+             gene.meta=dl$gene.map,
+             gene.variances=gene.variances),
         file='Data/Shalek-input.rds')
 
 ```
@@ -371,8 +374,8 @@ ggsave('Shalek-core.tiff', plots$core + plos.theme,
 # Cannot use EPS as has transparency
 # ggsave('Shalek-core.eps', plots$core + plos.theme,
 #        width=plos.width, height=plos.height, units="in")
-ggsave('Shalek-core.pdf', plots$core,
-       width=2*fig.width, height=2*fig.height)
+ggsave('Shalek-core.pdf', plots$core + plos.theme,
+       width=plos.width, height=plos.height)
 # Examine what pseudotimes the model estimated for the precocious genes
 (
     dl$samples.l$tau
@@ -441,7 +444,9 @@ ggsave('Shalek-roughnesses.svg', plots$roughnesses + plos.theme,
        width=plos.width, height=plos.height, units="in")
 ggsave('Shalek-roughnesses.tiff', plots$roughnesses + plos.theme,
        width=plos.width, height=plos.height, units="in", dpi=300)
-ggsave('Shalek-roughnesses.png', plots$roughnesses)
+ggsave('Shalek-roughnesses.pdf', plots$roughnesses + plos.theme,
+       width=plos.width, height=plos.height, units="in")
+ggsave('Shalek-roughnesses.png', plots$roughnesses + plos.theme)
 
 ```
 
@@ -490,7 +495,7 @@ plots$tau.offset <- (
                     linetype=2,
                     color="black")
 )
-ggsave('Shalek-tau-offset.png', plots$tau.offset)
+ggsave('Shalek-tau-offset.png', plots$tau.offset + plos.theme)
 
 ```
 
