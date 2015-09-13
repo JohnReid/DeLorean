@@ -96,11 +96,13 @@ held.out.posterior <- function(
             held.out
             %>% group_by(gene)
             %>% do(optimise(.))
+            %>% ungroup()
         )
         posterior <- (
             params
             %>% group_by(gene)
             %>% do(calc.posterior(.))
+            %>% ungroup()
         )
         return(list(held.out=held.out, params=params, posterior=posterior))
     })
@@ -119,7 +121,7 @@ held.out.select.genes <- function(dl, expr, num.held.out) {
     cells.fit <- as.character(dl$cell.map$cell)
     genes.fit <- as.character(dl$gene.map$gene)
     held.out.var <- apply(
-        expr[! rownames(shalek.A.expr) %in% genes.fit, cells.fit],
+        expr[! rownames(expr) %in% genes.fit, cells.fit],
         1,
         var)
     names(tail(sort(held.out.var), num.held.out))
@@ -140,6 +142,38 @@ held.out.melt <- function(dl, expr, held.out.genes) {
 }
 
 
+#' Filter the genes
+#'
+held.out.posterior.filter <- function(posterior, genes) {
+  return(list(
+    held.out = posterior$held.out %>% filter(gene %in% genes),
+    params = posterior$params %>% filter(gene %in% genes),
+    posterior = posterior$posterior %>% filter(gene %in% genes)))
+}
+
+
+#' Order the genes by the variation of their posterior mean
+#'
+held.out.posterior.by.variation <- function(posterior) {
+  return((
+    posterior$posterior %>%
+    group_by(gene) %>%
+    summarise(dynamic.var=var(mu)) %>%
+    arrange(-dynamic.var))$gene)
+}
+
+
+#' Join with another data frame. Useful for adding gene names etc..
+#'
+held.out.posterior.join <- function(posterior, .df) {
+  return(list(
+      held.out = posterior$held.out %>% left_join(.df),
+      params = posterior$params %>% left_join(.df),
+      posterior = posterior$posterior %>% left_join(.df)))
+}
+
+
+
 #' Plot the posterior of held out genes
 #'
 #' @param dl de.lorean object
@@ -150,9 +184,9 @@ held.out.melt <- function(dl, expr, held.out.genes) {
 #'
 plot.held.out.posterior <- function(dl, posterior, facets=~ gene) (
     plot.add.mean.and.variance(
-        ggplot(posterior$posterior %>% left_join(dl$gene.meta)))
-    + geom_point(
+        ggplot(posterior$posterior %>% left_join(dl$gene.meta))) +
+    geom_point(
         data=posterior$held.out %>% left_join(dl$cell.meta),
-        aes(x=tau, y=x, color=capture))
-    + facet_wrap(facets)
+        aes(x=tau, y=x, color=capture)) +
+    facet_wrap(facets)
 )
