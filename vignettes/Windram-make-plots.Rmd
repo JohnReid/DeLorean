@@ -1,0 +1,269 @@
+Setup configuration
+```{r loadData}
+library(devtools)
+load_all('..')
+source('shared.R')
+set.seed(1)
+
+```
+
+
+
+# Windram
+
+Load the data
+```{r loadData}
+dl.windram <- readRDS("Data/Windram.rds")
+
+```
+
+```{r makePlots}
+plots.windram <- list()
+plots.windram$pseudo <- with(dl.windram, {
+    (ggplot(samples.l$tau %>% filter(iter == best.sample),
+                    aes(x=tau, y=obstime.orig, color=capture),
+                    environment=environment())
+        + geom_point()
+        # + scale_x_continuous(name="pseudotime")
+        # + scale_y_continuous(name="capture time")
+        # + scale_color_discrete(name="low-resolution\ngroup")
+        + scale_y_continuous(name="true capture time")
+        + scale_x_continuous(name="pseudotime")
+        + scale_color_discrete(name="model\ncapture\ntime")
+    )
+})
+plots.windram$tau.posterior <- (
+    ggplot(dl.windram$samples.l$tau, aes(x=capture.orig, y=tau, color=capture))
+    + geom_boxplot()
+    + scale_x_discrete(name="true capture time")
+    + scale_y_continuous(name="pseudotime")
+    + scale_color_discrete(name="model\ncapture\ntime")
+    + coord_flip())
+posterior.cor <- (
+    dl.windram$samples.l$tau
+    %>% group_by(iter)
+    %>% summarise(pseudotime.capture.cor=cor(tau, obstime.orig,
+                                             method="spearman"))
+)
+posterior.cor.mean <- mean(posterior.cor$pseudotime.capture.cor)
+posterior.cor.best <- filter(posterior.cor,
+                             dl.windram$best.sample == iter)$pseudotime.capture.cor
+monocle.cor <- 0.9269565
+plots.windram$post.cor <- (ggplot(posterior.cor, aes(x=pseudotime.capture.cor))
+    + geom_histogram()
+    + geom_vline(x=monocle.cor, linetype='dotted')
+    + geom_vline(x=posterior.cor.best, linetype='dashed')
+    + scale_x_continuous(name="correlation"))
+plots.windram$profiles <- plot(
+    dl.windram, type="profiles",
+    genes=sample(dl.windram$genes.high.psi, 12))
+plots.windram$roughnesses <- plot(dl.windram, type="roughnesses")
+
+```
+
+
+```{r savePlots}
+config <- bioinf.config
+theme <- bioinf.theme
+ggsave('Figures/Bioinf/Windram-pseudotime-vs-obfuscated.eps',
+       plots.windram$pseudo + theme, units="in",
+       width=config$width, height=config$height)
+ggsave('Figures/Bioinf/Windram-tau-posterior.eps',
+       plots.windram$tau.posterior + theme, units="in",
+       width=config$width, height=config$height)
+ggsave('Figures/Bioinf/Windram-posterior-cor.eps',
+       plots.windram$post.cor + theme, units="in",
+       width=config$width, height=config$height)
+ggsave('Figures/Bioinf/Windram-profiles.pdf',
+       plots.windram$profiles + theme, units="in",
+       width=bioinf.double.w, height=bioinf.double.h)
+ggsave('Figures/Bioinf/Windram-roughnesses.eps',
+       plots.windram$roughnesses + theme, units="in",
+       width=config$width, height=config$height)
+
+```
+
+
+# McDavid
+
+Load the data
+```{r loadData}
+dl.mcdavid <- readRDS("Data/McDavid.rds")
+
+```
+
+```{r makePlots}
+plots.mcdavid <- list()
+# A function to make times periodic
+periodise <- function(tau, period=3) {
+    wave = floor(tau/period)
+    tau - wave * period
+}
+# A function to map from pseudotimes (tau) to cbPeaktimes
+tau.to.cbtime <- function(tau) 100*periodise((tau - .5)/3, 1)
+# and vice versa
+cbtime.to.tau <- function(cbtime) periodise(cbtime/100*3+.5, 3)
+#
+# Add the peak times to a profile plot.
+add.peak.times <- function(dl.mcdavid, gp) {
+    plot.peaktimes <- (
+        dl.mcdavid$gene.meta
+        # Only use those genes that are in the plot and have a peak time
+        %>% filter(gene %in% gp$data[['gene']], ! is.na(cbPeaktime))
+        # Convert the CycleBase peak time to pseudotime
+        %>% mutate(peak.tau=cbtime.to.tau(cbPeaktime))
+    )
+    # Add the peak times as vertical lines to the plot
+    (
+        gp
+        + geom_vline(data=plot.peaktimes,
+                     aes(xintercept=peak.tau),
+                     linetype='dashed', alpha=.7)
+    )
+}
+genes.for.profiles <- with(dl.mcdavid,
+    samples.l$psi
+    %>% filter(best.sample == iter)
+    %>% left_join(samples.l$omega)
+    %>% arrange(-psi/omega)
+    %>% head(12)
+    %>% left_join(gene.map)
+)
+plots.mcdavid$profiles <- (
+    plot(dl.mcdavid, type="profiles", genes=genes.for.profiles$gene)
+    + scale_x_continuous(name='Pseudotime', limits=c(0, 3))
+)
+plots.mcdavid$profiles <- (
+    add.peak.times(dl.mcdavid, plots.mcdavid$profiles)
+    + scale_x_continuous(name='Pseudotime',
+                         breaks=c(0,1,2,3),
+                         labels=c('G2/M', 'G0/G1', 'S', 'G2/M'))
+    + theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1))
+)
+
+```
+
+
+```{r savePlots}
+ggsave('Figures/Bioinf/McDavid-profiles.pdf',
+       plots.mcdavid$profiles + theme, units="in",
+       width=bioinf.double.w, height=bioinf.double.w)
+
+```
+
+
+
+# Shalek
+
+Load the data
+```{r loadData}
+dl.shalek <- readRDS("Data/Shalek.rds")
+input.shalek <- readRDS('Data/Shalek-input.rds')
+
+```
+
+```{r makePlots}
+plots.shalek <- list()
+clusters <- c("Id", "IIIb", "IIIc", "IIId")
+held.out.genes <- with(dl.shalek, input.shalek$gene.variances
+                           %>% left_join(gene.meta)
+                           %>% filter(! gene %in% gene.map$gene)
+                           %>% filter(cluster %in% clusters)
+                           # %>% filter(cluster != "Id")
+                           %>% arrange(-Psi/Omega)
+                           %>% head(getOption('Shalek.held.out', 100))
+)
+# Get an expression matrix of held out genes in the cells of interest
+held.out.expr <- shalek.A.expr[as.character(held.out.genes$gene),
+                               as.character(dl.shalek$cell.map$cell)]
+time.course.cells <- (
+    dl.shalek$cell.meta
+    %>% filter(! is.na(total),
+               "" == assay,
+               "LPS" == stimulant | "" == stimulant,
+               "" == ko,
+               FALSE == disrupted,
+               total > 1e6,
+               "" == replicate))
+clustered <- dl.shalek$gene.meta %>% filter(! is.na(cluster))
+fitted.time.course.cells <- (
+    time.course.cells
+    %>% filter(cell %in% dl.shalek$cell.map[['cell']])
+)$cell
+clustered.expr <- shalek.A.expr[as.character(clustered$gene),
+                                as.character(fitted.time.course.cells)]
+# rownames(clustered.expr)
+# colnames(clustered.expr)
+clustered.expr.l <- melt.expr(dl.shalek, clustered.expr) %>% left_join(dl.shalek$gene.meta)
+names(clustered.expr.l)
+# sample_n(clustered.expr.l, 14)
+module.scores <- (
+    clustered.expr.l
+    %>% group_by(cluster, cell)
+    %>% summarise(module.score=mean(x))
+    %>% left_join(dl.shalek$samples.l$tau
+                  %>% filter(dl.shalek$best.sample == iter)
+                  %>% dplyr::select(cell, tau)))
+module.scores
+stopifnot(all(! is.na(module.scores)))
+# Find the precocious cells
+core.antiviral <- (
+    module.scores
+    %>% left_join(dl.shalek$cell.meta %>% dplyr::select(cell, capture))
+    %>% filter("Id" == cluster)
+    %>% arrange(-module.score))
+precocious <- core.antiviral %>% filter("1h" == capture) %>% head(2)
+precocious
+precocious$cell
+module.scores <- (
+    module.scores %>% mutate(type=ifelse(cell %in% precocious$cell,
+                                         "precocious",
+                                         "not precocious"))
+)
+plots.shalek$core.antiviral <- (
+    ggplot(core.antiviral,
+           aes(x=module.score, color=capture))
+    + geom_density()
+)
+# Plot the core antiviral, the maturity, the peaked inflammation and
+# the sustained inflammation module scores against pseudotime.
+plots.shalek$module <- (
+    ggplot(module.scores
+           %>% filter(! is.na(tau),
+                      cluster %in% c("Id", "IIIb", "IIIc", "IIId")),
+           aes(x=tau, y=module.score, colour=cluster))
+    + stat_smooth()
+    + geom_point()
+)
+# Same with just core antiviral coloured by capture
+plots.shalek$core <- (
+    ggplot(module.scores
+           %>% left_join(dl.shalek$cell.meta %>% dplyr::select(cell, capture))
+           %>% filter(! is.na(tau),
+                      cluster == "Id"),
+           aes(x=tau, y=module.score, colour=capture, shape=type))
+    + stat_smooth(aes(group="", color=NULL))
+    + geom_point()
+)
+# Examine what pseudotimes the model estimated for the precocious genes
+(
+    dl.shalek$samples.l$tau
+    %>% filter(dl.shalek$best.sample == iter,
+               cell %in% precocious$cell)
+)
+dl.shalek <- roughness.test(dl.shalek, held.out.expr)
+plots.shalek$roughnesses <- plot(dl.shalek, type="roughnesses")
+
+```
+
+
+```{r savePlots}
+ggsave('Figures/Bioinf/Shalek-core.pdf',
+       plots.shalek$core + theme, units="in",
+       width=bioinf.single.w, height=bioinf.single.h)
+ggsave('Figures/Bioinf/Shalek-roughnesses.eps',
+       plots.shalek$roughnesses + theme, units="in",
+       width=bioinf.single.w, height=bioinf.single.h)
+
+```
+

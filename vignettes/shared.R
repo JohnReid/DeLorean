@@ -27,6 +27,20 @@ plos.height <- plos.width / golden.ratio
 html5 <- list(width=1300, height=700)  # in pixels
 html5$ratio <- with(html5, width / height)
 slide.fig.width <- 7
+bioinf.single.w <- 3.38  # Width of single bioinformatics column in inches
+bioinf.double.w <- 7.00  # Width of double bioinformatics column in inches
+bioinf.single.h <- bioinf.single.w / golden.ratio
+bioinf.double.h <- bioinf.double.w / golden.ratio
+
+#
+# Theme for Bioinformatics
+#
+base.family <- "Helvetica"
+bioinf.theme <- theme_grey(base_size=8, base_family=base.family)
+bioinf.config <- list(
+    width = bioinf.single.w,
+    height = bioinf.single.h,
+    theme = bioinf.theme)
 
 #
 # Theme for PLoS
