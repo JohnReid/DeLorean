@@ -147,7 +147,7 @@ plots.mcdavid$profiles <- (
 ```{r savePlots}
 ggsave('Figures/Bioinf/McDavid-profiles.pdf',
        plots.mcdavid$profiles + theme, units="in",
-       width=bioinf.double.w, height=bioinf.double.w)
+       width=bioinf.double.w, height=bioinf.double.h)
 
 ```
 
