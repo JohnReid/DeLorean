@@ -24,8 +24,6 @@ plot.de.lorean <- function(dl, type="profiles", ...) {
 #' number of points
 #' @param dl de.lorean object
 #'
-#' @export
-#'
 alpha.for.rug <- function(n, scale=100) {
     1 / (max(1, n / scale))
 }
@@ -33,8 +31,6 @@ alpha.for.rug <- function(n, scale=100) {
 #' Plot posterior for marginal log likelihoods of expression profiles
 #'
 #' @param dl de.lorean object
-#'
-#' @export
 #'
 plot.marg.like <- function(dl) {
     with(dl, {
@@ -52,8 +48,6 @@ plot.marg.like <- function(dl) {
 #'
 #' @param dl de.lorean object
 #'
-#' @export
-#'
 plot.pseudotime <- function(dl) {
     with(dl, {
         gp <- (ggplot(samples.l$tau %>% filter(iter == best.sample),
@@ -70,8 +64,6 @@ plot.pseudotime <- function(dl) {
 #' Plot the tau offsets.
 #'
 #' @param dl de.lorean object
-#'
-#' @export
 #'
 plot.tau.offsets <- function(dl, rug.alpha=.3) {
     with(dl,
@@ -91,8 +83,6 @@ plot.tau.offsets <- function(dl, rug.alpha=.3) {
 #'
 #' @param dl de.lorean object
 #'
-#' @export
-#'
 plot.convergence <- function(dl) {
     with(dl, {
         rhat.df <- data.frame(
@@ -110,8 +100,6 @@ plot.convergence <- function(dl) {
 #' Plot posterior for cell sizes
 #'
 #' @param dl de.lorean object
-#'
-#' @export
 #'
 plot.S.posteriors <- function(dl) {
     with(dl, {
@@ -184,8 +172,6 @@ plot.cmp.profiles <- function(...,
 #' @param add.data Add actual expression data to plot
 #' @param sample.iter Which sample to plot
 #'
-#' @export
-#'
 plot.profiles <- function(dl,
                           genes=dl$genes.high.psi,
                           profile.color='black',
@@ -246,6 +232,8 @@ plot.profiles <- function(dl,
 
 #' Mutate the profile data into shape compatible with GP plot function
 #'
+#' @param .data The data
+#'
 mutate.profile.data <- function(.data) {
     (
         .data
@@ -255,7 +243,7 @@ mutate.profile.data <- function(.data) {
 }
 
 
-#` Adjust the predicted mean with the predictions from the model.
+#' Adjust the predicted mean with the predictions from the model.
 #'
 adjust.predictions <- function(.data, adjust.model) {
     # print(names(.data))
@@ -282,8 +270,6 @@ adjust.predictions <- function(.data, adjust.model) {
 #' @param sample.iter Which sample to plot
 #' @param cell.size.adj Adjust expression by posterior estimate of cell size
 #'
-#' @export
-#'
 plot.add.expr <- function(gp, .data=NULL)
 {
     (gp + geom_point(data=.data,
@@ -299,8 +285,6 @@ plot.add.expr <- function(gp, .data=NULL)
 #'
 #' @param dl de.lorean object
 #' @param genes Genes to plot. If NULL plots some random varying genes.
-#'
-#' @export
 #'
 plot.expr.data <- function(dl, genes=NULL, num.genes=12) {
     with(dl, {

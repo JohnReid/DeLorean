@@ -3,8 +3,6 @@
 #'
 #' @param expr.l Melted expression values.
 #'
-#' @export
-#'
 anders.huber.cell.sizes <- function(expr.l) {
     (
         expr.l
@@ -21,8 +19,6 @@ anders.huber.cell.sizes <- function(expr.l) {
 #' in more than half the cells.
 #'
 #' @param expr.l Melted expression values.
-#'
-#' @export
 #'
 estimate.capture.cell.sizes <- function(expr.l) (
     expr.l

@@ -2,8 +2,6 @@
 #'
 #' @param ordering The ordering.
 #'
-#' @export
-#'
 ordering.is.valid <- function(ordering, full.check=FALSE) {
     if (! is.integer(ordering)
         || any(ordering <= 0)
@@ -29,8 +27,6 @@ ordering.is.valid <- function(ordering, full.check=FALSE) {
 #' @param from The index of the item to move.
 #' @param to The index it should be moved to.
 #'
-#' @export
-#'
 ordering.move <- function(ordering, from, to) {
     if (from != to) {
         item <- ordering[from]
@@ -55,8 +51,6 @@ ordering.move <- function(ordering, from, to) {
 #' @param width The width of the block to move.
 #' @param to The index it should be moved to.
 #' @param reverse Reverse the block?
-#'
-#' @export
 #'
 ordering.block.move <- function(ordering, from, width, to, reverse=FALSE) {
     if (from == to & ! reverse) {
@@ -94,8 +88,6 @@ ordering.block.move <- function(ordering, from, width, to, reverse=FALSE) {
 #'
 #' @param ordering The ordering.
 #'
-#' @export
-#'
 ordering.random.move <- function(ordering) {
     .sample <- sample(length(ordering), 2)
     ordering.move(ordering, .sample[1], .sample[2])
@@ -105,8 +97,6 @@ ordering.random.move <- function(ordering) {
 #' Randomly move a block in an ordering to another location
 #'
 #' @param ordering The ordering.
-#'
-#' @export
 #'
 ordering.random.block.move <- function(ordering, max.width=4) {
     width <- sample(max.width, 1)
@@ -121,8 +111,6 @@ ordering.random.block.move <- function(ordering, max.width=4) {
 #'
 #' @param fn A function to maximise.
 #' @param ordering The permutation (ordering) to start from.
-#'
-#' @export
 #'
 ordering.maximise <- function(ordering, fn) {
     stopifnot(! is.null(ordering))
@@ -146,8 +134,6 @@ ordering.maximise <- function(ordering, fn) {
 #' @param ordering Initial ordering
 #' @param loglikelihood Log likelihood function
 #' @param proposal.fn Proposal function
-#'
-#' @export
 #'
 ordering.metropolis.hastings <- function(
     ordering,
@@ -200,8 +186,6 @@ ordering.metropolis.hastings <- function(
 #' @param fn A function to maximise.
 #' @param ordering The permutation (ordering) to start from.
 #'
-#' @export
-#'
 ordering.improve <- function(fn, ordering) {
     Reduce(
         # Reduction function
@@ -222,8 +206,6 @@ ordering.improve <- function(fn, ordering) {
 #'
 #' @param ordering The permutation (ordering) to invert.
 #'
-#' @export
-#'
 ordering.invert <- function(ordering) {
     result <- rep(0, length(ordering))
     for (n in 1:length(result)) {
@@ -237,8 +219,6 @@ ordering.invert <- function(ordering) {
 #' order.
 #'
 #' @param ordering
-#'
-#' @export
 #'
 ordering.test.score <- function(ordering) {
     sum(sapply(1:(length(ordering)-1),

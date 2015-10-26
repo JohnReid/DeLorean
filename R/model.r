@@ -4,8 +4,6 @@
 #' @param reference.factor Factor whose levels to use.
 #' @param levels New levels
 #'
-#' @export
-#'
 update.levels <- function(.factor,
                           reference.factor=NULL,
                           .levels=levels(reference.factor),
@@ -20,8 +18,6 @@ update.levels <- function(.factor,
 #' @param dl de.lorean object
 #' @param sample.iter Which sample to use, defaults to best sample
 #'
-#' @export
-#'
 tau.for.sample <- function(dl, sample.iter=dl$best.sample) {
     (
         dl$samples.l$tau
@@ -35,16 +31,12 @@ tau.for.sample <- function(dl, sample.iter=dl$best.sample) {
 #'
 #' @param dl The de.lorean object.
 #'
-#' @export
-#'
 gene.levels <- function(dl) levels=levels(dl$gene.meta$gene)
 
 
 #' The levels of the cell factor
 #'
 #' @param dl The de.lorean object.
-#'
-#' @export
 #'
 cell.levels <- function(dl) levels=levels(dl$cell.meta$cell)
 
@@ -68,8 +60,6 @@ melt.expr <- function(dl, expr=dl$expr) (
 #'
 #' @param dl The de.lorean object.
 #' @param expr.l Expression values in long format.
-#'
-#' @export
 #'
 cast.expr <- function(expr.l) expr.l %>% acast(gene ~ cell, value.var="x")
 
@@ -283,8 +273,6 @@ filter.cells <- function(dl,
 #' @param dl de.lorean object
 #' @param number Number to sample from each capture time
 #'
-#' @export
-#'
 sample.per.capture <- function(dl, cells.per.capture) {
     sample.at.most <- function(.df, number) {
         sample_n(.df, min(number, nrow(.df)))
@@ -303,8 +291,6 @@ sample.per.capture <- function(dl, cells.per.capture) {
 #' Sample genes and cells
 #'
 #' @param dl de.lorean object
-#'
-#' @export
 #'
 sample.genes.and.cells <- function(
     dl,
@@ -465,8 +451,6 @@ compile.model <- function(dl) {
 #'
 #' @param dl de.lorean object
 #'
-#' @export
-#'
 make.chain.init.fn <- function(dl) {
     function() {
         with(dl$stan.data, {
@@ -582,8 +566,6 @@ find.smooth.tau <- function(
 #' @param num.cores Number of cores to run on.
 #'          Defaults to getOption("DL.num.cores", max(detectCores()-1, 1))
 #'
-#' @export
-#'
 test.mh <- function(
     dl,
     psi = mean(dl$gene.map$psi.hat),
@@ -630,8 +612,6 @@ cov.fn.for <- function(dl) {
 #' Create a log likelihood function suitable for evaluating smooth orderings.
 #'
 #' @param dl de.lorean object
-#'
-#' @export
 #'
 ordering.log.likelihood.fn <- function(
     dl,
@@ -688,8 +668,6 @@ ordering.log.likelihood.fn <- function(
 #' Choose an initialisation by sampling tau from the prior.
 #'
 #' @param dl de.lorean object
-#'
-#' @export
 #'
 init.chain.sample.tau <- function(dl) {
     with(dl$stan.data, {
@@ -831,8 +809,6 @@ examine.convergence <- function(dl) {
 #'
 #' @param dl de.lorean object
 #'
-#' @export
-#'
 model.parameter.dimensions <- function(dl) {
     sample.dims <- list(
         lp__=c(),
@@ -857,8 +833,6 @@ model.parameter.dimensions <- function(dl) {
 #'
 #' @param dl de.lorean object
 #'
-#' @export
-#'
 sample.melter <- function(dl, include.iter=TRUE) {
     function(sample.list, sample.dims) {
         melt.var <- function(param) {
@@ -878,8 +852,6 @@ sample.melter <- function(dl, include.iter=TRUE) {
 #' Join extra data to tau samples.
 #'
 #' @param dl de.lorean object
-#'
-#' @export
 #'
 join.tau.samples <- function(dl, tau.samples) {
     with(dl,
@@ -921,8 +893,6 @@ process.posterior <- function(dl) {
 #' @param dl de.lorean object
 #' @param sample.iter Sample to optimise (defaults to best sample).
 #'
-#' @export
-#'
 optimise.sample <- function(
     dl,
     parameters=sample.parameters(dl, sample.iter=sample.iter),
@@ -953,8 +923,6 @@ optimise.sample <- function(
 #' @param dl de.lorean object
 #' @param samples Samples to bind to existing samples.
 #' @param sample.iter Iteration (defaults to -1).
-#'
-#' @export
 #'
 bind.sample <- function(dl, samples, sample.iter=-1)
 {
@@ -1053,8 +1021,6 @@ make.predictions <- function(dl) {
 #' @param dl de.lorean object
 #' @param expr.held.out The expression matrix including the held out genes
 #'
-#' @export
-#'
 fit.held.out <- function(
     dl,
     expr.held.out,
@@ -1101,8 +1067,6 @@ fit.held.out <- function(
 #' @param dl de.lorean object
 #' @param sample.iter The sample we want the parameters for.
 #'
-#' @export
-#'
 sample.parameters <- function(dl,
                               sample.iter=dl$best.sample,
                               param.names=names(dl$samples.l))
@@ -1140,7 +1104,5 @@ test.fit <- function(vars) {
 #' The samples
 #''
 #' @param dl de.lorean object
-#'
-#' @export
 #'
 sample.iters <- function(dl) dl$samples.l$lp__$iter

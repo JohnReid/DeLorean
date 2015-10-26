@@ -42,8 +42,6 @@ is.de.lorean <- function(dl) inherits(dl, "de.lorean")
 
 #' Is internally consistent?
 #'
-#' @export
-#'
 check.de.lorean.consistent <- function(dl) with(dl, {
     if (exists('gene.map')) {
         # Check gene map is in correct order

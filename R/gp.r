@@ -1,20 +1,16 @@
-#` Makes a distance periodic
+#' Makes a distance periodic
 #'
 #' @param r Distance
 #' @param period The period
-#'
-#' @export
 #'
 cov.periodise <- function(r, period) {
     period * sin(r * pi / period) / 2;
 }
 
-#` Matern 3/2 covariance function
+#' Matern 3/2 covariance function
 #'
 #' @param r Distance
 #' @param l Length scale
-#'
-#' @export
 #'
 cov.matern.32 <- function(r, l) {
     x <- sqrt(3) * abs(r / l);
@@ -26,8 +22,6 @@ cov.matern.32 <- function(r, l) {
 #' @param tau.1 First vector of time points
 #' @param tau.2 Second vector of time points (defaults to first if not given)
 #' @param period Period if periodic
-#'
-#' @export
 #'
 cov.calc.dists <- function(tau.1, tau.2=tau.1, period=NULL) {
     # Calculate the distances
@@ -45,8 +39,6 @@ cov.calc.dists <- function(tau.1, tau.2=tau.1, period=NULL) {
 #'
 #' @param dl de.lorean object
 #' @param sample.iter Iteration to use (defaults to best.sample)
-#'
-#' @export
 #'
 cov.calc.dl.dists <- function(dl,
                               tau=tau.for.sample(dl),
@@ -76,8 +68,6 @@ cov.calc.dl.dists <- function(dl,
 #' @param psi Temporal variation
 #' @param psi Noise
 #'
-#' @export
-#'
 cov.calc.gene <- function(dl,
                           gene.idx,
                           cov.fn=cov.matern.32,
@@ -104,8 +94,6 @@ cov.calc.gene <- function(dl,
 #' @param gene.idx Gene index
 #' @param cov.fn Covariance function (defaults to cov.matern.32)
 #' @param sample.iter Iteration to use (defaults to best.sample)
-#'
-#' @export
 #'
 cov.calc.gene.conditioned <- function(dl,
                                       gene.idx,
@@ -135,8 +123,6 @@ cov.calc.gene.conditioned <- function(dl,
 #' @param cov.fn Covariance function (defaults to cov.matern.32)
 #' @param sample.iter Iteration to use (defaults to best.sample)
 #'
-#' @export
-#'
 cov.all.genes.conditioned <- function(dl,
                                       cov.fn=NULL,
                                       tau=tau.for.sample(dl))
@@ -160,8 +146,6 @@ cov.all.genes.conditioned <- function(dl,
 #' @param color Color to use
 #' @param line.alpha Alpha to use for mean line
 #' @param ribbon.alpha Alpha to use for variance ribbon
-#'
-#' @export
 #'
 plot.add.mean.and.variance <- function(gp,
                                        .data=NULL,
@@ -189,8 +173,6 @@ plot.add.mean.and.variance <- function(gp,
 #' @param K The covariance matrix (kernel), not needed if U is provided.
 #' @param U Cholesky decomposition of K (chol(K)).
 #'
-#' @export
-#'
 gp.log.marg.like <- function(y, K=NULL, U=chol(K)) {
     alpha <- backsolve(U, backsolve(U, y, transpose = TRUE))
     -(
@@ -208,8 +190,6 @@ gp.log.marg.like <- function(y, K=NULL, U=chol(K)) {
 #' @param y The targets.
 #' @param K The covariance matrix (kernel), not needed if U is provided.
 #' @param U Cholesky decomposition of K (chol(K)).
-#'
-#' @export
 #'
 gp.predict <- function(y, K=NULL, Kstar, Kstarstar, U=chol(K)) {
     alpha <- backsolve(U, backsolve(U, y, transpose = TRUE))
@@ -230,8 +210,6 @@ gp.predict <- function(y, K=NULL, Kstar, Kstarstar, U=chol(K)) {
 #'
 #' @param predictions The predictions
 #'
-#' @export
-#'
 gp.predictions.df <- function(predictions) {
     with(predictions, data.frame(mu=mu,
                                  Sigma=diag(Sigma),
@@ -248,8 +226,6 @@ gp.predictions.df <- function(predictions) {
 #' @param A Var(X)
 #' @param B Var(Y)
 #' @param C Cov(X, Y)
-#'
-#' @export
 #'
 gaussian.condition <- function(
     y,

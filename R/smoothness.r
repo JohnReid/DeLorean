@@ -3,8 +3,6 @@
 #'
 #' @param x Values
 #'
-#' @export
-#'
 calc.roughness <- function(x) {
     N <- length(x)
     stopifnot(N > 0)
@@ -21,8 +19,6 @@ calc.roughness <- function(x) {
 #' @param .df Data frame
 #' @param group.col Name of an ordered factor that the permutation
 #'    should respect.
-#'
-#' @export
 #'
 permute.df <- function(.df, group.col=NULL) {
     if (is.null(group.col)) {
@@ -42,8 +38,6 @@ permute.df <- function(.df, group.col=NULL) {
 #' @param dl de.lorean object
 #' @param expr.held.out The expression matrix including the held out genes
 #'
-#' @export
-#'
 roughness.of.sample <- function(
     dl,
     expr.held.out=dl$expr.held.out,
@@ -59,8 +53,6 @@ with(dl, {
 #' @param dl de.lorean object
 #' @param expr.held.out The expression matrix of the held out genes
 #'
-#' @export
-#'
 permuted.roughness <- function(
     dl,
     expr.held.out=dl$expr.held.out)
@@ -74,8 +66,6 @@ permuted.roughness <- function(
 #'
 #' @param dl de.lorean object
 #' @param expr.held.out The expression matrix including the held out genes
-#'
-#' @export
 #'
 roughness.of.permutations <- function(
     dl,
@@ -126,8 +116,6 @@ within(dl, {
 #' Plot results of roughness test
 #'
 #' @param dl de.lorean object
-#'
-#' @export
 #'
 plot.roughnesses <- function(dl) with(dl, (
     ggplot(roughnesses, aes(x=roughness,

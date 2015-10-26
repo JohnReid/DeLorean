@@ -180,8 +180,6 @@ held.out.posterior.join <- function(posterior, .df) {
 #' @param posterior The posterior of some held out genes
 #' @param facets Variables to wrap facets on
 #'
-#' @export
-#'
 plot.held.out.posterior <- function(dl, posterior, facets=~ gene) (
     plot.add.mean.and.variance(
         ggplot(posterior$posterior %>% left_join(dl$gene.meta))) +
