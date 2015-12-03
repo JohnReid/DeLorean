@@ -41,10 +41,8 @@ bib <- read.bibtex("DeLorean.bib")
 ```
 
 ```{r build, echo=FALSE, eval=FALSE}
-library(devtools)
-load_all('..')
-library(rmarkdown)
-render('DeLorean-model.Rmd')
+devtools::load_all('..')
+rmarkdown::render('DeLorean-model.Rmd')
 
 ```
 
@@ -61,7 +59,7 @@ library(extrafont)
 #
 # Stylesheet
 #
-options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
+options(markdown.HTML.stylesheet = system.file(file.path('Rmd', 'foghorn.css'),
                                                package="DeLorean"))
 
 ```
@@ -79,14 +77,6 @@ mrc.colors <- c(
     rgb(106, 59 , 119, maxColorValue=255),
     rgb(130, 47 , 90 , maxColorValue=255)
 )
-
-#
-# Check/install fonts
-#
-# install.packages("extrafont")
-# font_import()
-# fonts()
-# fonttable()
 
 font.family <- "Verdana"
 font.theme <- theme_update(text=element_text(family=font.family))

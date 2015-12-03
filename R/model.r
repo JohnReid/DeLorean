@@ -46,7 +46,7 @@ cell.levels <- function(dl) levels=levels(dl$cell.meta$cell)
 #' @param dl The de.lorean object.
 #' @param expr Matrix of expression values.
 #'
-#' @export
+#' @export melt.expr
 #'
 melt.expr <- function(dl, expr=dl$expr) (
     expr
@@ -320,6 +320,8 @@ sample.genes.and.cells <- function(
 #' @param period Period of expression patterns
 #' @param hold.out Number genes to hold out for generalisation tests
 #'
+#' @export format.for.stan
+#'
 format.for.stan <- function(
     dl,
     num.test = 101,
@@ -413,11 +415,11 @@ format.for.stan <- function(
 #' @export
 #'
 compile.model <- function(dl) {
-    stan.model.file <- system.file(sprintf('inst/Stan/%s.stan',
-                                           dl$opts$model.name),
-                                   package='DeLorean')
-    stopifnot(! is.null(stan.model.file))
-    stopifnot("" != stan.model.file)
+    stan.model.file <- system.file(file.path('Stan',
+                                             sprintf('%s.stan',
+                                                     dl$opts$model.name)),
+                                   package='DeLorean',
+                                   mustWork=TRUE)
     data.dir <- system.file('data', package='DeLorean')
     compiled.model.file <- paste(data.dir,
                                  sprintf("%s.rds", dl$opts$model.name),
@@ -1081,6 +1083,8 @@ sample.parameters <- function(dl,
 
 
 #' Test fit for log normal and gamma
+#'
+#' @export
 #'
 test.fit <- function(vars) {
     fit.gamma <- fitdistr(vars, 'gamma')

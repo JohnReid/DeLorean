@@ -15,7 +15,12 @@ Depends:
     reshape2 (>= 1.4),
     ggplot2 (>= 1.0.0),
     knitr (>= 1.8),
+    knitcitations,
+    extrafont,
     broom (>= 0.3.6)
+Imports:
+    rmarkdown
 License: MIT
 LazyData: true
 VignetteBuilder: knitr
+RoxygenNote: 5.0.1

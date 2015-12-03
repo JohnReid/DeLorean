@@ -11,10 +11,8 @@ output: html_document
 -->
 
 ```{r build, echo=FALSE, eval=FALSE}
-library(devtools)
-load_all('..')
-library(rmarkdown)
-render('DeLorean-Trapnell.Rmd')
+devtools::load_all('..')
+rmarkdown::render('DeLorean-Trapnell.Rmd')
 
 ```
 
@@ -57,7 +55,7 @@ library(DeLorean)
 #
 # Stylesheet
 #
-options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
+options(markdown.HTML.stylesheet = system.file(file.path('Rmd', 'foghorn.css'),
                                                package="DeLorean"))
 
 ```

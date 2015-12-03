@@ -1,7 +1,6 @@
 Setup configuration
 ```{r loadData}
-library(devtools)
-load_all('..')
+devtools::load_all('..')
 source('shared.R')
 set.seed(1)
 

@@ -4,7 +4,7 @@
 #'
 #' @export
 report.file <- function(report.name) {
-    system.file("inst", "Rmd", sprintf("%s.Rmd", report.name),
+    system.file("Rmd", sprintf("%s.Rmd", report.name),
                 package="DeLorean")
 }
 
@@ -12,7 +12,7 @@ report.file <- function(report.name) {
 #' The filename of the R markdown stylesheet
 #'
 de.lorean.stylesheet <- function() {
-    system.file("inst", "Rmd", "foghorn.css", package="DeLorean")
+    system.file("Rmd", "foghorn.css", package="DeLorean")
 }
 
 

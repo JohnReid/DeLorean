@@ -5,21 +5,17 @@ output: html_document
 ---
 
 ```{r build, echo=FALSE, eval=FALSE}
-library(devtools)
-load_all('../..')
-library(rmarkdown)
-render('fetch-Shalek-2014.Rmd')
-
+devtools::load_all('../..')
+rmarkdown::render('fetch-Shalek-2014.Rmd')
 ```
 
 
 ```{r loadLibs, echo=FALSE, message=FALSE}
+library(DeLorean)
 library(stringr)
 library(dplyr)
 library(reshape2)
 library(ggplot2)
-library(GEOquery)
-
 ```
 
 
@@ -85,7 +81,7 @@ cell.re.A <- str_c(
     '$')
 cell.meta.A <- (
     as.data.frame(str_match(str_c(names(shalek.A), '_'), cell.re.A))
-    %>% select(cell=V1, assay=V2, ko=V3, stimulant=V4,
+    %>% dplyr::select(cell=V1, assay=V2, ko=V3, stimulant=V4,
                capture=V5, replicate=V6, cell.num=V7)
     %>% mutate(cell=factor(str_replace(cell, "_$", ""), levels=cells.A),
                cell.num=as.numeric(as.character(cell.num)),
@@ -97,7 +93,7 @@ cell.meta.A <- (
 sample_n(cell.meta.A, 20)
 stopifnot(all(! is.na(cell.meta.A[,1])))
 which(is.na(cell.meta.A[,1]))
-sapply(cell.meta.A %>% select(-1), levels)
+sapply(cell.meta.A %>% dplyr::select(-1), levels)
 sapply(cell.meta.A, class)
 nrow(cell.meta.A)
 # cell.meta.A %>% filter(""!=assay)
@@ -120,7 +116,7 @@ supp.table.2 <- (
                       %>% str_replace("_Unstim_", "_Unstimulated_")
                       %>% str_replace("_rsem$", ""),
                cell=factor(cell.1, levels=cells.A)))
-    #%>% select(-cell.1))
+    #%>% dplyr::select(-cell.1))
 sapply(supp.table.2, class)
 dim(supp.table.2)
 sum(is.na(supp.table.2$cell))
@@ -129,7 +125,7 @@ sum(is.na(supp.table.2$cell))
 # Update cell meta data with Table 2
 cell.meta.A <- (
     cell.meta.A
-    %>% left_join(supp.table.2 %>% select(cell, total, aligned)))
+    %>% left_join(supp.table.2 %>% dplyr::select(cell, total, aligned)))
 dim(cell.meta.A)
 # Check which cells in table 2 have more than one match
 print(
@@ -176,7 +172,7 @@ gp <- ggplot(cluster.disrupt,
 pdf("Shalek-cluster-disrupt.pdf")
 print(gp)
 dev.off()
-cell.meta.A <- cell.meta.A %>% left_join(cluster.disrupt %>% select(cell, disrupted))
+cell.meta.A <- cell.meta.A %>% left_join(cluster.disrupt %>% dplyr::select(cell, disrupted))
 
 ```
 
@@ -203,6 +199,7 @@ colSums(shalek.A)
 
 Check other method to retrieve data to see if there is more meta data.
 ```{r useGEOquery, include=FALSE, eval=FALSE}
+library(GEOquery)
 geo.series <- 'GSE48968'
 geo.sample.1 <- 'GSM1189042'
 geo.sample.2 <- 'GSM1190902'
@@ -226,7 +223,7 @@ cell.re.B <- str_c(
 names(shalek.B)
 cell.meta.B <- (
     as.data.frame(str_match(names(shalek.B), cell.re.B))
-    %>% select(ko=V2, t=V3, cell=V4))
+    %>% dplyr::select(ko=V2, t=V3, cell=V4))
 sample_n(cell.meta.B, 20)
 stopifnot(all(! is.na(cell.meta.B[,1])))
 which(is.na(cell.meta.B[,1]))

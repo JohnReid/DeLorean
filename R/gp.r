@@ -137,7 +137,6 @@ cov.all.genes.conditioned <- function(dl,
                             ncol=length(dl$test.input)))
 }
 
-
 #' Add posterior representation to a plot.
 #'
 #' @param gp Plot object
@@ -165,7 +164,6 @@ plot.add.mean.and.variance <- function(gp,
                       alpha=ribbon.alpha))
 }
 
-
 #' The log marginal likelihood. See "2.3 Varying the Hyperparameters"
 #' on page 19 of Rasmumssen and Williams' book.
 #'
@@ -181,7 +179,6 @@ gp.log.marg.like <- function(y, K=NULL, U=chol(K)) {
         + length(y) * log(2 * pi)
     )
 }
-
 
 #' Predictive mean, variance and log marginal likelihood of a GP.
 #' See "2.3 Varying the Hyperparameters"
@@ -205,8 +202,7 @@ gp.predict <- function(y, K=NULL, Kstar, Kstarstar, U=chol(K)) {
     )
 }
 
-
-#` Convert the output of gp.predict() into a data.frame.
+#' Convert the output of gp.predict() into a data.frame.
 #'
 #' @param predictions The predictions
 #'

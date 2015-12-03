@@ -6,15 +6,12 @@ output:
   html_document:
     toc: true
     fig_caption: true
-    # css: ../inst/Rmd/foghorn.css
 ---
 
 ```{r build, echo=FALSE, eval=FALSE}
-library(devtools)
-load_all('..')
-library(rmarkdown)
+devtools::load_all('..')
 fit.model <- TRUE
-render('Kouno-DeLorean.Rmd')
+rmarkdown::render('Kouno-DeLorean.Rmd')
 
 ```
 
@@ -53,7 +50,7 @@ bib <- read.bibtex("DeLorean.bib")
 if (file.exists("config.R")) {
     source("config.R")
 }
-source(system.file("vignettes/shared.R", package="DeLorean"))
+source(system.file("scripts/shared.R", package="DeLorean"))
 
 ```
 
@@ -63,7 +60,7 @@ library(DeLorean)
 #
 # Stylesheet
 #
-options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
+options(markdown.HTML.stylesheet = system.file(file.path('Rmd', 'foghorn.css'),
                                                package="DeLorean"))
 font.family <- "Verdana"
 font.theme <- theme_update(text=element_text(family=font.family))

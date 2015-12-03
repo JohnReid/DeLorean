@@ -6,6 +6,15 @@ Specifically designed for single cell transcriptome experiments.
 
 
 
+Requirements
+------------
+
+To render the vignettes you will need a working version (> 1.12.3) of `pandoc` on your machine with the
+`pandoc-citeproc` filter. On Ubuntu do:
+
+    sudo apt-get install pandoc pandoc-citeproc
+
+
 
 Installation
 ------------
@@ -17,6 +26,5 @@ installed, then install it by running:
 
 Now you can install the development version of `DeLorean` with:
 
-    library(devtools)
-    install_github('JohnReid/DeLorean')
+    devtools::install_github('JohnReid/DeLorean')
 

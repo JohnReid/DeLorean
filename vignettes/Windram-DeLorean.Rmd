@@ -6,7 +6,6 @@ output:
   html_document:
     toc: true
     fig_caption: true
-    # css: ../inst/Rmd/foghorn.css
 ---
 
 <!--
@@ -15,12 +14,10 @@ output:
 -->
 
 ```{r build, echo=FALSE, eval=FALSE}
-library(devtools)
-load_all('..')
-library(rmarkdown)
+devtools::load_all('..')
 # fit.model <- FALSE
 fit.model <- TRUE
-render('Windram-DeLorean.Rmd')
+rmarkdown::render('Windram-DeLorean.Rmd')
 
 ```
 
@@ -54,7 +51,7 @@ bib <- read.bibtex("DeLorean.bib")
 if (file.exists("config.R")) {
     source("config.R")
 }
-source(system.file("vignettes/shared.R", package="DeLorean"))
+source(system.file("scripts/shared.R", package="DeLorean"))
 
 ```
 
@@ -64,7 +61,7 @@ library(DeLorean)
 #
 # Stylesheet
 #
-options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
+options(markdown.HTML.stylesheet = system.file(file.path('Rmd', 'foghorn.css'),
                                                package="DeLorean"))
 font.family <- "Verdana"
 font.theme <- theme_update(text=element_text(family=font.family))
@@ -361,6 +358,7 @@ print(plots$roughnesses)
 ggsave('Windram-roughnesses.tiff', plots$roughnesses + plos.theme,
        width=plos.width, height=plos.height / 2, units="in", dpi=300)
 ggsave('Windram-roughnesses.svg', plots$roughnesses + plos.theme,
+       width=text.width * 2, height=text.width)
 ggsave('Windram-roughnesses.pdf', plots$roughnesses + plos.theme,
        width=text.width * 2, height=text.width)
 ggsave('Windram-roughnesses.png', plots$roughnesses + plos.theme)

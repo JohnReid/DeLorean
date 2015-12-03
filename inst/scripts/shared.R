@@ -1,4 +1,8 @@
 #
+# Code that is shared amongst the vignettes.
+#
+
+#
 # Install extrafont and import fonts from system.
 # We just need to do this once.
 #
@@ -36,7 +40,7 @@ bioinf.double.h <- bioinf.double.w / golden.ratio
 # Theme for Bioinformatics
 #
 base.family <- "Helvetica"
-bioinf.theme <- theme_grey(base_size=8, base_family=base.family)
+bioinf.theme <- ggplot2::theme_grey(base_size=8, base_family=base.family)
 bioinf.config <- list(
     width = bioinf.single.w,
     height = bioinf.single.h,
@@ -45,7 +49,17 @@ bioinf.config <- list(
 #
 # Theme for PLoS
 #
-# base.family <- "Times"
-base.family <- "Arial"
+base.family <- "Times"
+# base.family <- "Arial"  # Arial may not be on all systems
 # base.family <- "Liberation Sans"
-plos.theme <- theme_classic(base_size=8, base_family=base.family)
+plos.theme <- ggplot2::theme_classic(base_size=8, base_family=base.family)
+
+#
+# Fit model if not defined
+#
+if (! exists('fit.model')) fit.model <- TRUE
+
+#
+# Create data directory if not there
+#
+if( ! file.exists('Data')) dir.create('Data')
