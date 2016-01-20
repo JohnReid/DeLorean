@@ -38,10 +38,10 @@ de.lorean <- function(expr, gene.meta, cell.meta) {
 #'
 #' @export
 #'
-is.de.lorean <- function(dl) inherits(dl, "de.lorean")
+is.de.lorean <- function(x) inherits(x, "de.lorean")
 
-#' Is internally consistent?
-#'
+# Is internally consistent?
+#
 check.de.lorean.consistent <- function(dl) with(dl, {
     if (exists('gene.map')) {
         # Check gene map is in correct order
@@ -61,25 +61,83 @@ check.de.lorean.consistent <- function(dl) with(dl, {
 #'
 #' @export
 #'
-print.de.lorean <- function(dl) {
-    print(sapply(dl, head))
+print.de.lorean <- function(x, ...) {
+    print(sapply(x, head))
 }
 
 #' Dimensions of DeLorean object
 #'
 #' @export
 #'
-dim.de.lorean <- function(dl) {
-    dim(dl$expr)
+dim.de.lorean <- function(x) {
+    dim(x$expr)
 }
 
 #' Summarise DeLorean object
 #'
-#' @param dl de.lorean object
+#' @param x de.lorean object
 #'
 #' @export
 #'
-summary.de.lorean <- function(dl) {
-    print(sapply(dl, summary))
+summary.de.lorean <- function(x, ...) {
+    print(sapply(x, summary))
 }
 
+# To avoid R CMD check --as-cran NOTES
+globalVariables(c(
+  'cell.meta',
+  'cell',
+  'capture',
+  'x',
+  'size',
+  'tau',
+  'predictedmean',
+  'predictedvar',
+  'adjustment',
+  'samples.l',
+  'gene.map',
+  'g',
+  'omega',
+  'psi',
+  'expr',
+  'gene.meta',
+  'gene',
+  'x.mean',
+  'S.hat',
+  'x.hat',
+  'x.sd',
+  'x.hat.sd',
+  'capture',
+  'x.var',
+  'Vgc',
+  'Mgc',
+  'num.capture',
+  'Psi',
+  'Omega',
+  'mu',
+  'stan.data',
+  'prop.expr',
+  '.',
+  'gene.time.expr',
+  'psi.hat',
+  'omega.hat',
+  'cell.expr',
+  'gene.expr',
+  'gene.var',
+  'opts',
+  'fit',
+  'phi.hat',
+  'obstime',
+  'time.range',
+  'hyper',
+  'dynamic.var',
+  'opts',
+  'name',
+  'gene.map',
+  'is.held.out',
+  'sample.iter',
+  'held.out.expr',
+  'type',
+  'iter',
+  'V',
+  'median.tau'))

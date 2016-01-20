@@ -1,9 +1,9 @@
-#' Update a factor based on the levels of another factor.
-#'
-#' @param .factor Factor
-#' @param reference.factor Factor whose levels to use.
-#' @param levels New levels
-#'
+# Update a factor based on the levels of another factor.
+#
+# @param .factor Factor
+# @param reference.factor Factor whose levels to use.
+# @param levels New levels
+#
 update.levels <- function(.factor,
                           reference.factor=NULL,
                           .levels=levels(reference.factor),
@@ -13,11 +13,11 @@ update.levels <- function(.factor,
 }
 
 
-#' Retrieve the estimated tau for the given sample.
-#'
-#' @param dl de.lorean object
-#' @param sample.iter Which sample to use, defaults to best sample
-#'
+# Retrieve the estimated tau for the given sample.
+#
+# @param dl de.lorean object
+# @param sample.iter Which sample to use, defaults to best sample
+#
 tau.for.sample <- function(dl, sample.iter=dl$best.sample) {
     (
         dl$samples.l$tau
@@ -27,17 +27,17 @@ tau.for.sample <- function(dl, sample.iter=dl$best.sample) {
 }
 
 
-#' The levels of the gene factor
-#'
-#' @param dl The de.lorean object.
-#'
+# The levels of the gene factor
+#
+# @param dl The de.lorean object.
+#
 gene.levels <- function(dl) levels=levels(dl$gene.meta$gene)
 
 
-#' The levels of the cell factor
-#'
-#' @param dl The de.lorean object.
-#'
+# The levels of the cell factor
+#
+# @param dl The de.lorean object.
+#
 cell.levels <- function(dl) levels=levels(dl$cell.meta$cell)
 
 
@@ -56,11 +56,11 @@ melt.expr <- function(dl, expr=dl$expr) (
 )
 
 
-#' Cast an expression matrix.
-#'
-#' @param dl The de.lorean object.
-#' @param expr.l Expression values in long format.
-#'
+# Cast an expression matrix.
+#
+# @param dl The de.lorean object.
+# @param expr.l Expression values in long format.
+#
 cast.expr <- function(expr.l) expr.l %>% acast(gene ~ cell, value.var="x")
 
 
@@ -268,11 +268,11 @@ filter.cells <- function(dl,
 
 
 
-#' Sample so many cells per capture time.
-#'
-#' @param dl de.lorean object
-#' @param number Number to sample from each capture time
-#'
+# Sample so many cells per capture time.
+#
+# @param dl de.lorean object
+# @param number Number to sample from each capture time
+#
 sample.per.capture <- function(dl, cells.per.capture) {
     sample.at.most <- function(.df, number) {
         sample_n(.df, min(number, nrow(.df)))
@@ -288,10 +288,10 @@ sample.per.capture <- function(dl, cells.per.capture) {
 }
 
 
-#' Sample genes and cells
-#'
-#' @param dl de.lorean object
-#'
+# Sample genes and cells
+#
+# @param dl de.lorean object
+#
 sample.genes.and.cells <- function(
     dl,
     max.cells = 0,
@@ -420,7 +420,7 @@ compile.model <- function(dl) {
                                                      dl$opts$model.name)),
                                    package='DeLorean',
                                    mustWork=TRUE)
-    data.dir <- system.file('data', package='DeLorean')
+    data.dir <- system.file('extdata', package='DeLorean')
     compiled.model.file <- paste(data.dir,
                                  sprintf("%s.rds", dl$opts$model.name),
                                  sep='/')
@@ -434,13 +434,13 @@ compile.model <- function(dl) {
             compiled <- readRDS(compiled.model.file)
         } else {
             message("Compiling model")
-            compiled <- stan(file=stan.model.file, chains=0)
+            compiled <- rstan::stan(file=stan.model.file, chains=0)
             message("Saving compiled model to ", compiled.model.file)
             saveRDS(compiled, compiled.model.file)
         }
         # Try one iteration to check everything is OK
         # message("Trying iteration")
-        fit <- stan(fit=compiled,
+        fit <- rstan::stan(fit=compiled,
                     data=stan.data,
                     init=make.chain.init.fn(dl),
                     iter=1,
@@ -449,10 +449,10 @@ compile.model <- function(dl) {
 }
 
 
-#' Define a function to initialise the chains
-#'
-#' @param dl de.lorean object
-#'
+# Define a function to initialise the chains
+#
+# @param dl de.lorean object
+#
 make.chain.init.fn <- function(dl) {
     function() {
         with(dl$stan.data, {
@@ -486,7 +486,7 @@ even.tau.spread <- function(dl) {
 #'
 #' @param dl de.lorean object
 #' @param num.cores Number of cores to run on.
-#'          Defaults to getOption("DL.num.cores", max(detectCores()-1, 1))
+#'          Defaults to getOption("DL.num.cores", max(parallel::detectCores()-1, 1))
 #' @param num.tau.to.keep How many initialisations to keep.
 #' @param method Method to use "maximise" or "metropolis"
 #'
@@ -496,7 +496,7 @@ find.smooth.tau <- function(
     dl,
     psi = exp(dl$hyper$mu_psi),
     omega = exp(dl$hyper$mu_omega),
-    num.cores = getOption("DL.num.cores", max(detectCores() - 1, 1)),
+    num.cores = getOption("DL.num.cores", max(parallel::detectCores() - 1, 1)),
     num.tau.to.try = num.cores,
     num.tau.to.keep = num.cores,
     method = "metropolis",
@@ -541,7 +541,7 @@ find.smooth.tau <- function(
         seeds <- sample.int(.Machine$integer.max, num.tau.to.try)
         # Run in parallel or not?
         if (num.cores > 1) {
-            orderings <- mclapply(seeds,
+            orderings <- parallel::mclapply(seeds,
                                   mc.cores=num.cores,
                                   ordering.search)
         } else {
@@ -562,17 +562,17 @@ find.smooth.tau <- function(
 }
 
 
-#' Test ordering Metropolis-Hastings sampler.
-#'
-#' @param dl de.lorean object
-#' @param num.cores Number of cores to run on.
-#'          Defaults to getOption("DL.num.cores", max(detectCores()-1, 1))
-#'
+# Test ordering Metropolis-Hastings sampler.
+#
+# @param dl de.lorean object
+# @param num.cores Number of cores to run on.
+#          Defaults to getOption("DL.num.cores", max(parallel::detectCores()-1, 1))
+#
 test.mh <- function(
     dl,
     psi = mean(dl$gene.map$psi.hat),
     omega = mean(dl$gene.map$omega.hat),
-    num.cores = getOption("DL.num.cores", max(detectCores() - 1, 1)),
+    num.cores = getOption("DL.num.cores", max(parallel::detectCores() - 1, 1)),
     iterations = 1000,
     thin = 15
 ) {
@@ -594,7 +594,7 @@ test.mh <- function(
         seeds <- sample.int(.Machine$integer.max, num.cores)
         # Run in parallel or not?
         if (num.cores > 1) {
-            orderings <- mclapply(seeds,
+            orderings <- parallel::mclapply(seeds,
                                   mc.cores=num.cores,
                                   ordering.search)
         } else {
@@ -605,16 +605,16 @@ test.mh <- function(
 }
 
 
-#' The covariance function for the DeLorean object.
+# The covariance function for the DeLorean object.
 cov.fn.for <- function(dl) {
     cov.matern.32
 }
 
 
-#' Create a log likelihood function suitable for evaluating smooth orderings.
-#'
-#' @param dl de.lorean object
-#'
+# Create a log likelihood function suitable for evaluating smooth orderings.
+#
+# @param dl de.lorean object
+#
 ordering.log.likelihood.fn <- function(
     dl,
     psi = mean(dl$gene.map$psi.hat),
@@ -667,10 +667,10 @@ ordering.log.likelihood.fn <- function(
 }
 
 
-#' Choose an initialisation by sampling tau from the prior.
-#'
-#' @param dl de.lorean object
-#'
+# Choose an initialisation by sampling tau from the prior.
+#
+# @param dl de.lorean object
+#
 init.chain.sample.tau <- function(dl) {
     with(dl$stan.data, {
         init <- list(
@@ -698,7 +698,7 @@ init.chain.sample.tau <- function(dl) {
 #' @param num.tau.candidates How many candidates to examine. Defaults to 6000.
 #' @param num.tau.to.keep How many candidates to keep. Defaults to num.cores.
 #' @param num.cores Number of cores to run on.
-#'          Defaults to getOption("DL.num.cores", max(detectCores()-1, 1))
+#'          Defaults to getOption("DL.num.cores", max(parallel::detectCores()-1, 1))
 #'
 #' @export
 #'
@@ -706,7 +706,7 @@ find.best.tau <- function(dl,
                           num.tau.candidates = 6000,
                           num.tau.to.keep = num.cores,
                           num.cores = getOption("DL.num.cores",
-                                                max(detectCores() - 1, 1))
+                                                max(parallel::detectCores() - 1, 1))
 ) {
     within(dl, {
         # Define a function that calculates log probability for
@@ -719,7 +719,7 @@ find.best.tau <- function(dl,
         }
         # Choose tau several times and calculate log probability
         if (num.cores > 1) {
-            tau.inits <- mclapply(1:num.tau.candidates,
+            tau.inits <- parallel::mclapply(1:num.tau.candidates,
                                   mc.cores=num.cores,
                                   try.tau.init)
         } else {
@@ -739,7 +739,7 @@ find.best.tau <- function(dl,
 #'
 #' @param dl de.lorean object
 #' @param num.cores Number of cores to run on.
-#'          Defaults to getOption("DL.num.cores", max(detectCores()-1, 1))
+#'          Defaults to getOption("DL.num.cores", max(parallel::detectCores()-1, 1))
 #' @param chains Number of chains to run on each core
 #' @param iter Number of iterations in each chain
 #' @param thin How many samples to generate before retaining one
@@ -748,7 +748,7 @@ find.best.tau <- function(dl,
 #'
 fit.model <- function(
     dl,
-    num.cores = getOption("DL.num.cores", max(detectCores() - 1, 1)),
+    num.cores = getOption("DL.num.cores", max(parallel::detectCores() - 1, 1)),
     chains = 1,
     iter = 1000,
     thin = 50)
@@ -763,16 +763,16 @@ fit.model <- function(
         pars
     }
     # Run the chains in parallel
-    sflist <- mclapply(1:num.cores,
+    sflist <- parallel::mclapply(1:num.cores,
                        mc.cores=num.cores,
                        function(i)
-                           stan(fit=dl$fit, data=dl$stan.data,
+                           rstan::stan(fit=dl$fit, data=dl$stan.data,
                                 thin=thin,
                                 init=init.chain.good.tau,
                                 iter=iter,
                                 seed=i, chains=chains,
                                 chain_id=i, refresh=-1))
-    dl$fit <- sflist2stanfit(sflist)
+    dl$fit <- rstan::sflist2stanfit(sflist)
     dl$compiled <- NULL
     dl$sflist <- NULL
     return(dl)
@@ -791,26 +791,26 @@ examine.convergence <- function(dl) {
         if (opts$estimate.phi) {
             pars <- c(pars, "phi")
         }
-        summ <- monitor(fit,
+        summ <- rstan::monitor(fit,
                         print=FALSE,
                         pars=pars)
-        ignore.names <- str_detect(rownames(summ),
+        ignore.names <- stringr::str_detect(rownames(summ),
                                    "^(predictedvar|predictedmean)")
         rhat.sorted <- sort(summ[! ignore.names, "Rhat"])
         rhat.df <- data.frame(
             rhat=rhat.sorted,
             param=names(rhat.sorted),
-            parameter=str_match(names(rhat.sorted), "^[[:alpha:]]+"))
+            parameter=stringr::str_match(names(rhat.sorted), "^[[:alpha:]]+"))
         rm(summ)
         rm(pars)
     })
 }
 
 
-#' The dimensions of the model parameters
-#'
-#' @param dl de.lorean object
-#'
+# The dimensions of the model parameters
+#
+# @param dl de.lorean object
+#
 model.parameter.dimensions <- function(dl) {
     sample.dims <- list(
         lp__=c(),
@@ -831,10 +831,10 @@ model.parameter.dimensions <- function(dl) {
 }
 
 
-#' Sample melter
-#'
-#' @param dl de.lorean object
-#'
+# Sample melter
+#
+# @param dl de.lorean object
+#
 sample.melter <- function(dl, include.iter=TRUE) {
     function(sample.list, sample.dims) {
         melt.var <- function(param) {
@@ -851,10 +851,10 @@ sample.melter <- function(dl, include.iter=TRUE) {
 }
 
 
-#' Join extra data to tau samples.
-#'
-#' @param dl de.lorean object
-#'
+# Join extra data to tau samples.
+#
+# @param dl de.lorean object
+#
 join.tau.samples <- function(dl, tau.samples) {
     with(dl,
          tau.samples
@@ -889,12 +889,12 @@ process.posterior <- function(dl) {
 }
 
 
-#' Optimise the log posterior starting at a particular sample or from some
-#' other set of parameters.
-#'
-#' @param dl de.lorean object
-#' @param sample.iter Sample to optimise (defaults to best sample).
-#'
+# Optimise the log posterior starting at a particular sample or from some
+# other set of parameters.
+#
+# @param dl de.lorean object
+# @param sample.iter Sample to optimise (defaults to best sample).
+#
 optimise.sample <- function(
     dl,
     parameters=sample.parameters(dl, sample.iter=sample.iter),
@@ -902,7 +902,7 @@ optimise.sample <- function(
     ...)
 {
     with(dl, {
-        optimised <- optimizing(dl$fit@stanmodel,
+        optimised <- rstan::optimizing(dl$fit@stanmodel,
                                 data=dl$stan.data,
                                 init=parameters,
                                 as_vector=FALSE,
@@ -920,12 +920,12 @@ optimise.sample <- function(
 }
 
 
-#' Bind a sample.
-#'
-#' @param dl de.lorean object
-#' @param samples Samples to bind to existing samples.
-#' @param sample.iter Iteration (defaults to -1).
-#'
+# Bind a sample.
+#
+# @param dl de.lorean object
+# @param samples Samples to bind to existing samples.
+# @param sample.iter Iteration (defaults to -1).
+#
 bind.sample <- function(dl, samples, sample.iter=-1)
 {
     within(
@@ -981,13 +981,13 @@ analyse.noise.levels <- function(dl, num.high.psi=25) {
 }
 
 
-#' Get the sampled parameter for the gene
-#'
-#' @param dl de.lorean object
-#' @param gene.idx Gene index
-#' @param param Parameter
-#' @param sample.iter Iteration to use (defaults to best.sample)
-#'
+# Get the sampled parameter for the gene
+#
+# @param dl de.lorean object
+# @param gene.idx Gene index
+# @param param Parameter
+# @param sample.iter Iteration to use (defaults to best.sample)
+#
 sampled.gene.param <- function(dl,
                                gene.idx,
                                param,
@@ -1018,24 +1018,23 @@ make.predictions <- function(dl) {
 }
 
 
-#' Fit held out genes
-#'
-#' @param dl de.lorean object
-#' @param expr.held.out The expression matrix including the held out genes
-#'
+# Fit held out genes
+#
+# @param dl de.lorean object
+# @param expr.held.out The expression matrix including the held out genes
+#
 fit.held.out <- function(
     dl,
     expr.held.out,
     sample.iter=dl$best.sample)
 {
-    library(mgcv)
     with(dl, {
         if (opts$adjust.cell.sizes) {
             cell.posterior <- samples.l$S %>% filter(sample.iter == iter)
             expr.held.out <- t(t(expr.held.out) + cell.posterior$S)
         }
         #' Calculate covariance over pseudotimes and capture times
-        calc.K <- Curry(cov.calc.gene,
+        calc.K <- functional::Curry(cov.calc.gene,
                         dl,
                         include.test=F,
                         psi=exp(stan.data$mu_psi),
@@ -1058,17 +1057,17 @@ fit.held.out <- function(
         apply(expr.held.out, 1, calc.gp.marginals)
         # list(
             # gp.marginals=sapply(held.out.genes, calc.gp.marginals),
-            # loess=lapply(held.out.genes, Curry(fit.model, model=gam)))
-            # gam=lapply(held.out.genes, Curry(fit.model, model=gam)))
+            # loess=lapply(held.out.genes, functional::Curry(fit.model, model=gam)))
+            # gam=lapply(held.out.genes, functional::Curry(fit.model, model=gam)))
     })
 }
 
 
-#' Parameter values for sample
-#'
-#' @param dl de.lorean object
-#' @param sample.iter The sample we want the parameters for.
-#'
+# Parameter values for sample
+#
+# @param dl de.lorean object
+# @param sample.iter The sample we want the parameters for.
+#
 sample.parameters <- function(dl,
                               sample.iter=dl$best.sample,
                               param.names=names(dl$samples.l))
@@ -1087,16 +1086,16 @@ sample.parameters <- function(dl,
 #' @export
 #'
 test.fit <- function(vars) {
-    fit.gamma <- fitdistr(vars, 'gamma')
-    fit.lognormal <- fitdistr(vars, 'lognormal')
+    fit.gamma <- MASS::fitdistr(vars, 'gamma')
+    fit.lognormal <- MASS::fitdistr(vars, 'lognormal')
     gp <- (
         ggplot(data.frame(V=vars), aes(x=V))
         + geom_density()
-        + stat_function(fun=Curry(dgamma,
+        + stat_function(fun=functional::Curry(dgamma,
                                 shape=fit.gamma$estimate['shape'],
                                 rate=fit.gamma$estimate['rate']),
                         linetype='dashed')
-        + stat_function(fun=Curry(dlnorm,
+        + stat_function(fun=functional::Curry(dlnorm,
                                 meanlog=fit.lognormal$estimate['meanlog'],
                                 sdlog=fit.lognormal$estimate['sdlog']),
                         linetype='dotted')
@@ -1105,8 +1104,8 @@ test.fit <- function(vars) {
 }
 
 
-#' The samples
-#''
-#' @param dl de.lorean object
-#'
+# The samples
+#
+# @param dl de.lorean object
+#
 sample.iters <- function(dl) dl$samples.l$lp__$iter

@@ -4,8 +4,7 @@
 #' @keywords datasets
 #'
 #' @name trapnell.expr
-#' @aliases trapnell.cell.meta
-#' @aliases trapnell.gene.meta
+#' @aliases trapnell.cell.meta trapnell.gene.meta
 #'
 #' @usage data(TrapnellDeLorean)
 #'
@@ -34,8 +33,7 @@ NULL
 #' @keywords datasets
 #'
 #' @name mcdavid.expr
-#' @aliases mcdavid.cell.meta
-#' @aliases mcdavid.gene.meta
+#' @aliases mcdavid.cell.meta mcdavid.gene.meta
 #'
 #' @usage data(McDavidDeLorean)
 #'
@@ -61,8 +59,7 @@ NULL
 #' @keywords datasets
 #'
 #' @name guo.expr
-#' @aliases guo.cell.meta
-#' @aliases guo.gene.meta
+#' @aliases guo.cell.meta guo.gene.meta
 #'
 #' @usage data(GuoDeLorean)
 #'
@@ -90,8 +87,7 @@ NULL
 #' @keywords datasets
 #'
 #' @name kouno.expr
-#' @aliases kouno.cell.meta
-#' @aliases kouno.gene.meta
+#' @aliases kouno.cell.meta kouno.gene.meta
 #'
 #' @usage data(KounoDeLorean)
 #'
@@ -119,8 +115,7 @@ NULL
 #' @keywords datasets
 #'
 #' @name windram.expr
-#' @aliases windram.cell.meta
-#' @aliases windram.gene.meta
+#' @aliases windram.cell.meta windram.gene.meta
 #'
 #' @usage data(WindramDeLorean)
 #'
@@ -149,12 +144,7 @@ NULL
 #' @keywords datasets
 #'
 #' @name tang.key.genes
-#' @aliases tang.pcr
-#' @aliases tang.pcr.cell.meta
-#' @aliases tang.pcr.gene.meta
-#' @aliases tang.rna.seq
-#' @aliases tang.rna.seq.cell.meta
-#' @aliases tang.rna.seq.gene.meta
+#' @aliases tang.pcr tang.pcr.cell.meta tang.pcr.gene.meta tang.rna.seq tang.rna.seq.cell.meta tang.rna.seq.gene.meta
 #'
 #' @usage data(TangDeLorean)
 #'
@@ -189,8 +179,7 @@ NULL
 #' @keywords datasets
 #'
 #' @name shalek.A.expr
-#' @aliases shalek.A.cell.meta
-#' @aliases shalek.A.gene.meta
+#' @aliases shalek.A.gene.meta shalek.A.cell.meta
 #'
 #' @usage data(ShalekDeLorean)
 #'

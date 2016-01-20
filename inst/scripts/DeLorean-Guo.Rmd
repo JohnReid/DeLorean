@@ -53,7 +53,7 @@ library(DeLorean)
 #
 # Stylesheet
 #
-options(markdown.HTML.stylesheet = system.file(filepath('Rmd', 'foghorn.css'),
+options(markdown.HTML.stylesheet = system.file(file.path('Rmd', 'foghorn.css'),
                                                package="DeLorean"))
 font.family <- "Verdana"
 font.theme <- theme_update(text=element_text(family=font.family))

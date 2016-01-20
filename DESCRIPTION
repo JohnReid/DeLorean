@@ -1,26 +1,31 @@
 Package: DeLorean
-Title: Estimates pseudotimes for single cell expression data
-Version: 0.1
-Authors@R: "John Reid <john.reid@mrc-bsu.cam.ac.uk> [aut, cre]"
-Description: Estimates pseudotimes for single cell expression data
+Title: Estimates Pseudotimes for Single Cell Expression Data
+Author: John Reid <john.reid@mrc-bsu.cam.ac.uk>
+Maintainer: John Reid <john.reid@mrc-bsu.cam.ac.uk>
+Version: 1.0
+Description: Implements the DeLorean model to estimate pseudotimes for single cell expression data.
+    The DeLorean model uses a Gaussian process latent variable model to model uncertainty in the
+    capture time of cross-sectional data.
 Depends:
     R (>= 3.0.2),
-    MASS (>= 7.3),
-    parallel,
-    functional,
     rstan (>= 2.4.0),
-    coda,
-    stringr (>= 0.6.2),
     dplyr (>= 0.4.1.9000),
     reshape2 (>= 1.4),
-    ggplot2 (>= 1.0.0),
+    ggplot2 (>= 1.0.0)
+Imports:
+    MASS (>= 7.3),
+    testthat,
+    parallel,
+    functional,
+    coda,
+    stringr (>= 0.6.2),
+    broom (>= 0.3.6)
+Suggests:
     knitr (>= 1.8),
     knitcitations,
-    extrafont,
-    broom (>= 0.3.6)
-Imports:
-    rmarkdown
-License: MIT
+    rmarkdown,
+    extrafont
+License: MIT + file LICENSE
 LazyData: true
 VignetteBuilder: knitr
 RoxygenNote: 5.0.1

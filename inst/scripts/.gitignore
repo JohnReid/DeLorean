@@ -1,3 +1,8 @@
+*.pdf
+*.png
+*.html
+*.svg
+*.tiff
 Guo-ICA.pdf
 Guo-rand-proj.html
 Windram-Monocle-compare.pdf

@@ -1,18 +1,18 @@
 #' Various DeLorean object plots
 #'
-#' @param dl de.lorean object
+#' @param x de.lorean object
 #'
 #' @export
 #'
-plot.de.lorean <- function(dl, type="profiles", ...) {
+plot.de.lorean <- function(x, type="profiles", ...) {
     result <- switch(type,
-        profiles=plot.profiles(dl, ...),
-        S.posteriors=plot.S.posteriors(dl, ...),
-        pseudotime=plot.pseudotime(dl, ...),
-        convergence=plot.convergence(dl, ...),
-        expr.data=plot.expr.data(dl, ...),
-        roughnesses=plot.roughnesses(dl, ...),
-        tau.offsets=plot.tau.offsets(dl, ...)
+        profiles=plot.profiles(x, ...),
+        S.posteriors=plot.S.posteriors(x, ...),
+        pseudotime=plot.pseudotime(x, ...),
+        convergence=plot.convergence(x, ...),
+        expr.data=plot.expr.data(x, ...),
+        roughnesses=plot.roughnesses(x, ...),
+        tau.offsets=plot.tau.offsets(x, ...)
     )
     if (is.null(result)) {
         stop('Unknown plot type')
@@ -70,7 +70,7 @@ plot.tau.offsets <- function(dl, rug.alpha=.3) {
          ggplot(samples.l$tau, aes(x=tau.offset, color=capture))
          + geom_density()
          + geom_rug(alpha=rug.alpha)
-         + stat_function(fun=Curry(dnorm, sd=hyper$sigma_tau),
+         + stat_function(fun=functional::Curry(dnorm, sd=hyper$sigma_tau),
                          linetype='dashed',
                          alpha=.7,
                          color='blue')
@@ -88,7 +88,7 @@ plot.convergence <- function(dl) {
         rhat.df <- data.frame(
             rhat=rhat.sorted,
             param=names(rhat.sorted),
-            parameter=str_match(names(rhat.sorted), "^[[:alpha:]]+"))
+            parameter=stringr::str_match(names(rhat.sorted), "^[[:alpha:]]+"))
         gp <- (ggplot(rhat.df,
                       aes(y=rhat, x=parameter),
                       environment=environment())
@@ -124,7 +124,7 @@ plot.S.posteriors <- function(dl) {
 #'   object)
 #' @param sample.iter Which sample to plot
 #'
-#' @export
+#' @export plot.cmp.profiles
 #'
 plot.cmp.profiles <- function(...,
                               genes = NULL) {
@@ -243,8 +243,8 @@ mutate.profile.data <- function(.data) {
 }
 
 
-#' Adjust the predicted mean with the predictions from the model.
-#'
+# Adjust the predicted mean with the predictions from the model.
+#
 adjust.predictions <- function(.data, adjust.model) {
     # print(names(.data))
     adjustments <- (
