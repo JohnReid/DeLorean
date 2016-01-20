@@ -63,7 +63,7 @@ Filter genes as in Trapnell et al.
 gene.meta <- (
     trapnell.l
     %>% group_by(gene)
-    %>% summarise(num.expr=sum(fpkm > expr.threshold),
+    %>% dplyr::summarise(num.expr=sum(fpkm > expr.threshold),
                   lpe.sd=sd(fpkm.log10[fpkm > min.expr]))
     %>% filter(num.expr >= 50, lpe.sd > .7))
 qplot(gene.meta$num.expr, binwidth=5)
@@ -97,7 +97,7 @@ genes.high.sd <- filter(gene.meta, num.expr >= 50, lpe.sd > 1)$gene
 gene.diff.expr <- (trapnell.f
     %>% filter(gene %in% genes.high.sd)
     %>% group_by(gene)
-    %>% summarise(p.val=Tobit.Diff.Expr.LRT(fpkm.log10, obstime))
+    %>% dplyr::summarise(p.val=Tobit.Diff.Expr.LRT(fpkm.log10, obstime))
     %>% arrange(p.val)
 )
 gene.diff.expr

@@ -15,7 +15,7 @@ held.out.posterior <- function(
     gene.means <- (
         held.out
         %>% group_by(gene)
-        %>% summarise(mean=mean(x))
+        %>% dplyr::summarise(mean=mean(x))
     )
     held.out <- (
         held.out
@@ -158,7 +158,7 @@ held.out.posterior.by.variation <- function(posterior) {
   return((
     posterior$posterior %>%
     group_by(gene) %>%
-    summarise(dynamic.var=var(mu)) %>%
+    dplyr::summarise(dynamic.var=var(mu)) %>%
     arrange(-dynamic.var))$gene)
 }
 

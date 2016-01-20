@@ -83,7 +83,7 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
         #
         gene.expr <- (expr.l
             %>% group_by(gene)
-            %>% summarise(x.mean=mean(x))
+            %>% dplyr::summarise(x.mean=mean(x))
         )
         stopifnot(! is.na(gene.expr))
         # Estimate the cell size by the median of the expression
@@ -91,7 +91,7 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
         cell.expr <- (expr.l
             %>% left_join(gene.expr)
             %>% group_by(cell)
-            %>% summarise(S.hat=median(x - x.mean))
+            %>% dplyr::summarise(S.hat=median(x - x.mean))
         )
         stopifnot(! is.na(cell.expr))
         expr.l <- expr.l %>% left_join(cell.expr)
@@ -106,7 +106,7 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
         # Resummarise the adjusted expression data
         gene.expr <- (expr.l
             %>% group_by(gene)
-            %>% summarise(x.mean=mean(x),
+            %>% dplyr::summarise(x.mean=mean(x),
                           x.sd=sd(x),
                           phi.hat=mean(x.hat),
                           x.hat.sd=sd(x.hat))
@@ -119,7 +119,7 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
             expr.l
             %>% left_join(cell.meta)
             %>% group_by(gene, capture)
-            %>% summarise(x.mean=mean(x.hat),
+            %>% dplyr::summarise(x.mean=mean(x.hat),
                           x.var=mean((x.hat-mean(x.hat))**2),
                           num.capture=n(),
                           Mgc=mean(x),
@@ -132,7 +132,7 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
         gene.var <- (
             gene.time.expr
             %>% group_by(gene)
-            %>% summarise(Omega=weighted.mean(x.var, num.capture, na.rm=TRUE),
+            %>% dplyr::summarise(Omega=weighted.mean(x.var, num.capture, na.rm=TRUE),
                           Psi=weighted.mean((x.mean-mean(x.mean))**2,
                                             num.capture, na.rm=TRUE))
             %>% filter(! is.na(Psi), Omega > 0 | Psi > 0)
@@ -200,7 +200,7 @@ estimate.hyper <- function(
         gene.var <- gene.var %>% left_join(
             gene.time.expr
             %>% group_by(gene)
-            %>% summarise(omega.hat=mean(Vgc),
+            %>% dplyr::summarise(omega.hat=mean(Vgc),
                           psi.hat=var(Mgc)/V.obs)
             %>% filter(! is.na(psi.hat), ! is.na(omega.hat),
                        omega.hat > 0 | psi.hat > 0)
@@ -973,7 +973,7 @@ analyse.noise.levels <- function(dl, num.high.psi=25) {
         gene.noise.levels <- (
             noise.levels
             %>% group_by(g)
-            %>% summarise(omega=mean(omega), psi=mean(psi))
+            %>% dplyr::summarise(omega=mean(omega), psi=mean(psi))
             %>% left_join(gene.map)
             %>% arrange(-psi/omega))
         genes.high.psi <- head(gene.noise.levels$gene, num.high.psi)

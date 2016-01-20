@@ -283,7 +283,7 @@ naive.peaks <- (
     melt.expr(dl)
     %>% left_join(dl$cell.map %>% select(cell, capture, obstime))
     %>% group_by(gene)
-    %>% summarise(peak.idx=which.max(x),  # Find index of maximal expression
+    %>% dplyr::summarise(peak.idx=which.max(x),  # Find index of maximal expression
                   cell=cell[peak.idx],
                   capture=capture[peak.idx],
                   peak.tau=obstime[peak.idx])
@@ -336,7 +336,7 @@ dl <- within(dl, {
     peak.vs.max <- (
         predictions
         %>% group_by(iter, g)
-        %>% summarise(predicted.peak=tau.to.cbtime(tau[which.max(predictedmean)]))
+        %>% dplyr::summarise(predicted.peak=tau.to.cbtime(tau[which.max(predictedmean)]))
         %>% left_join(gene.map %>% select(g, gene, cbRank, cbPeaktime, expPeaktime))
         %>% filter(! is.na(cbPeaktime))
         %>% mutate(dist=peak.distance(predicted.peak, cbPeaktime))
@@ -350,7 +350,7 @@ dl <- within(dl, {
     peak.max.dist <- (
         peak.vs.max
         %>% group_by(iter)
-        %>% summarise(rmse=calc.rms(dist))
+        %>% dplyr::summarise(rmse=calc.rms(dist))
     )
 })
 sample_n(dl$peak.max.dist, 15)

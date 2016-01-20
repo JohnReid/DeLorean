@@ -250,7 +250,7 @@ adjust.predictions <- function(.data, adjust.model) {
     adjustments <- (
         .data
         %>% group_by(t)
-        %>% summarise(tau=tau[1]))
+        %>% dplyr::summarise(tau=tau[1]))
     # print(tail(adjustments))
     adjustments$adjustment <- predict(adjust.model,
                                         newdata=adjustments)
@@ -297,7 +297,7 @@ plot.expr.data <- function(dl, genes=NULL, num.genes=12) {
              variation <- (
                  expr.l
                  %>% group_by(gene)
-                 %>% summarise(var=var(x))
+                 %>% dplyr::summarise(var=var(x))
                  %>% arrange(-var))
              if (nrow(variation) > num.genes) {
                  variation <- variation %>% head(num.genes)

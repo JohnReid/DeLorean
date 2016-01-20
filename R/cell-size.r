@@ -7,10 +7,10 @@ anders.huber.cell.sizes <- function(expr.l) {
     (
         expr.l
         %>% group_by(gene)
-        %>% summarise(mu=mean(x))
+        %>% dplyr::summarise(mu=mean(x))
         %>% left_join(expr.l)
         %>% group_by(cell)
-        %>% summarise(size=median(x-mu))
+        %>% dplyr::summarise(size=median(x-mu))
     )
 }
 
@@ -23,7 +23,7 @@ anders.huber.cell.sizes <- function(expr.l) {
 estimate.capture.cell.sizes <- function(expr.l) (
     expr.l
     %>% group_by(gene)
-    %>% summarise(prop.expr=mean(x>0))
+    %>% dplyr::summarise(prop.expr=mean(x>0))
     %>% filter(prop.expr > .5)
     %>% left_join(expr.l)
     %>% group_by(capture)

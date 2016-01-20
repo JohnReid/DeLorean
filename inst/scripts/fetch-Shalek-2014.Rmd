@@ -131,7 +131,7 @@ dim(cell.meta.A)
 print(
     supp.table.2
     %>% group_by(cell)
-    %>% summarise(num=n())
+    %>% dplyr::summarise(num=n())
     %>% arrange(-num)
     %>% filter(num > 1)
 )

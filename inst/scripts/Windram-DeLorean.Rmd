@@ -295,7 +295,7 @@ pseudotime in the full posterior.
 posterior.cor <- (
     dl$samples.l$tau
     %>% group_by(iter)
-    %>% summarise(pseudotime.capture.cor=cor(tau, obstime.orig,
+    %>% dplyr::summarise(pseudotime.capture.cor=cor(tau, obstime.orig,
                                              method="spearman"))
 )
 posterior.cor.mean <- mean(posterior.cor$pseudotime.capture.cor)

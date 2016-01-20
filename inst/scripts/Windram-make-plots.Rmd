@@ -41,7 +41,7 @@ plots.windram$tau.posterior <- (
 posterior.cor <- (
     dl.windram$samples.l$tau
     %>% group_by(iter)
-    %>% summarise(pseudotime.capture.cor=cor(tau, obstime.orig,
+    %>% dplyr::summarise(pseudotime.capture.cor=cor(tau, obstime.orig,
                                              method="spearman"))
 )
 posterior.cor.mean <- mean(posterior.cor$pseudotime.capture.cor)
@@ -199,7 +199,7 @@ names(clustered.expr.l)
 module.scores <- (
     clustered.expr.l
     %>% group_by(cluster, cell)
-    %>% summarise(module.score=mean(x))
+    %>% dplyr::summarise(module.score=mean(x))
     %>% left_join(dl.shalek$samples.l$tau
                   %>% filter(dl.shalek$best.sample == iter)
                   %>% dplyr::select(cell, tau)))

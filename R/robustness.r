@@ -65,7 +65,7 @@ test.robustness.de.lorean <- function(
     # Sort by median tau
     cells <- (tau.posterior
         %>% group_by(cell)
-        %>% summarise(median.tau=median(tau))
+        %>% dplyr::summarise(median.tau=median(tau))
         %>% arrange(median.tau)
     )
     # Create result list with plot
