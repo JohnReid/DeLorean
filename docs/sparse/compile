@@ -1,0 +1,3 @@
+#!//bin/bash -ex
+
+pandoc lowrank.md -s --mathjax -o lowrank.pdf
