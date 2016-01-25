@@ -2,7 +2,7 @@ library(MASS)
 library(ggplot2)
 library(dplyr)
 set.seed(1)
-theme_set(theme_grey(base_size=48))
+theme_set(theme_grey(base_size=24))
 distance <- function(x, y=x) outer(x, y, FUN="-")
 kernel.se <- function(x, y=x) exp(-distance(x, y)**2)
 add.posterior.plot <- function(gp, df., colour) {
@@ -16,25 +16,51 @@ solve.pivoted.chol <- function(Q, b) {
   # r <- attr(Q, 'rank')
   backsolve(Q, backsolve(Q, b[pivot], transpose=TRUE))[order(pivot)]
 }
-N <- 25
+N <- 35
 M <- 20
 sigma <- .4
 inputs.inducing <- seq(-.5, 4.5, length.out=M)
 train <- data.frame(input=rnorm(N, 2, 2)) %>%
   mutate(f=mvrnorm(1, mu=rep(0, n()), kernel.se(input) + sigma**2 * diag(N)), f.var=NA, method=NA)
+inputs.test <- seq(min(train$input), max(train$input), length.out=300)
 K <- kernel.se(train$input)
 K.noisy <- K + sigma**2 * diag(nrow(train))
 cond.number <- function(X) {
   eig <- eigen(X, only.values=TRUE)
   eig$values[1] / eig$values[nrow(X)]
 }
+Kfu <- kernel.se(train$input, inputs.inducing)
+Kuu <- kernel.se(inputs.inducing)
+Kuu.inv <- ginv(Kuu)
+Kstaru <- kernel.se(inputs.test, inputs.inducing)
+Qstarstar <- Kstaru %*% Kuu.inv %*% t(Kstaru)
+Qff <- Kfu %*% Kuu.inv %*% t(Kfu)
 # cond.number(K.chol)
 K.chol <- chol(K.noisy)
+#
+# Test Cholesky decomposition of non-negative definite matrix
+R <- chol(K, pivot=TRUE)
+rank. <- attr(R, 'rank')
+pivot <- attr(R, 'pivot')
+oo <- order(pivot)
+max(abs(t(R[1:rank.,oo])%*%R[1:rank.,oo] - K))
+## solve for RPx
+a <- Kfu[,1]
+b <- K %*% a
+RPx <- backsolve(R, b[pivot], k=rank., transpose=TRUE)
+x <- backsolve(R, RPx, k=rank.)
+x - a[pivot[1:rank.]]
+K %*% x[oo] - a
+max(abs(crossprod(R[1:rank.,oo]) - K))
+rank.
+
+rank.
+R[21:24,21:24]
+
 # max(abs(crossprod(K.chol) - K.noisy))
 K.inv.f.chol <- solve.chol(K.chol, train$f)
 # max(abs(train$f - K.noisy %*% K.inv.f.chol))
 
-inputs.test <- seq(min(train$input), max(train$input), length.out=300)
 Kstarstar <- kernel.se(inputs.test)
 Kstartrain <- kernel.se(inputs.test, train$input)
 exact <- data.frame(input=inputs.test) %>%
@@ -43,12 +69,6 @@ exact <- data.frame(input=inputs.test) %>%
          method='exact')
 #
 # Subset of regressors (notation from Quinonero & Rasmussen (2005), eqn 16b)
-Kfu <- kernel.se(train$input, inputs.inducing)
-Kuu <- kernel.se(inputs.inducing)
-Kuu.inv <- ginv(Kuu)
-Kstaru <- kernel.se(inputs.test, inputs.inducing)
-Qstarstar <- Kstaru %*% Kuu.inv %*% t(Kstaru)
-Qff <- Kfu %*% Kuu.inv %*% t(Kfu)
 Sigma <- ginv(1/sigma**2 * crossprod(Kfu) + Kuu)
 Sigma.starstar <- Kstaru %*% Sigma %*% t(Kstaru)
 sor <- data.frame(input=inputs.test) %>%
