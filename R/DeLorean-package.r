@@ -96,7 +96,7 @@ dim.de.lorean <- function(x) {
 #'
 #' @export
 #'
-summary.de.lorean <- function(x, ...) {
+summary.de.lorean <- function(object, ...) {
     print(sapply(x, summary))
 }
 
