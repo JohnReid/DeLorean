@@ -1,6 +1,10 @@
 #' Various DeLorean object plots
 #'
 #' @param x de.lorean object
+#' @param type Type of plot: 'profiles'; 'S.posteriors';
+#'          'pseudotime'; 'convergence'; 'expr.data';
+#'          'roughnesses'; 'tau.offsets'
+#' @param ... Extra arguments to plot function
 #'
 #' @export
 #'
@@ -22,7 +26,9 @@ plot.de.lorean <- function(x, type="profiles", ...) {
 
 #' Calculate a suitable value for a rug plot given the
 #' number of points
-#' @param dl de.lorean object
+#'
+#' @param n Number of points.
+#' @param scale Scale the value.
 #'
 alpha.for.rug <- function(n, scale=100) {
     1 / (max(1, n / scale))
@@ -64,6 +70,7 @@ plot.pseudotime <- function(dl) {
 #' Plot the tau offsets.
 #'
 #' @param dl de.lorean object
+#' @param rug.alpha Alpha parameter for rug geom
 #'
 plot.tau.offsets <- function(dl, rug.alpha=.3) {
     with(dl,
@@ -122,11 +129,10 @@ plot.S.posteriors <- function(dl) {
 #' @param ... Named de.lorean objects
 #' @param genes Genes to plot (defaults to genes.high.psi of first de.lorean
 #'   object)
-#' @param sample.iter Which sample to plot
 #'
-#' @export plot.cmp.profiles
+#' @export cmp.profiles.plot
 #'
-plot.cmp.profiles <- function(...,
+cmp.profiles.plot <- function(...,
                               genes = NULL) {
     dls <- list(...)
     dl.levels <- names(dls)
@@ -169,8 +175,10 @@ plot.cmp.profiles <- function(...,
 #'
 #' @param dl de.lorean object
 #' @param genes Genes to plot (defaults to genes.high.psi)
+#' @param profile.color Colour for the profile
 #' @param add.data Add actual expression data to plot
 #' @param sample.iter Which sample to plot
+#' @param ... Extra arguments
 #'
 plot.profiles <- function(dl,
                           genes=dl$genes.high.psi,
@@ -265,10 +273,7 @@ adjust.predictions <- function(.data, adjust.model) {
 #' Add expression data to a plot
 #'
 #' @param gp Plot object
-#' @param dl de.lorean object
-#' @param genes Genes to plot
-#' @param sample.iter Which sample to plot
-#' @param cell.size.adj Adjust expression by posterior estimate of cell size
+#' @param .data Expression data to add
 #'
 plot.add.expr <- function(gp, .data=NULL)
 {
@@ -284,7 +289,8 @@ plot.add.expr <- function(gp, .data=NULL)
 #' Plot the expression data by the capture points
 #'
 #' @param dl de.lorean object
-#' @param genes Genes to plot. If NULL plots some random varying genes.
+#' @param genes Genes to plot. If NULL plots some random varying genes
+#' @param num.genes Number of genes to plot
 #'
 plot.expr.data <- function(dl, genes=NULL, num.genes=12) {
     with(dl, {

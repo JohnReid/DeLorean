@@ -142,8 +142,7 @@ Examine data for empirical Bayes estimation of hyperparameters.
 dl <- estimate.hyper(
     dl,
     sigma.tau=group.size / 2,
-    delta=.5,
-    model.name='simplest-model')
+    delta=.5)
 fits.omega <- test.fit(dl$gene.var$Omega)
 print(fits.omega$gp)
 fits.psi <- test.fit(dl$gene.var$Psi)
@@ -159,7 +158,7 @@ print(fits.psi$gp)
 
 Choose a few genes.
 ```{r filterGenes, eval=fit.model}
-max.genes <- min(getOption("Windram.max.genes", 100))
+max.genes <- min(getOption("Windram.max.genes", 30))
 sampled.genes <- sample_n(dl$gene.meta, max.genes)$gene
 gene.filter <- function(genes) genes %in% sampled.genes
 dl <- filter.genes(dl, gene.filter)
@@ -169,7 +168,7 @@ dl <- filter.genes(dl, gene.filter)
 
 Format the data for Stan and fit the model.
 ```{r fitModel, eval=fit.model}
-dl <- format.for.stan(dl)
+dl <- prepare.for.stan(dl)
 # Save for input to Monocle
 saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
         file='Data/Windram-input.rds')
@@ -306,8 +305,8 @@ posterior.cor.best
 monocle.cor <- 0.9269565
 plots$post.cor <- (ggplot(posterior.cor, aes(x=pseudotime.capture.cor))
     + geom_histogram()
-    + geom_vline(x=monocle.cor, linetype='dashed', color='red')
-    + geom_vline(x=posterior.cor.best, linetype='dashed', color='blue')
+    + geom_vline(xintercept=monocle.cor, linetype='dashed', color='red')
+    + geom_vline(xintercept=posterior.cor.best, linetype='dashed', color='blue')
     + scale_x_continuous(name="correlation"))
 print(plots$post.cor)
 ggsave('Windram-posterior-cor.tiff', plots$post.cor + plos.theme,

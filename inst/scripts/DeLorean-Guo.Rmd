@@ -134,8 +134,8 @@ epi.sampled.cells <- (
 run.model <- function(dl, cells.sampled) {
     cell.filter <- function(cells) cells %in% cells.sampled
     dl <- filter.cells(dl, cell.filter)
-    dl <- format.for.stan(dl)
-    dl <- compile.model.simple(dl)
+    dl <- prepare.for.stan(dl)
+    dl <- compile.model(dl)
     dl <- find.best.tau(dl)
     system.time(dl <- fit.model(dl, num.cores=20))
     dl <- examine.convergence(dl)
@@ -153,7 +153,7 @@ dl.epi <- run.model(dl, epi.sampled.cells$cell)
 Compare the profiles in the three fitted models for the TE, PE and ICM.
 
 ```{r compareProfiles}
-gp <- plot.cmp.profiles(TE=dl.te, PE=dl.pe, EPI=dl.epi,
+gp <- cmp.profiles.plot(TE=dl.te, PE=dl.pe, EPI=dl.epi,
                         genes=dl.te$gene.map$gene)
 print(gp)
 png('Guo-fates.png', width=1400, height=900)

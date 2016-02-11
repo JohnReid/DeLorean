@@ -38,7 +38,8 @@ cov.calc.dists <- function(tau.1, tau.2=tau.1, period=NULL) {
 #' test inputs.
 #'
 #' @param dl de.lorean object
-#' @param sample.iter Iteration to use (defaults to best.sample)
+#' @param tau The pseudotimes to use
+#' @param include.test Also include the pseudotimes for the test inputs
 #'
 cov.calc.dl.dists <- function(dl,
                               tau=tau.for.sample(dl),
@@ -64,9 +65,10 @@ cov.calc.dl.dists <- function(dl,
 #' @param dl de.lorean object
 #' @param gene.idx Gene index
 #' @param cov.fn Covariance function (defaults to cov.matern.32)
-#' @param sample.iter Iteration to use (defaults to best.sample)
+#' @param tau The pseudotimes to use
+#' @param include.test Also include the pseudotimes for the test inputs
 #' @param psi Temporal variation
-#' @param psi Noise
+#' @param omega Noise
 #'
 cov.calc.gene <- function(dl,
                           gene.idx,
@@ -93,7 +95,7 @@ cov.calc.gene <- function(dl,
 #' @param dl de.lorean object
 #' @param gene.idx Gene index
 #' @param cov.fn Covariance function (defaults to cov.matern.32)
-#' @param sample.iter Iteration to use (defaults to best.sample)
+#' @param tau The pseudotimes to use
 #'
 cov.calc.gene.conditioned <- function(dl,
                                       gene.idx,
@@ -121,7 +123,7 @@ cov.calc.gene.conditioned <- function(dl,
 #'
 #' @param dl de.lorean object
 #' @param cov.fn Covariance function (defaults to cov.matern.32)
-#' @param sample.iter Iteration to use (defaults to best.sample)
+#' @param tau The pseudotimes to use
 #'
 cov.all.genes.conditioned <- function(dl,
                                       cov.fn=NULL,
@@ -185,8 +187,10 @@ gp.log.marg.like <- function(y, K=NULL, U=chol(K)) {
 #' on page 19 of Rasmumssen and Williams' book.
 #'
 #' @param y The targets.
-#' @param K The covariance matrix (kernel), not needed if U is provided.
-#' @param U Cholesky decomposition of K (chol(K)).
+#' @param K The covariance matrix (kernel) for input points, not needed if U is provided.
+#' @param Kstar The cross covariance matrix (kernel)
+#' @param Kstarstar The cross covariance matrix (kernel) for test points
+#' @param U Cholesky decomposition of K
 #'
 gp.predict <- function(y, K=NULL, Kstar, Kstarstar, U=chol(K)) {
     alpha <- backsolve(U, backsolve(U, y, transpose = TRUE))
@@ -217,11 +221,12 @@ gp.predictions.df <- function(predictions) {
 #' on page 200 of Rasmumssen and Williams' book.
 #'
 #' @param y y
-#' @param mu.x mu_x
-#' @param mu.y mu_y
-#' @param A Var(X)
-#' @param B Var(Y)
-#' @param C Cov(X, Y)
+#' @param mu.x Mean of x
+#' @param mu.y Mean of y
+#' @param .A Var(X)
+#' @param .B Var(Y)
+#' @param .C Cov(X, Y)
+#' @param U Cholesky decomposition of .B
 #'
 gaussian.condition <- function(
     y,

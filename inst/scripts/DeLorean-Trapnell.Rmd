@@ -121,8 +121,8 @@ dl <- filter.genes(dl, gene.filter)
 
 Define and compile the model, find the best initialisation, and fit the model.
 ```{r model}
-dl <- format.for.stan(dl)
-dl <- compile.model.simple(dl)
+dl <- prepare.for.stan(dl)
+dl <- compile.model(dl)
 dl <- find.best.tau(dl)
 system.time(dl <- fit.model(dl))
 

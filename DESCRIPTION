@@ -7,24 +7,23 @@ Description: Implements the DeLorean model to estimate pseudotimes for single ce
     The DeLorean model uses a Gaussian process latent variable model to model uncertainty in the
     capture time of cross-sectional data.
 Depends:
-    R (>= 3.0.2),
+    R (>= 3.0.2)
+Imports:
     rstan (>= 2.4.0),
     dplyr (>= 0.4.1.9000),
     reshape2 (>= 1.4),
-    ggplot2 (>= 1.0.0)
-Imports:
-    MASS (>= 7.3),
-    testthat,
-    parallel,
-    functional,
-    coda,
     stringr (>= 0.6.2),
-    broom (>= 0.3.6)
+    ggplot2 (>= 1.0.0),
+    MASS (>= 7.3),
+    coda,
+    parallel,
+    functional
 Suggests:
     knitr (>= 1.8),
     knitcitations,
     rmarkdown,
-    extrafont
+    extrafont,
+    testthat
 License: MIT + file LICENSE
 LazyData: true
 VignetteBuilder: knitr

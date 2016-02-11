@@ -31,8 +31,8 @@ test.robustness.de.lorean <- function(
     partition <- partition.de.lorean(dl, pieces)
     # Define function to fit each piece
     run.model <- function(piece) {
-        piece <- format.for.stan(piece)
-        piece <- compile.model.simple(piece)
+        piece <- prepare.for.stan(piece)
+        piece <- compile.model(piece)
         piece <- find.best.tau(piece)
         piece <- fit.model(piece)
         process.posterior(piece)

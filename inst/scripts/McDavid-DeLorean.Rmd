@@ -183,7 +183,7 @@ saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
 
 Define and compile the model, find the best initialisation, and fit the model.
 ```{r model}
-dl <- format.for.stan(dl, period=3, hold.out=3)
+dl <- prepare.for.stan(dl, period=3, hold.out=3)
 dl <- compile.model(dl)
 dl <- find.best.tau(dl)
 # dl <- find.smooth.tau(dl)

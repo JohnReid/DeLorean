@@ -37,6 +37,7 @@ permute.df <- function(.df, group.col=NULL) {
 #'
 #' @param dl de.lorean object
 #' @param expr.held.out The expression matrix including the held out genes
+#' @param sample.iter Which sample to use
 #'
 roughness.of.sample <- function(
     dl,
@@ -66,6 +67,7 @@ permuted.roughness <- function(
 #'
 #' @param dl de.lorean object
 #' @param expr.held.out The expression matrix including the held out genes
+#' @param num.perms Number of permutations to test
 #'
 roughness.of.permutations <- function(
     dl,
@@ -81,6 +83,7 @@ roughness.of.permutations <- function(
 #'
 #' @param dl de.lorean object
 #' @param expr.held.out The expression matrix including the held out genes
+#' @param num.perms Number of permutations to test
 #'
 #' @export
 #'

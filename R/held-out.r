@@ -3,6 +3,7 @@
 #'
 #' @param dl de.lorean object
 #' @param held.out Held out gene expression levels
+#' @param posterior.sample Posterior sample to use
 #'
 #' @export
 #'
@@ -132,7 +133,7 @@ held.out.select.genes <- function(dl, expr, num.held.out) {
 #'
 #' @param dl de.lorean object
 #' @param expr Expression matrix of all genes
-#' @param num.held.out Number to select
+#' @param held.out.genes Genes to hold out
 #'
 #' @export
 #'
@@ -144,6 +145,9 @@ held.out.melt <- function(dl, expr, held.out.genes) {
 
 #' Filter the genes
 #'
+#' @param posterior The posterior of some held out genes
+#' @param genes Genes to filter
+#'
 held.out.posterior.filter <- function(posterior, genes) {
   return(list(
     held.out = posterior$held.out %>% filter(gene %in% genes),
@@ -153,6 +157,8 @@ held.out.posterior.filter <- function(posterior, genes) {
 
 
 #' Order the genes by the variation of their posterior mean
+#'
+#' @param posterior The posterior of some held out genes
 #'
 held.out.posterior.by.variation <- function(posterior) {
   return((
@@ -164,6 +170,9 @@ held.out.posterior.by.variation <- function(posterior) {
 
 
 #' Join with another data frame. Useful for adding gene names etc..
+#'
+#' @param posterior The posterior of some held out genes
+#' @param .df Data frame to join with
 #'
 held.out.posterior.join <- function(posterior, .df) {
   return(list(

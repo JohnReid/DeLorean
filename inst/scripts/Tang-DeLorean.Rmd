@@ -150,8 +150,8 @@ saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
 
 Format the data for Stan and fit the model.
 ```{r fitModel}
-dl <- format.for.stan(dl)
-dl <- compile.model.simple(dl)
+dl <- prepare.for.stan(dl)
+dl <- compile.model(dl)
 dl <- find.best.tau(dl)
 system.time(dl <- fit.model(dl))
 

@@ -1,6 +1,7 @@
 #' Check that it is a valid ordering
 #'
-#' @param ordering The ordering.
+#' @param ordering The ordering
+#' @param full.check Perform a full check
 #'
 ordering.is.valid <- function(ordering, full.check=FALSE) {
     if (! is.integer(ordering)
@@ -96,7 +97,8 @@ ordering.random.move <- function(ordering) {
 
 #' Randomly move a block in an ordering to another location
 #'
-#' @param ordering The ordering.
+#' @param ordering The ordering
+#' @param max.width The maximum width of the block
 #'
 ordering.random.block.move <- function(ordering, max.width=4) {
     width <- sample(max.width, 1)
@@ -132,8 +134,10 @@ ordering.maximise <- function(ordering, fn) {
 #' Metropolis-Hastings on orderings.
 #'
 #' @param ordering Initial ordering
-#' @param loglikelihood Log likelihood function
+#' @param log.likelihood Log likelihood function
 #' @param proposal.fn Proposal function
+#' @param iterations Number of iterations
+#' @param thin Thinning parameter
 #'
 ordering.metropolis.hastings <- function(
     ordering,
@@ -174,7 +178,7 @@ ordering.metropolis.hastings <- function(
     }
     stopifnot(sample.idx == num.samples)
     # Return all state as a list
-    list(chain = mcmc(chain, start=1, end=iterations+1, thin=thin),
+    list(chain = coda::mcmc(chain, start=1, end=iterations+1, thin=thin),
          log.likelihoods = lls,
          acceptance.rate = accepted / iterations)
 }
@@ -218,7 +222,7 @@ ordering.invert <- function(ordering) {
 #' Test ordering score: sum every time consecutive items are in
 #' order.
 #'
-#' @param ordering
+#' @param ordering The permutation (ordering) to test.
 #'
 ordering.test.score <- function(ordering) {
     sum(sapply(1:(length(ordering)-1),

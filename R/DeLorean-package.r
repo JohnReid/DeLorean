@@ -6,6 +6,15 @@ NULL
 
 #' Initialise DeLorean object
 #'
+#' @param expr Expression array
+#' @param gene.meta Data frame of meta data for genes
+#' @param cell.meta Data frame of meta data for cells
+#'
+#' @import ggplot2
+#' @import dplyr
+#' @import reshape2
+#' @import rstan
+#'
 #' @export
 #'
 de.lorean <- function(expr, gene.meta, cell.meta) {
@@ -36,6 +45,8 @@ de.lorean <- function(expr, gene.meta, cell.meta) {
 
 #' Is a DeLorean object?
 #'
+#' @param x de.lorean object
+#'
 #' @export
 #'
 is.de.lorean <- function(x) inherits(x, "de.lorean")
@@ -59,6 +70,9 @@ check.de.lorean.consistent <- function(dl) with(dl, {
 
 #' Print details of DeLorean object
 #'
+#' @param x de.lorean object
+#' @param ... Extra arguments
+#'
 #' @export
 #'
 print.de.lorean <- function(x, ...) {
@@ -66,6 +80,8 @@ print.de.lorean <- function(x, ...) {
 }
 
 #' Dimensions of DeLorean object
+#'
+#' @param x De lorean object
 #'
 #' @export
 #'
@@ -75,7 +91,8 @@ dim.de.lorean <- function(x) {
 
 #' Summarise DeLorean object
 #'
-#' @param x de.lorean object
+#' @param object de.lorean object
+#' @param ... Extra arguments
 #'
 #' @export
 #'
@@ -99,6 +116,7 @@ globalVariables(c(
   'g',
   'omega',
   'psi',
+  'phi',
   'expr',
   'gene.meta',
   'gene',

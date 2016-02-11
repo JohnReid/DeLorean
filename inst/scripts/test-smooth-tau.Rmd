@@ -60,7 +60,7 @@ library(devtools)
 load_all('../..')
 test.dl <- readRDS(file='test-dl.rds')
 # test.dl <- readRDS(file='Shalek-input.rds')
-# test.dl <- format.for.stan(test.dl)
+# test.dl <- prepare.for.stan(test.dl)
 ll.fn <- ordering.log.likelihood.fn(test.dl)
 
 ```

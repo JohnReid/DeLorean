@@ -10,3 +10,8 @@ sandbox
 .Rproj.user/
 man/
 inst/doc
+
+.Rd2pdf*
+DeLorean.Rcheck
+..Rcheck
+downloads

@@ -58,8 +58,8 @@ melt.expr <- function(dl, expr=dl$expr) (
 
 # Cast an expression matrix.
 #
-# @param dl The de.lorean object.
-# @param expr.l Expression values in long format.
+# @param dl The de.lorean object
+# @param expr.l Expression values in long format
 #
 cast.expr <- function(expr.l) expr.l %>% acast(gene ~ cell, value.var="x")
 
@@ -67,6 +67,8 @@ cast.expr <- function(expr.l) expr.l %>% acast(gene ~ cell, value.var="x")
 #' Analyse variance of expression between and within capture times.
 #'
 #' @param dl de.lorean object
+#' @param adjust.cell.sizes Choose whether to adjust the expression values by
+#'        the cell size estimates
 #'
 #' @export
 #'
@@ -150,15 +152,15 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
 #' @param dl de.lorean object
 #' @param sigma.tau Noise s.d. in temporal dimension
 #' @param length.scale Length scale for stationary GP covariance function
+#' @param model.name Choose model
 #'
 #' @export
 #'
 estimate.hyper <- function(
     dl,
     sigma.tau = .5,
-    delta = .5,
     length.scale = NULL,
-    model.name = 'simplest-model'
+    model.name = 'lowrank'
 ) {
     dl <- within(dl, {
         #
@@ -169,16 +171,17 @@ estimate.hyper <- function(
             opts$model.name,
             "simple-model" = TRUE,
             "simplest-model" = FALSE,
+            "lowrank" = FALSE,
             NA)
         opts$adjust.cell.sizes <- switch(
             opts$model.name,
             "simple-model" = TRUE,
             "simplest-model" = FALSE,
+            "lowrank" = FALSE,
             NA)
         #
         # Set up temporal hyper-parameters
         #
-        opts$delta <- delta
         opts$sigma.tau <- sigma.tau
         time.range <- range(cell.meta$obstime)
         time.width <- time.range[2] - time.range[1]
@@ -313,18 +316,20 @@ sample.genes.and.cells <- function(
 }
 
 
-#' Format for Stan
+#' Prepare for Stan
 #'
 #' @param dl de.lorean object
 #' @param num.test Number of test points to consider
+#' @param num.inducing Number of inducing points
 #' @param period Period of expression patterns
 #' @param hold.out Number genes to hold out for generalisation tests
 #'
-#' @export format.for.stan
+#' @export prepare.for.stan
 #'
-format.for.stan <- function(
+prepare.for.stan <- function(
     dl,
     num.test = 101,
+    num.inducing = 20,  # M
     period = 0,
     hold.out = 0
 ) {
@@ -386,9 +391,14 @@ format.for.stan <- function(
                 C=.C,
                 G=.G,
                 H=hold.out,
+                M=num.inducing,
                 # Data
                 time=cell.map$obstime,
                 expr=expr,
+                # Inducing pseudotimes
+                u=seq(from=time.range[1] - 3*hyper$sigma_tau,
+                      to=time.range[2] + 3*hyper$sigma_tau,
+                      length.out=num.inducing),
                 # Held out parameters
                 heldout_psi=filter(gene.map, g > .G)$psi.hat,
                 heldout_omega=filter(gene.map, g > .G)$omega.hat,
@@ -485,10 +495,14 @@ even.tau.spread <- function(dl) {
 #' expression profiles over this ordering.
 #'
 #' @param dl de.lorean object
+#' @param psi Temporal variation
+#' @param omega Noise
 #' @param num.cores Number of cores to run on.
 #'          Defaults to getOption("DL.num.cores", max(parallel::detectCores()-1, 1))
-#' @param num.tau.to.keep How many initialisations to keep.
+#' @param num.tau.to.try How many initialisations to try
+#' @param num.tau.to.keep How many initialisations to keep
 #' @param method Method to use "maximise" or "metropolis"
+#' @param ... Extra arguments to method
 #'
 #' @export
 #'
@@ -502,7 +516,7 @@ find.smooth.tau <- function(
     method = "metropolis",
     ...
 ) {
-    log.likelihood <- ordering.log.likelihood.fn(dl)
+    log.likelihood <- ordering.log.likelihood.fn(dl, psi, omega)
     dl$tau.inits <- with(dl, {
         # Maximise the sum of the log marginal likelihoods
         ordering.search <- function(seed) {
@@ -562,12 +576,16 @@ find.smooth.tau <- function(
 }
 
 
-# Test ordering Metropolis-Hastings sampler.
-#
-# @param dl de.lorean object
-# @param num.cores Number of cores to run on.
-#          Defaults to getOption("DL.num.cores", max(parallel::detectCores()-1, 1))
-#
+#' Test ordering Metropolis-Hastings sampler.
+#'
+#' @param dl de.lorean object
+#' @param psi Temporal variation
+#' @param omega Noise
+#' @param num.cores Number of cores to run on.
+#'          Defaults to getOption("DL.num.cores", max(parallel::detectCores()-1, 1))
+#' @param iterations Number of iterations
+#' @param thin Thin the samples
+#'
 test.mh <- function(
     dl,
     psi = mean(dl$gene.map$psi.hat),
@@ -576,7 +594,7 @@ test.mh <- function(
     iterations = 1000,
     thin = 15
 ) {
-    log.likelihood <- ordering.log.likelihood.fn(dl)
+    log.likelihood <- ordering.log.likelihood.fn(dl, psi, omega)
     dl$tau.inits <- with(dl, {
         # Maximise the sum of the log marginal likelihoods
         ordering.search <- function(seed) {
@@ -611,10 +629,13 @@ cov.fn.for <- function(dl) {
 }
 
 
-# Create a log likelihood function suitable for evaluating smooth orderings.
-#
-# @param dl de.lorean object
-#
+#' Create a log likelihood function suitable for evaluating smooth orderings.
+#'
+#' @param dl de.lorean object
+#' @param psi Temporal variation
+#' @param omega Noise
+#' @param cov.fn Covariance function
+#'
 ordering.log.likelihood.fn <- function(
     dl,
     psi = mean(dl$gene.map$psi.hat),
@@ -941,6 +962,8 @@ bind.sample <- function(dl, samples, sample.iter=-1)
 #' Optimise the best sample and update the best.sample index.
 #'
 #' @param dl de.lorean object
+#' @param sample.to.opt Sample to optimise
+#' @param new.best.sample Update to best sample index
 #'
 #' @export
 #'
@@ -1018,11 +1041,12 @@ make.predictions <- function(dl) {
 }
 
 
-# Fit held out genes
-#
-# @param dl de.lorean object
-# @param expr.held.out The expression matrix including the held out genes
-#
+#' Fit held out genes
+#'
+#' @param dl de.lorean object
+#' @param expr.held.out The expression matrix including the held out genes
+#' @param sample.iter The sample to use to fit with
+#'
 fit.held.out <- function(
     dl,
     expr.held.out,
@@ -1082,6 +1106,8 @@ sample.parameters <- function(dl,
 
 
 #' Test fit for log normal and gamma
+#'
+#' @param vars Data to fit
 #'
 #' @export
 #'

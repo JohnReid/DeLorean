@@ -24,7 +24,7 @@ de.lorean.stylesheet <- function() {
 #'  markdown report file in the package.
 #'
 knit.report <- function(dl, report.name) {
-    knit2html(report.file(report.name),
+    knitr::knit2html(report.file(report.name),
               envir=environment(),
               stylesheet=de.lorean.stylesheet())
 }
