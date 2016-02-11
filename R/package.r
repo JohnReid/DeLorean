@@ -89,13 +89,13 @@ dim.de.lorean <- function(x) {
     dim(x$expr)
 }
 
-#' Summarise DeLorean object
-#'
-#' @param object de.lorean object
-#' @param ... Extra arguments
-#'
-#' @export
-#'
+# Summarise DeLorean object
+#
+# @param object de.lorean object
+# @param ... Extra arguments
+#
+# @export
+#
 summary.de.lorean <- function(object, ...) {
     print(sapply(x, summary))
 }

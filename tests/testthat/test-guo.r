@@ -4,10 +4,7 @@ dl <- de.lorean(
     guo.expr,
     guo.gene.meta,
     guo.cell.meta)
-dl <- estimate.hyper(
-    dl,
-    sigma.tau=0.5,
-    delta=.5)
+dl <- estimate.hyper(dl, sigma.tau=0.5)
 set.seed(1)
 num.genes <- nrow(dl$gene.meta)  # All genes
 sampled.genes <- sample_n(dl$gene.meta, num.genes)$gene
@@ -45,10 +42,10 @@ run.model <- function(dl, cells.sampled) {
     dl <- make.predictions(dl)
     dl
 }
-dl.te  <- run.model(dl,  te.sampled.cells$cell)
-dl.pe  <- run.model(dl,  pe.sampled.cells$cell)
-dl.epi <- run.model(dl, epi.sampled.cells$cell)
-gp <- cmp.profiles.plot(TE=dl.te, PE=dl.pe, EPI=dl.epi,
-                        genes=dl.te$gene.map$gene)
-print(gp)
+#dl.te  <- run.model(dl,  te.sampled.cells$cell)
+#dl.pe  <- run.model(dl,  pe.sampled.cells$cell)
+#dl.epi <- run.model(dl, epi.sampled.cells$cell)
+#gp <- cmp.profiles.plot(TE=dl.te, PE=dl.pe, EPI=dl.epi,
+                        #genes=dl.te$gene.map$gene)
+#print(gp)
 sessionInfo()
