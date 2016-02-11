@@ -756,25 +756,74 @@ find.best.tau <- function(dl,
 }
 
 
-#' Fit the model
+#' Fit the model using specified method (sampling or variational Bayes)
 #'
 #' @param dl de.lorean object
-#' @param num.cores Number of cores to run on.
-#'          Defaults to getOption("DL.num.cores", max(parallel::detectCores()-1, 1))
-#' @param chains Number of chains to run on each core
-#' @param iter Number of iterations in each chain
-#' @param thin How many samples to generate before retaining one
+#' @param method Either "sample" or "vb"
+#' @param ... Extra arguments for method
 #'
 #' @export
 #'
 fit.model <- function(
     dl,
+    method = 'sample',
+    ...)
+{
+    switch(
+        method,
+        "sample" = fit.model.sample(dl, ...),
+        "vb" = fit.model.vb(dl, ...),
+        stop('Unknown method'))
+}
+
+
+#' Fit the model using Stan sampler
+#'
+#' @param dl de.lorean object
+#' @param num.cores Number of cores to run on.
+#'          Defaults to getOption("DL.num.cores", max(parallel::detectCores()-1, 1))
+#' @param chains Number of chains to run on each core
+#' @param thin How many samples to generate before retaining one
+#' @param ... Extra arguments for rstan::stan() sampling call
+#'
+#' @export
+#'
+fit.model.sample <- function(
+    dl,
     num.cores = getOption("DL.num.cores", max(parallel::detectCores() - 1, 1)),
     chains = 1,
-    iter = 1000,
-    thin = 50)
+    thin = 50,
+    ...)
 {
-    init.chain.good.tau <- function(chain_id) {
+    init.chain.good.tau <- make.init.fn(dl)
+    # Run the chains in parallel
+    sflist <- parallel::mclapply(
+        1:num.cores,
+        mc.cores=num.cores,
+        function(i)
+            rstan::stan(
+                fit=dl$fit,
+                data=dl$stan.data,
+                thin=thin,
+                init=init.chain.good.tau,
+                seed=i,
+                chains=chains,
+                chain_id=i,
+                refresh=-1,
+                ...))
+    dl$fit <- rstan::sflist2stanfit(sflist)
+    dl$compiled <- NULL  # Delete large unneeded object
+    dl$sflist <- NULL  # Delete large unneeded object
+    return(dl)
+}
+
+
+#' Returns a function that constructs parameter settings with good tau.
+#'
+#' @param dl de.lorean object
+#'
+make.init.fn <- function(dl) {
+    function(chain_id) {
         #
         # Create random parameters
         pars <- make.chain.init.fn(dl)()
@@ -783,16 +832,23 @@ fit.model <- function(
         pars$tau <- dl$tau.inits[[chain_id]]$tau
         pars
     }
-    # Run the chains in parallel
-    sflist <- parallel::mclapply(1:num.cores,
-                       mc.cores=num.cores,
-                       function(i)
-                           rstan::stan(fit=dl$fit, data=dl$stan.data,
-                                thin=thin,
-                                init=init.chain.good.tau,
-                                iter=iter,
-                                seed=i, chains=chains,
-                                chain_id=i, refresh=-1))
+}
+
+
+#' Fit the model using Stan variational Bayes
+#'
+#' @param dl de.lorean object
+#' @param ... Extra arguments for rstan::vb()
+#'
+#' @export
+#'
+fit.model.vb <- function(dl, ...) {
+    # Run variational Bayes
+    rstan::vb(
+        dl$fit,
+        data=dl$stan.data,
+        pars=make.init.fn(dl)(1),
+        ...)
     dl$fit <- rstan::sflist2stanfit(sflist)
     dl$compiled <- NULL
     dl$sflist <- NULL
