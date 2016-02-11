@@ -23,7 +23,7 @@ inputs.inducing <- seq(-.5, 4.5, length.out=M)
 train <- data.frame(input=rnorm(N, 2, 2)) %>%
   mutate(f=mvrnorm(1, mu=rep(0, n()), kernel.se(input) + sigma**2 * diag(N)), f.var=NA, method=NA)
 inputs.test <- seq(min(train$input), max(train$input), length.out=300)
-K <- kernel.se(train$input)
+K <- kernel.se(train$input) + 1e-9 * diag(nrow(train))
 K.noisy <- K + sigma**2 * diag(nrow(train))
 cond.number <- function(X) {
   eig <- eigen(X, only.values=TRUE)
