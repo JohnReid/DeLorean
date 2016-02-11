@@ -1,0 +1,54 @@
+---
+title: "The DeLorean pseudotime estimation package"
+author: "John Reid"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+Our understanding of dynamical biological systems such as developmental
+processes or transitions into disease states is limited by our ability to
+reverse-engineer these systems using available data.  Most medium- and
+high-throughput experimental protocols (e.g. single cell RNA-seq) are
+destructive in nature, generating cross-sectional time series in which it
+is not possible to track the progress of one cell through the system.  In
+typical systems, individual cells progress at different rates and a
+sample's experimental capture time will not accurately reflect how far it
+has progressed. In these cases, cross-sectional data can appear
+particularly noisy.
+
+## Pseudotime
+
+We propose a probabilistic model that uses smoothness assumptions to
+estimate and correct for this effect.  Each cell is assigned a pseudotime
+that represents its progress through the system.  These pseudotimes are
+related to but not determined by the cells' experimental capture times.
+Replacing capture times with pseudotimes gives us a more representative
+view of the underlying system, improving downstream analyses.
+
+## Model
+
+We model the smoothness assumption on each gene's expression profile $y_g$
+using a Gaussian process over pseudotime. Gene-specific parameters in the
+covariance function represent intrinsic measurement noise $\omega_g$
+and variation of the profile over time $\psi_g$. Each sample's
+pseudotime $\tau_c$ is given a normal prior centred on its capture time.
+$$latex
+\begin{aligned}
+    y_{g} &\sim \mathcal{GP}(\phi_g, \Sigma_g) \\
+    \Sigma_g(\tau_1, \tau_2)
+    &= \psi_g \Sigma_\tau(\tau_1, \tau_2)
+        + \omega_g \delta_{\tau_1,\tau_2} \\
+    \log \psi_g &\sim \mathcal{N}(\mu_\psi, \sigma_\psi) \\
+    \log \omega_g &\sim \mathcal{N}(\mu_\omega, \sigma_\omega) \\
+    \Sigma_\tau(\tau_1, \tau_2)
+        &= \textrm{Matern}_{3/2}\bigg(r=\frac{|\tau_1 - \tau_2|}{l}\bigg)
+        = (1 + \sqrt{3}r) \exp[-\sqrt{3}r] \\
+    \tau_c &\sim \mathcal{N}(k_c, \sigma_\tau)
+\end{aligned}
+$$
+This model is effectively a one-dimensional Gaussian process latent
+variable model with a structured prior on the latent variable (pseudotime).
