@@ -9,7 +9,7 @@ Description: Implements the DeLorean model to estimate pseudotimes for single ce
 Depends:
     R (>= 3.0.2)
 Imports:
-    rstan (>= 2.4.0),
+    rstan (>= 2.9.0),
     dplyr (>= 0.4.1.9000),
     reshape2 (>= 1.4),
     stringr (>= 0.6.2),
