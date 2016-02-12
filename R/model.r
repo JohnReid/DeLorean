@@ -847,9 +847,7 @@ fit.model.vb <- function(dl, ...) {
     dl$fit <- rstan::vb(
         attributes(dl$fit)$stanmodel,
         data=dl$stan.data,
-        pars=make.init.fn(dl)(1),
         ...)
-    dl$compiled <- NULL  # Remove unneeded large object.
     return(dl)
 }
 

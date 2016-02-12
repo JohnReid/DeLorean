@@ -4,7 +4,7 @@
 #' @param type Type of plot:
 #'          \itemize{
 #'            \item 'expr.data': The expression data plotted by capture time
-#'            \item 'convergence': \eqn{hat{R}} convergence statistics
+#'            \item 'Rhat': \eqn{hat{R}} convergence statistics
 #'            \item 'pseudotime': Pseudotimes in best posterior sample
 #'            \item 'profiles': Gene expression profiles for best posterior sample
 #'            \item 'tau.offsets': Offsets of pseudotimes to assess the prior
@@ -19,7 +19,7 @@ plot.de.lorean <- function(x, type="profiles", ...) {
         profiles=plot.profiles(x, ...),
         S.posteriors=plot.S.posteriors(x, ...),
         pseudotime=plot.pseudotime(x, ...),
-        convergence=plot.convergence(x, ...),
+        Rhat=plot.Rhat(x, ...),
         expr.data=plot.expr.data(x, ...),
         roughnesses=plot.roughnesses(x, ...),
         tau.offsets=plot.tau.offsets(x, ...)
@@ -66,6 +66,10 @@ plot.pseudotime <- function(dl) {
                       aes(x=tau, y=obstime, color=capture),
                       environment=environment())
             + geom_point()
+            + geom_vline(data=cell.meta %>% group_by(capture),
+                         aes(xintercept=obstime, color=capture),
+                         linetype=2,
+                         alpha=.8)
             + scale_x_continuous(name="Pseudotime (tau)")
             + scale_y_continuous(name="Observed (capture) time")
         )
@@ -96,7 +100,7 @@ plot.tau.offsets <- function(dl, rug.alpha=.3) {
 #'
 #' @param dl de.lorean object
 #'
-plot.convergence <- function(dl) {
+plot.Rhat <- function(dl) {
     with(dl, {
         rhat.df <- data.frame(
             rhat=rhat.sorted,
