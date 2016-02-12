@@ -109,8 +109,9 @@ plot(dl, type='expr.data')
 Compile and fit the model using Stan's ADVI variational Bayes (VB) algorithm. We could
 also use one of Stan's samplers with `method='sample'`.
 ```{r fit, cache=T}
-dl <- compile.model(dl)
-dl <- fit.model(dl, method='vb', seed=1)
+dl <- compile.model(dl);
+dl <- find.best.tau(dl)
+dl <- fit.model(dl, method='vb', seed=2)
 dl <- examine.convergence(dl)
 dl <- process.posterior(dl)
 dl <- analyse.noise.levels(dl)

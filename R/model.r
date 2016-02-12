@@ -848,6 +848,7 @@ fit.model.vb <- function(dl, ...) {
     dl$fit <- rstan::vb(
         attributes(dl$fit)$stanmodel,
         data=dl$stan.data,
+        init=make.init.fn(dl)(1),
         ...)
     return(dl)
 }
