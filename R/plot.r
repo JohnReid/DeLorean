@@ -1,13 +1,19 @@
-# Various DeLorean object plots
-#
-# @param x de.lorean object
-# @param type Type of plot: 'profiles'; 'S.posteriors';
-#          'pseudotime'; 'convergence'; 'expr.data';
-#          'roughnesses'; 'tau.offsets'
-# @param ... Extra arguments to plot function
-#
-# @export plot.de.lorean
-#
+#' Various DeLorean object plots
+#'
+#' @param x de.lorean object
+#' @param type Type of plot:
+#'          \itemize{
+#'            \item 'expr.data': The expression data plotted by capture time
+#'            \item 'convergence': \eqn{hat{R}} convergence statistics
+#'            \item 'pseudotime': Pseudotimes in best posterior sample
+#'            \item 'profiles': Gene expression profiles for best posterior sample
+#'            \item 'tau.offsets': Offsets of pseudotimes to assess the prior
+#'            \item 'roughnesses': Roughnesses of the pseudotime posterior
+#'          }
+#' @param ... Extra arguments to plot function
+#'
+#' @export plot.de.lorean
+#'
 plot.de.lorean <- function(x, type="profiles", ...) {
     result <- switch(type,
         profiles=plot.profiles(x, ...),

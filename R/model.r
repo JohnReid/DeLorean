@@ -844,14 +844,12 @@ make.init.fn <- function(dl) {
 #'
 fit.model.vb <- function(dl, ...) {
     # Run variational Bayes
-    rstan::vb(
-        dl$fit,
+    dl$fit <- rstan::vb(
+        attributes(dl$fit)$stanmodel,
         data=dl$stan.data,
         pars=make.init.fn(dl)(1),
         ...)
-    dl$fit <- rstan::sflist2stanfit(sflist)
-    dl$compiled <- NULL
-    dl$sflist <- NULL
+    dl$compiled <- NULL  # Remove unneeded large object.
     return(dl)
 }
 

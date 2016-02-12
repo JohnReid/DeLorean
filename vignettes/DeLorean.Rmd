@@ -52,3 +52,72 @@ $$latex
 $$
 This model is effectively a one-dimensional Gaussian process latent
 variable model with a structured prior on the latent variable (pseudotime).
+
+
+## Example
+
+Guo et al. assayed single cell expression values at 7 time points in mouse
+embryonic cells and the data is contained in the `DeLorean` package.
+We will load this data and analyse a subset of it corresponding to specification
+into epiblast cells. First we must build a `de.lorean` object with the correct
+data.
+
+```{r guoData}
+library(DeLorean)
+library(dplyr)
+data(GuoDeLorean)
+#
+# Create a de.lorean object
+dl <- de.lorean(guo.expr, guo.gene.meta, guo.cell.meta)
+#
+# Estimate hyperparameters for model from whole data set
+dl <- estimate.hyper(dl, sigma.tau=0.5)
+#
+# Choose a few cells from each capture point from the epiblast lineage
+num.at.each.stage <- 5
+epi.sampled.cells <- guo.cell.meta %>%
+    filter(capture < "32C" |
+           "EPI" == cell.type |
+           "ICM" == cell.type) %>%
+    group_by(capture) %>%
+    do(sample_n(., num.at.each.stage))
+dl <- filter.cells(dl, cells=epi.sampled.cells$cell)
+```
+
+Now we have the data we can prepare it for fitting.
+```{r prepare}
+#
+# Format data for Stan model
+dl <- prepare.for.stan(dl)
+#
+# Compile Stan model
+dl <- compile.model(dl)
+#
+# Find good initialisations for the pseudotimes
+dl <- find.best.tau(dl)
+```
+
+Fit the model
+```{r fit}
+dl$fit <- rstan::vb(
+    attributes(dl$fit)$stanmodel,
+    data=dl$stan.data)
+    # pars=make.init.fn(dl)(1))
+```
+
+Analyse the posterior.
+```{r analyse}
+dl <- examine.convergence(dl)
+dl <- process.posterior(dl)
+dl <- analyse.noise.levels(dl)
+dl <- make.predictions(dl)
+```
+
+Plot some results.
+```{r plot}
+plot(dl, type='expr.data')
+plot(dl, type='convergence')
+plot(dl, type='pseudotime')
+plot(dl, type='profiles')
+plot(dl, type='tau.offsets')
+```
