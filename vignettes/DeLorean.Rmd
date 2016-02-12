@@ -78,18 +78,18 @@ library(dplyr)
 data(GuoDeLorean)
 ```
 
+Create a de.lorean object
 ```{r}
-#
-# Create a de.lorean object
 dl <- de.lorean(guo.expr, guo.gene.meta, guo.cell.meta)
-#
-# Estimate hyperparameters for model from whole data set
+```
+
+Estimate hyperparameters for model from whole data set
+```{r}
 dl <- estimate.hyper(dl, sigma.tau=0.5)
 ```
 
+Choose a few cells from each capture point from the epiblast lineage.
 ```{r}
-#
-# Choose a few cells from each capture point from the epiblast lineage
 num.at.each.stage <- 5
 epi.sampled.cells <- guo.cell.meta %>%
     filter(capture < "32C" |
@@ -106,10 +106,11 @@ dl <- prepare.for.stan(dl)
 plot(dl, type='expr.data')
 ```
 
-Compile and fit the model
+Compile and fit the model using Stan's ADVI variational Bayes (VB) algorithm. We could
+also use one of Stan's samplers with `method='sample'`.
 ```{r fit, cache=T}
 dl <- compile.model(dl)
-dl <- fit.model(dl, method='vb', seed=2)
+dl <- fit.model(dl, method='vb', seed=1)
 dl <- examine.convergence(dl)
 dl <- process.posterior(dl)
 dl <- analyse.noise.levels(dl)
@@ -117,7 +118,7 @@ dl <- analyse.noise.levels(dl)
 
 If running a sampler, Stan provides Rhat statistics that can aid detecting
 convergence problems. This makes no sense for ADVI but we show it here
-so that MCMC users may know of it.
+so that users of the samplers may know of it.
 ```{r}
 plot(dl, type='Rhat')
 ```

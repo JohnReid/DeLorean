@@ -453,6 +453,7 @@ compile.model <- function(dl) {
         fit <- rstan::stan(fit=compiled,
                     data=stan.data,
                     init=make.chain.init.fn(dl),
+                    warmup=1,
                     iter=1,
                     chains=1)
     })
