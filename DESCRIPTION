@@ -7,7 +7,8 @@ Description: Implements the DeLorean model to estimate pseudotimes for single ce
     The DeLorean model uses a Gaussian process latent variable model to model uncertainty in the
     capture time of cross-sectional data.
 Depends:
-    R (>= 3.0.2)
+    R (>= 3.0.2),
+    Rcpp
 Imports:
     rstan (>= 2.9.0),
     dplyr (>= 0.4.1.9000),
