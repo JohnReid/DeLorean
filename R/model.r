@@ -160,7 +160,7 @@ estimate.hyper <- function(
     dl,
     sigma.tau = .5,
     length.scale = NULL,
-    model.name = 'lowrank'
+    model.name = 'simplest-model'
 ) {
     dl <- within(dl, {
         #
