@@ -2,6 +2,14 @@
 #'
 #' @name DeLorean
 #' @docType package
+#'
+#' @import Rcpp
+#' @import ggplot2
+#' @import dplyr
+#' @import reshape2
+#' @importFrom rstan stan sflist2stanfit vb monitor optimizing log_prob
+#'   unconstrain_pars extract
+#'
 NULL
 
 #' Initialise DeLorean object
@@ -10,10 +18,9 @@ NULL
 #' @param gene.meta Data frame of meta data for genes
 #' @param cell.meta Data frame of meta data for cells
 #'
-#' @import ggplot2
-#' @import dplyr
-#' @import reshape2
-#' @import rstan
+#' @examples
+#' data(WindramDeLorean)
+#' dl <- de.lorean(windram.expr, windram.gene.meta, windram.cell.meta)
 #'
 #' @export
 #'

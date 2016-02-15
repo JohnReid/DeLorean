@@ -736,7 +736,7 @@ find.best.tau <- function(dl,
         try.tau.init <- function(i) {
             set.seed(i)
             pars <- init.chain.sample.tau(dl)
-            lp <- log_prob(fit, unconstrain_pars(fit, pars))
+            lp <- rstan::log_prob(fit, rstan::unconstrain_pars(fit, pars))
             list(lp=lp, tau=pars$tau)
         }
         # Choose tau several times and calculate log probability
@@ -947,7 +947,7 @@ join.tau.samples <- function(dl, tau.samples) {
 process.posterior <- function(dl) {
     within(dl, {
         # Define a function to melt samples into a long format
-        samples.l <- sample.melter(dl)(extract(dl$fit, permuted=TRUE),
+        samples.l <- sample.melter(dl)(rstan::extract(dl$fit, permuted=TRUE),
                                        model.parameter.dimensions(dl))
         best.sample <- which.max(samples.l$lp__$lp__)
         if (TRUE %in% samples.l$logmarglike$is.held.out) {

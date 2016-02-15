@@ -67,8 +67,8 @@ variable model with a structured prior on the latent variable (pseudotime).
 
 Guo et al. assayed single cell expression values at 7 time points in mouse
 embryonic cells and the data is contained in the `DeLorean` package.
-We will load this data and analyse a subset of it corresponding to specification
-into epiblast cells. First we must build a `de.lorean` object with the correct
+We will load this data and analyse a subset of it corresponding to
+the epiblast lineage. First we must build a `de.lorean` object with the correct
 data.
 
 Load the data
@@ -78,12 +78,12 @@ library(dplyr)
 data(GuoDeLorean)
 ```
 
-Create a de.lorean object
+Create a de.lorean object from the full data set.
 ```{r}
 dl <- de.lorean(guo.expr, guo.gene.meta, guo.cell.meta)
 ```
 
-Estimate hyperparameters for model from whole data set
+Estimate hyperparameters for the model from the whole data set.
 ```{r}
 dl <- estimate.hyper(dl, sigma.tau=0.5)
 ```
@@ -100,7 +100,8 @@ epi.sampled.cells <- guo.cell.meta %>%
 dl <- filter.cells(dl, cells=epi.sampled.cells$cell)
 ```
 
-Now we have the data we can prepare it for fitting.
+Now we have the data we can prepare it for fitting and plot the raw data of some
+of the genes as violin plots.
 ```{r prepare}
 dl <- prepare.for.stan(dl)
 plot(dl, type='expr.data')
@@ -109,7 +110,7 @@ plot(dl, type='expr.data')
 Compile and fit the model using Stan's ADVI variational Bayes (VB) algorithm. We could
 also use one of Stan's samplers with `method='sample'`.
 ```{r fit, cache=T}
-dl <- compile.model(dl);
+dl <- compile.model(dl)
 dl <- find.best.tau(dl)
 dl <- fit.model(dl, method='vb', seed=2)
 dl <- examine.convergence(dl)
@@ -117,19 +118,20 @@ dl <- process.posterior(dl)
 dl <- analyse.noise.levels(dl)
 ```
 
-If running a sampler, Stan provides Rhat statistics that can aid detecting
-convergence problems. This makes no sense for ADVI but we show it here
-so that users of the samplers may know of it.
+If running a sampler, Stan provides $\hat{R}$ statistics that can aid detecting
+convergence problems. This makes no sense for ADVI but we show how to produce
+the boxplots here for users of the samplers.
 ```{r}
 plot(dl, type='Rhat')
 ```
 
-Plot the pseudotimes from the best sample.
+Plot the pseudotimes from the best sample (best in the sense of highest
+likelihood).  The prior means for the capture points are shown as dashed lines.
 ```{r plot}
 plot(dl, type='pseudotime')
 ```
 
-Make predictions and plot profiles
+Plot the expression data over the pseudotimes from the best sample.
 ```{r}
 dl <- make.predictions(dl)
 plot(dl, type='profiles')
