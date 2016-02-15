@@ -139,10 +139,7 @@ ggplot(dl$cell.sizes, aes(x=capture, y=size)) + geom_boxplot()
 
 Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes, eval=fit.model}
-dl <- estimate.hyper(
-    dl,
-    sigma.tau=group.size / 2,
-    delta=.5)
+dl <- estimate.hyper(dl, sigma.tau=group.size / 2)
 fits.omega <- test.fit(dl$gene.var$Omega)
 print(fits.omega$gp)
 fits.psi <- test.fit(dl$gene.var$Psi)

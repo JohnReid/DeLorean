@@ -129,11 +129,7 @@ sample_n(dl$cell.meta, 15)
 
 Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes, eval=fit.model}
-dl <- estimate.hyper(
-    dl,
-    sigma.tau=3,
-    delta=.5)
-
+dl <- estimate.hyper(dl, sigma.tau=3)
 ```
 ```{r child=report.file("hyper-parameters")}
 ```

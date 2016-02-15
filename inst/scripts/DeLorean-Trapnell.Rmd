@@ -11,7 +11,8 @@ output: html_document
 -->
 
 ```{r build, echo=FALSE, eval=FALSE}
-devtools::load_all('..')
+devtools::load_all('../..')
+devtools::load_all('../../../DeLoreanData')
 rmarkdown::render('DeLorean-Trapnell.Rmd')
 
 ```
@@ -52,6 +53,7 @@ if (file.exists("config.R")) {
 ```{r loadLibs, echo=FALSE, message=FALSE}
 # suppressMessages(loadfonts())
 library(DeLorean)
+library(DeLoreanData)
 #
 # Stylesheet
 #
@@ -80,11 +82,7 @@ dl <- de.lorean(
 
 Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empBayes}
-dl <- estimate.hyper(
-    dl,
-    sigma.tau=6,
-    delta=.5)
-
+dl <- estimate.hyper(dl, sigma.tau=6)
 ```
 
 

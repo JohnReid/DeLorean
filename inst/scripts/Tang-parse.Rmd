@@ -286,11 +286,7 @@ Check we can create a DeLorean object from the data.
 dl.rna.seq <- de.lorean(tang.rna.seq,
                         tang.rna.seq.gene.meta,
                         tang.rna.seq.cell.meta)
-dl.rna.seq <- estimate.hyper(
-    dl.rna.seq,
-    sigma.tau=1.5,
-    delta=.5)
-
+dl.rna.seq <- estimate.hyper(dl.rna.seq, sigma.tau=1.5)
 ```
 
 

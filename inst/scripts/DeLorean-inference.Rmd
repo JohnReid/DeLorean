@@ -41,14 +41,14 @@ bib <- read.bibtex("DeLorean.bib")
 ```
 
 ```{r build, echo=FALSE, eval=FALSE}
-devtools::load_all('..')
+devtools::load_all('../..')
 rmarkdown::render('DeLorean-inference.Rmd')
 
 ```
 
 ```{r loadLibs, echo=FALSE, message=FALSE}
-# suppressMessages(loadfonts())
 library(DeLorean)
+library(ggplot2)
 #
 # Stylesheet
 #
@@ -58,7 +58,7 @@ options(markdown.HTML.stylesheet = system.file(file.path('Rmd', 'foghorn.css'),
 ```
 
 ```{r setUpThemes, echo=FALSE, message=FALSE}
-loadfonts(quiet=TRUE)
+extrafont::loadfonts(quiet=TRUE)
 
 mrc.colors <- c(
     rgb(138, 121, 103, maxColorValue=255),
@@ -74,7 +74,6 @@ mrc.colors <- c(
 font.family <- "Verdana"
 font.theme <- theme_update(text=element_text(family=font.family))
 theme_set(font.theme)
-
 ```
 
 

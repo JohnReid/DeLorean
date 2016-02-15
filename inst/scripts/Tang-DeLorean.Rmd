@@ -92,11 +92,7 @@ dl <- de.lorean(
 
 Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes}
-dl <- estimate.hyper(
-    dl,
-    sigma.tau=1.5,
-    delta=.5)
-
+dl <- estimate.hyper(dl, sigma.tau=1.5)
 ```
 ```{r child=report.file("hyper-parameters")}
 ```

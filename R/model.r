@@ -425,6 +425,7 @@ prepare.for.stan <- function(
 #' @export
 #'
 compile.model <- function(dl) {
+    library(Rcpp)
     stan.model.file <- system.file(file.path('Stan',
                                              sprintf('%s.stan',
                                                      dl$opts$model.name)),

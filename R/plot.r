@@ -329,18 +329,17 @@ expr.data.plot <- function(dl, genes=NULL, num.genes=12) {
                 %>% melt(varnames=c("gene", "cell"), value.name="x"))
          }
          stopifnot(all(genes %in% rownames(expr)))
-         expr.l <- (
-            expr.l
-            %>% mutate(cell=factor(cell, levels=levels(cell.meta$cell)))
-            %>% left_join(cell.meta))
-        (ggplot(expr.l %>% filter(gene %in% genes),
-                aes(x=capture, y=x))
-            #+ geom_boxplot()
-            + geom_violin()
-            + stat_summary(fun.y=mean,
-                           colour="red",
-                           aes(group=gene),
-                           geom="line")
-            + facet_wrap(~ gene))
+         expr.l <- expr.l %>%
+             mutate(cell=factor(cell, levels=levels(cell.meta$cell))) %>%
+             left_join(cell.meta) %>%
+             dplyr::filter(gene %in% genes)
+         ggplot(expr.l, aes(x=capture, y=x)) +
+             # geom_boxplot() +
+             geom_violin() +
+             stat_summary(fun.y=mean,
+                          colour="red",
+                          aes(group=gene),
+                          geom="line") +
+             facet_wrap(~ gene)
     })
 }

@@ -162,9 +162,7 @@ dl <- estimate.hyper(
     dl,
     sigma.tau=.5,
     length.scale=5,
-    delta=.5,
     model.name=getOption("McDavid.model", 'simple-model'))
-
 ```
 
 ```{r child=report.file("hyper-parameters")}

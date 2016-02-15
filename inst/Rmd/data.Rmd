@@ -1,3 +1,9 @@
+```{r echo=FALSE}
+library(ggplot2)
+library(dplyr)
+```
+
+
 ```{r dataAttach, include=FALSE}
 # Attach the DeLorean data frame to access members
 dl <- analyse.variance(dl, adjust.cell.sizes=FALSE)
