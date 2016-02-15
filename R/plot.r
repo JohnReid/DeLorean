@@ -3,12 +3,21 @@
 #' @param x de.lorean object
 #' @param type Type of plot:
 #'   \itemize{
-#'     \item 'expr.data': The expression data plotted by capture time
+#'     \item 'expr.data': The expression data plotted by capture time.
+#'       See \code{\link{expr.data.plot}}.
 #'     \item 'Rhat': \eqn{hat{R}} convergence statistics
+#'       See \code{\link{Rhat.plot}}.
 #'     \item 'pseudotime': Pseudotimes in best posterior sample
+#'       See \code{\link{pseudotime.plot}}.
 #'     \item 'profiles': Gene expression profiles for best posterior sample
+#'       See \code{\link{profiles.plot}}.
 #'     \item 'tau.offsets': Offsets of pseudotimes to assess the prior
+#'       See \code{\link{tau.offsets.plot}}.
+#'     \item 'marg.like': Plot the posterior of the marginal likelihoods
+#'       for individual genes.
+#'       See \code{\link{marg.like.plot}}.
 #'     \item 'roughnesses': Roughnesses of the pseudotime posterior
+#'       See \code{\link{roughnesses.plot}}.
 #'   }
 #' @param ... Extra arguments to plot function
 #'
@@ -17,13 +26,14 @@
 #'
 plot.de.lorean <- function(x, type="profiles", ...) {
     result <- switch(type,
-        profiles=plot.profiles(x, ...),
-        S.posteriors=plot.S.posteriors(x, ...),
-        pseudotime=plot.pseudotime(x, ...),
-        Rhat=plot.Rhat(x, ...),
-        expr.data=plot.expr.data(x, ...),
-        roughnesses=plot.roughnesses(x, ...),
-        tau.offsets=plot.tau.offsets(x, ...)
+        profiles=profiles.plot(x, ...),
+        S.posteriors=S.posteriors.plot(x, ...),
+        pseudotime=pseudotime.plot(x, ...),
+        Rhat=Rhat.plot(x, ...),
+        expr.data=expr.data.plot(x, ...),
+        roughnesses=roughnesses.plot(x, ...),
+        marg.like=marg.like.plot(x, ...),
+        tau.offsets=tau.offsets.plot(x, ...)
     )
     if (is.null(result)) {
         stop('Unknown plot type')
@@ -41,11 +51,14 @@ alpha.for.rug <- function(n, scale=100) {
     1 / (max(1, n / scale))
 }
 
-#' Plot posterior for marginal log likelihoods of expression profiles
+#' Plot posterior for marginal log likelihoods of individual gene's
+#' expression profiles
 #'
 #' @param dl de.lorean object
 #'
-plot.marg.like <- function(dl) {
+#' @export
+#'
+marg.like.plot <- function(dl) {
     with(dl, {
         gp <- (ggplot(samples.l$logmarglike %>% left_join(gene.map),
                       aes(x=gene,
@@ -57,11 +70,13 @@ plot.marg.like <- function(dl) {
     })
 }
 
-#' Plot pseudotime (tau) against observed capture time
+#' pseudotime.plot (tau) against observed capture time
 #'
 #' @param dl de.lorean object
 #'
-plot.pseudotime <- function(dl) {
+#' @export
+#'
+pseudotime.plot <- function(dl) {
     with(dl, {
         gp <- (ggplot(samples.l$tau %>% filter(iter == best.sample),
                       aes(x=tau, y=obstime, color=capture),
@@ -83,7 +98,9 @@ plot.pseudotime <- function(dl) {
 #' @param dl de.lorean object
 #' @param rug.alpha Alpha parameter for rug geom
 #'
-plot.tau.offsets <- function(dl, rug.alpha=.3) {
+#' @export
+#'
+tau.offsets.plot <- function(dl, rug.alpha=.3) {
     with(dl,
          ggplot(samples.l$tau, aes(x=tau.offset, color=capture))
          + geom_density()
@@ -101,7 +118,9 @@ plot.tau.offsets <- function(dl, rug.alpha=.3) {
 #'
 #' @param dl de.lorean object
 #'
-plot.Rhat <- function(dl) {
+#' @export
+#'
+Rhat.plot <- function(dl) {
     with(dl, {
         rhat.df <- data.frame(
             rhat=rhat.sorted,
@@ -119,7 +138,9 @@ plot.Rhat <- function(dl) {
 #'
 #' @param dl de.lorean object
 #'
-plot.S.posteriors <- function(dl) {
+#' @export
+#'
+S.posteriors.plot <- function(dl) {
     with(dl, {
         gp <- (ggplot(samples.l$S
                       %>% left_join(cell.map)
@@ -141,10 +162,9 @@ plot.S.posteriors <- function(dl) {
 #' @param genes Genes to plot (defaults to genes.high.psi of first de.lorean
 #'   object)
 #'
-#' @export cmp.profiles.plot
+#' @export
 #'
-cmp.profiles.plot <- function(...,
-                              genes = NULL) {
+cmp.profiles.plot <- function(..., genes = NULL) {
     dls <- list(...)
     dl.levels <- names(dls)
     stopifnot(! is.null(dl.levels))  # Must have names for de.lorean objects
@@ -191,7 +211,9 @@ cmp.profiles.plot <- function(...,
 #' @param sample.iter Which sample to plot
 #' @param ... Extra arguments
 #'
-plot.profiles <- function(dl,
+#' @export
+#'
+profiles.plot <- function(dl,
                           genes=dl$genes.high.psi,
                           profile.color='black',
                           add.data=T,
@@ -303,7 +325,9 @@ plot.add.expr <- function(gp, .data=NULL)
 #' @param genes Genes to plot. If NULL plots some random varying genes
 #' @param num.genes Number of genes to plot
 #'
-plot.expr.data <- function(dl, genes=NULL, num.genes=12) {
+#' @export
+#'
+expr.data.plot <- function(dl, genes=NULL, num.genes=12) {
     with(dl, {
          if (is.null(genes)) {
              num.to.sample <- min(nrow(expr), num.genes * 10)

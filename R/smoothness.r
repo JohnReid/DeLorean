@@ -120,7 +120,9 @@ within(dl, {
 #'
 #' @param dl de.lorean object
 #'
-plot.roughnesses <- function(dl) with(dl, (
+#' @export
+#'
+roughnesses.plot <- function(dl) with(dl, (
     ggplot(roughnesses, aes(x=roughness,
                             fill=type, color=type))
     + geom_histogram(aes(y=..density..), position='dodge')
