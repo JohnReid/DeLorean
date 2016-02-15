@@ -27,7 +27,6 @@
 plot.de.lorean <- function(x, type="profiles", ...) {
     result <- switch(type,
         profiles=profiles.plot(x, ...),
-        S.posteriors=S.posteriors.plot(x, ...),
         pseudotime=pseudotime.plot(x, ...),
         Rhat=Rhat.plot(x, ...),
         expr.data=expr.data.plot(x, ...),
@@ -70,15 +69,16 @@ marg.like.plot <- function(dl) {
     })
 }
 
-#' pseudotime.plot (tau) against observed capture time
+#' Plot pseudotime (tau) against observed capture time.
 #'
 #' @param dl de.lorean object
+#' @param sample.iter Which sample to take pseudotimes from
 #'
 #' @export
 #'
-pseudotime.plot <- function(dl) {
+pseudotime.plot <- function(dl, sample.iter=dl$best.sample) {
     with(dl, {
-        gp <- (ggplot(samples.l$tau %>% filter(iter == best.sample),
+        gp <- (ggplot(samples.l$tau %>% filter(iter == sample.iter),
                       aes(x=tau, y=obstime, color=capture),
                       environment=environment())
             + geom_point()
@@ -93,7 +93,8 @@ pseudotime.plot <- function(dl) {
 }
 
 
-#' Plot the tau offsets.
+#' Plot the tau offsets, that is how much the pseudotimes (tau) differ
+#' from their prior means over the full posterior.
 #'
 #' @param dl de.lorean object
 #' @param rug.alpha Alpha parameter for rug geom
@@ -113,8 +114,8 @@ tau.offsets.plot <- function(dl, rug.alpha=.3) {
 }
 
 
-#' Plot the Rhat convergence statistics. examine.convergence must be called
-#' before this plot can be made.
+#' Plot the Rhat convergence statistics. \code{\link{examine.convergence}}
+#' must be called before this plot can be made.
 #'
 #' @param dl de.lorean object
 #'
@@ -130,28 +131,6 @@ Rhat.plot <- function(dl) {
                       aes(y=rhat, x=parameter),
                       environment=environment())
             + geom_boxplot()
-        )
-    })
-}
-
-#' Plot posterior for cell sizes
-#'
-#' @param dl de.lorean object
-#'
-#' @export
-#'
-S.posteriors.plot <- function(dl) {
-    with(dl, {
-        gp <- (ggplot(samples.l$S
-                      %>% left_join(cell.map)
-                      %>% arrange(capture),
-                      aes(x=factor(cell,
-                                   levels=arrange(cell.map, capture)$cell),
-                          y=S,
-                          color=capture),
-                      environment=environment())
-            + geom_boxplot()
-            + coord_flip()
         )
     })
 }
@@ -202,7 +181,7 @@ cmp.profiles.plot <- function(..., genes = NULL) {
     )
 }
 
-#' Plot best sample predicted expression
+#' Plot best sample predicted expression.
 #'
 #' @param dl de.lorean object
 #' @param genes Genes to plot (defaults to genes.high.psi)
@@ -365,4 +344,3 @@ expr.data.plot <- function(dl, genes=NULL, num.genes=12) {
             + facet_wrap(~ gene))
     })
 }
-
