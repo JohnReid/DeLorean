@@ -12,11 +12,10 @@ output:
 #
 # Execute this block to render the Rmarkdown.
 #
-devtools::load_all('..')
+devtools::load_all('../..')
 # fit.model <- FALSE
 fit.model <- TRUE
 rmarkdown::render('Shalek-DeLorean.Rmd')
-
 ```
 
 <!--
@@ -56,7 +55,6 @@ if (file.exists("config.R")) {
     source("config.R")
 }
 source(system.file("scripts/shared.R", package="DeLorean"))
-
 ```
 
 ```{r loadLibs, echo=FALSE, message=FALSE}
@@ -70,7 +68,6 @@ options(markdown.HTML.stylesheet = system.file(file.path('Rmd', 'foghorn.css'),
 font.family <- "Verdana"
 font.theme <- theme_update(text=element_text(family=font.family))
 theme_set(font.theme)
-
 ```
 
 `r date()`
@@ -84,7 +81,6 @@ is available in the `DeLorean` R package.
 ```{r loadLib, eval=fit.model}
 library(DeLorean)
 data(ShalekDeLorean)
-
 ```
 
 
@@ -94,7 +90,6 @@ dl <- de.lorean(
     shalek.A.expr,
     shalek.A.gene.meta,
     shalek.A.cell.meta)
-
 ```
 
 
@@ -110,7 +105,6 @@ time.course.cells <- (
                total > 1e6,
                "" == replicate))
 dl <- filter.cells(dl, cells=time.course.cells$cell)
-
 ```
 
 
@@ -120,7 +114,6 @@ plots.
 dl$cell.meta$cell <- factor(
     dl$cell.meta$cell,
     levels=(shalek.A.cell.meta %>% arrange(capture))$cell)
-
 ```
 
 
@@ -129,7 +122,6 @@ dl$cell.meta$cell <- factor(
 ```{r testCellSize}
 dl <- adjust.by.cell.sizes(dl)
 ggplot(dl$cell.sizes, aes(x=capture, y=size)) + geom_boxplot()
-
 ```
 
 
@@ -139,7 +131,6 @@ Only use induced genes that have been assigned to a cluster.
 ```{r useInducedGenes, eval=fit.model}
 induced.genes <- dl$gene.meta %>% filter(! is.na(cluster))
 dl <- filter.genes(dl, genes=induced.genes$gene)
-
 ```
 ```{r child=report.file("data")}
 ```
@@ -191,7 +182,6 @@ genes.for.stan <- (
 dl <- filter.genes(dl, genes=genes.for.stan$gene)
 # How many come from each cluster?
 qplot(genes.for.stan$cluster)
-
 ```
 
 Choose a few cells but make sure we have the precocious cells.
@@ -206,7 +196,6 @@ if (! "LPS_1h_S52" %in% sampled.cells) {
     sampled.cells[2] <- "LPS_1h_S52"
 }
 dl <- filter.cells(dl, cells=sampled.cells)
-
 ```
 
 
@@ -221,7 +210,6 @@ dl <- estimate.hyper(
     sigma.tau=getOption("Shalek.sigma.tau", 1),
     length.scale=getOption("Shalek.length.scale", 5),
     model.name=getOption("Shalek.model", 'simplest-model'))
-
 ```
 ```{r child=report.file("hyper-parameters")}
 ```
@@ -234,7 +222,6 @@ saveRDS(list(expr=dl$expr,
              gene.meta=dl$gene.map,
              gene.variances=gene.variances),
         file='Data/Shalek-input.rds')
-
 ```
 
 
@@ -247,7 +234,6 @@ dl <- compile.model(dl)
 # system.time(dl <- find.smooth.tau(dl, num.tau.to.try=detectCores()*2))
 system.time(dl <- find.best.tau(dl))
 system.time(dl <- fit.model(dl))
-
 ```
 
 
@@ -267,7 +253,6 @@ Examine posterior and optimise best sample.
 dl <- process.posterior(dl)
 # dl <- optimise.best.sample(dl)
 dl <- analyse.noise.levels(dl)
-
 ```
 ```{r child=report.file("posterior")}
 ```
@@ -378,7 +363,6 @@ ggsave('Shalek-core.pdf', plots$core + plos.theme,
     %>% filter(dl$best.sample == iter,
                cell %in% precocious$cell)
 )
-
 ```
 
 
@@ -405,7 +389,6 @@ gp <- (
 png('S51-dists.png', width=960, height=960)
 print(gp)
 dev.off()
-
 ```
 
 
@@ -424,7 +407,6 @@ held.out.genes <- with(dl, gene.variances
 # Get an expression matrix of held out genes in the cells of interest
 held.out.expr <- shalek.A.expr[as.character(held.out.genes$gene),
                                as.character(dl$cell.map$cell)]
-
 ```
 
 
@@ -443,7 +425,6 @@ ggsave('Shalek-roughnesses.tiff', plots$roughnesses + plos.theme,
 ggsave('Shalek-roughnesses.pdf', plots$roughnesses + plos.theme,
        width=plos.width, height=plos.height, units="in")
 ggsave('Shalek-roughnesses.png', plots$roughnesses + plos.theme)
-
 ```
 
 
@@ -478,7 +459,6 @@ fit.lognormal <- fitdistr(vars, 'lognormal')
 mean(log(vars))
 sd(log(vars))
 mean(diag(Sigma)) - mean(as.vector(Sigma))
-
 ```
 
 ```{r tauPosteriorOffset.2, echo=FALSE}
@@ -492,7 +472,6 @@ plots$tau.offset <- (
                     color="black")
 )
 ggsave('Shalek-tau-offset.png', plots$tau.offset + plos.theme)
-
 ```
 
 
@@ -518,7 +497,6 @@ expr.gene <- (
     %>% dplyr::summarise(v.total=mean((x-mean(x))**2))
     %>% left_join(expr.gene)
     %>% mutate(v.total-Psi-Omega))
-
 ```
 
 
@@ -529,13 +507,11 @@ held.out <- held.out.melt(dl, shalek.A.expr, held.out.genes)
 system.time(posterior <- held.out.posterior(dl, held.out))
 gp <- plot.held.out.posterior(dl, posterior)
 print(gp)
-
 ```
 
 Save plots.
 ```{r savePlots}
 saveRDS(plots, "Data/Shalek-plots.rds")
-
 ```
 
 ```{r date}

@@ -14,7 +14,8 @@ output:
 -->
 
 ```{r build, echo=FALSE, eval=FALSE}
-devtools::load_all('..')
+devtools::load_all('../..')
+devtools::load_all('../../../DeLoreanData')
 rmarkdown::render('Tang-DeLorean.Rmd')
 
 ```
@@ -56,6 +57,7 @@ source(system.file("scripts/shared.R", package="DeLorean"))
 ```{r loadLibs, echo=FALSE, message=FALSE}
 # suppressMessages(loadfonts())
 library(DeLorean)
+library(DeLoreanData)
 #
 # Stylesheet
 #
