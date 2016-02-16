@@ -241,7 +241,7 @@ ggsave('Windram-pseudotime-vs-obfuscated.png', plots$pseudo + plos.theme,
        width=slide.fig.width, height=slide.fig.width / html5$ratio,
        dpi=300, units="in")
 # Save convergence as well
-ggsave('Windram-Rhat.png', plot(dl, type="convergence"),
+ggsave('Windram-Rhat.png', plot(dl, type="Rhat"),
        width=slide.fig.width, height=slide.fig.width / html5$ratio,
        dpi=300, units="in")
 # Save profiles as well
@@ -281,7 +281,6 @@ ggsave('Windram-tau-best.pdf', plots$tau.best + plos.theme,
 ggsave('Windram-tau-best.png', plots$tau.best + plos.theme,
        width=slide.fig.width, height=slide.fig.width / html5$ratio,
        dpi=300, units="in")
-
 ```
 
 
@@ -315,7 +314,6 @@ ggsave('Windram-posterior-cor.pdf', plot=plots$post.cor + plos.theme,
 ggsave('Windram-posterior-cor.png', plots$post.cor + plos.theme,
        width=slide.fig.width / 2, height=slide.fig.width / 2 / html5$ratio,
        dpi=300, units="in")
-
 ```
 
 
@@ -324,7 +322,6 @@ the best sample.
 ```{r}
 with(dl$samples.l$tau %>% filter(iter == dl$best.sample),
      cor(tau, obstime.orig, method="spearman"))
-
 ```
 
 # Evaluate held out genes
@@ -338,7 +335,6 @@ held.out.genes <- with(dl, gene.var
                            %>% head(getOption('Windram.held.out', 100)))
 held.out.expr <- windram.expr[as.character(held.out.genes$gene),
                               as.character(dl$cell.map$cell)]
-
 ```
 
 
@@ -358,7 +354,6 @@ ggsave('Windram-roughnesses.svg', plots$roughnesses + plos.theme,
 ggsave('Windram-roughnesses.pdf', plots$roughnesses + plos.theme,
        width=text.width * 2, height=text.width)
 ggsave('Windram-roughnesses.png', plots$roughnesses + plos.theme)
-
 ```
 
 
@@ -366,13 +361,11 @@ ggsave('Windram-roughnesses.png', plots$roughnesses + plos.theme)
 # Save DeLorean object without fit component
 saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Data/Windram.rds")
 dl <- readRDS("Data/Windram.rds")
-
 ```
 
 Save plots.
 ```{r savePlots}
 saveRDS(plots, "Data/Windram-plots.rds")
-
 ```
 
 R version and packages used:
