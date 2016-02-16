@@ -15,7 +15,8 @@ output:
 
 
 ```{r build, echo=FALSE, eval=FALSE}
-devtools::load_all('..')
+devtools::load_all('../..')
+devtools::load_all('../../../DeLoreanData')
 rmarkdown::render('McDavid-DeLorean.Rmd')
 
 ```
@@ -366,8 +367,8 @@ plots$RMSE <- (
     ggplot(dl$peak.max.dist, aes(x=rmse))
     + geom_density()
     + geom_rug()
-    + geom_vline(x=capture.RMSE, linetype='dashed', color='red')
-    + geom_vline(x=best.peak.rmse, linetype='dashed', color='blue')
+    + geom_vline(xintercept=capture.RMSE, linetype='dashed', color='red')
+    + geom_vline(xintercept=best.peak.rmse, linetype='dashed', color='blue')
     + scale_x_continuous(name="RMSE"))
 ggsave('McDavid-rmse.pdf', plot=plots$RMSE,
        width=text.width, height=text.width)
@@ -446,7 +447,6 @@ ggsave('McDavid-rmse-qq.pdf', plot=plots$qq,
 # peak capture RMSE.
 with(dl$peak.max.dist,
      1-pnorm(capture.RMSE, mean=mean(rmse), sd=sd(rmse), lower.tail=F))
-
 ```
 
 
@@ -483,7 +483,6 @@ ggsave('McDavid-profiles.png', plot=plots$profiles,
        units="in", dpi=100)
 ggsave('McDavid-profiles.pdf', plot=plots$profiles,
        width=2*text.width, height=2*text.width/golden.ratio)
-
 ```
 
 
@@ -493,7 +492,6 @@ saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Data/McDavid.rds")
 saveRDS(plots, "Data/McDavid-plots.rds")
 dl <- readRDS("Data/McDavid.rds")
 plots <- readRDS("Data/McDavid-plots.rds")
-
 ```
 
 

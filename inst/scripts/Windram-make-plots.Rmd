@@ -50,8 +50,8 @@ posterior.cor.best <- filter(posterior.cor,
 monocle.cor <- 0.9269565
 plots.windram$post.cor <- (ggplot(posterior.cor, aes(x=pseudotime.capture.cor))
     + geom_histogram()
-    + geom_vline(x=monocle.cor, linetype='dotted')
-    + geom_vline(x=posterior.cor.best, linetype='dashed')
+    + geom_vline(xintercept=monocle.cor, linetype='dotted')
+    + geom_vline(xintercept=posterior.cor.best, linetype='dashed')
     + scale_x_continuous(name="correlation"))
 plots.windram$profiles <- plot(
     dl.windram, type="profiles",

@@ -183,7 +183,6 @@ png('Trapnell-profiles.png', width=1200, height=800)
       genes=filter(dl$gene.map, hgnc_symbol %in% genes.fig.all)$gene)
     + facet_wrap(~ hgnc_symbol + gene))
 dev.off()
-
 ```
 
 
@@ -196,6 +195,5 @@ saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Data/Trapnell.rds")
 R version and packages used:
 ```{r sessionInfo}
 sessionInfo()
-
 ```
 

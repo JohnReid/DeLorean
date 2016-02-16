@@ -127,6 +127,7 @@ roughnesses.plot <- function(dl) with(dl, (
                             fill=type, color=type))
     + geom_histogram(aes(y=..density..), position='dodge')
     + geom_rug()
-    + geom_vline(x=filter(roughnesses, dl$best.sample==sample.iter)$roughness,
-                          linetype='dashed', color='blue')
+    + geom_vline(
+        xintercept=filter(roughnesses, dl$best.sample==sample.iter)$roughness,
+        linetype='dashed', color='blue')
 ))

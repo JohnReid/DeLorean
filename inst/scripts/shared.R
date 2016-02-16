@@ -1,6 +1,8 @@
 #
 # Code that is shared amongst the vignettes.
 #
+library(ggplot2)
+library(dplyr)
 
 #
 # Install extrafont and import fonts from system.
