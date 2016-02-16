@@ -204,9 +204,11 @@ estimate.hyper <- function(
             gene.time.expr
             %>% group_by(gene)
             %>% dplyr::summarise(omega.hat=mean(Vgc),
-                          psi.hat=var(Mgc)/V.obs)
-            %>% filter(! is.na(psi.hat), ! is.na(omega.hat),
-                       omega.hat > 0 | psi.hat > 0)
+                                 psi.hat=var(Mgc)/V.obs)
+            %>% filter(! is.na(psi.hat),
+                       ! is.na(omega.hat),
+                       omega.hat > 0,
+                       psi.hat > 0)
         )
         hyper <- list(
             mu_S=mean(cell.expr$S.hat),
@@ -220,6 +222,7 @@ estimate.hyper <- function(
             sigma_tau=opts$sigma.tau,
             l=opts$length.scale
         )
+        print(hyper)
         stopifnot(all(! sapply(hyper, is.na)))
     })
 }
