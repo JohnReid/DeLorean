@@ -10,7 +10,7 @@ Now we consider a set of inducing pseudotimes, $u$, that we will use in a
 sparse approximation of this Gaussian process. Following Quinonero and
 Rasmussen's notation for Snelson and Ghahramani's Sparse Gaussian Processes
 using pseudoinputs, we have the approximation $$\mathcal{N}(0,
-\psi_g(Q_{\tau,\tau} - \textrm{diag}[Q_{\tau,\tau} - K_{\tau,\tau})]) +
+\psi_g(Q_{\tau,\tau} + \textrm{diag}[K_{\tau,\tau} - Q_{\tau,\tau}]) +
 \omega_g I)$$ where $Q_{\tau,\tau} = K_{\tau,u}K_{u,u}^{-1}K_{u,\tau}$. We
 choose Snelson and Ghahramanani's sparse approximation as it does not
 underestimate the variance at pseudotimes away from the inducing inputs. We
@@ -22,15 +22,18 @@ approximation gives us computational savings.  In particular we can use the
 Matrix Inversion Lemma to efficiently calculate the precision of the sparse
 approximation and hence efficiently evaluate the likelihood. Suppose that we
 have a $M \times C$ matrix $A_{u,\tau}$ such that $Q_{\tau,\tau}=A_{u,\tau}^T
-A_{u,\tau}$ then the precision $$\bigg(\psi_g(Q_{\tau,\tau} -
-\textrm{diag}[Q_{\tau,\tau} - K_{\tau,\tau}]) + \omega_g I\bigg)^{-1}$$ is the
+A_{u,\tau}$ then the precision $$\bigg[\psi_g(Q_{\tau,\tau} +
+\textrm{diag}[K_{\tau,\tau} - Q_{\tau,\tau}]) + \omega_g I\bigg]^{-1}$$ is the
 inverse of a low rank update, $\psi_g Q_{\tau,\tau}$, to the easily invertible
-diagonal matrix $B = \omega_g I - \psi_g \textrm{diag}[Q_{\tau,\tau} -
-K_{\tau,\tau}]$.  The Matrix Inversion Lemma allows us to calculate this at
+diagonal matrix $B = \omega_g I + \psi_g \textrm{diag}[K_{\tau,\tau} -
+Q_{\tau,\tau}]$.  The Matrix Inversion Lemma allows us to calculate this at
 the $\mathcal{O}(M^3)$ computational cost of an inversion of a $M \times M$
-matrix and some $\mathcal{O}(C^2 M)$ matrix multiplications: $$ B^{-1} - \psi_g
-B^{-1} A_{u,\tau}^T (I_m + \psi_g A_{u,\tau} B^{-1} A_{u,\tau}^T)^{-1}
-A_{u,\tau} B^{-1} $$ The Matrix Determinant Lemma allows us to cheaply
+matrix and some $\mathcal{O}(C^2 M)$ matrix multiplications:
+$$
+B^{-1} -
+B^{-1} A_{u,\tau}^T (\psi_g I_m + A_{u,\tau} B^{-1} A_{u,\tau}^T)^{-1}
+A_{u,\tau} B^{-1} $$
+The Matrix Determinant Lemma allows us to cheaply
 calculate the determinant of the covariance as $$ \textrm{det}(I_m+\psi_g
 A_{u,\tau} B^{-1} A^T_{u,\tau}) \textrm{det}(B) $$
 
