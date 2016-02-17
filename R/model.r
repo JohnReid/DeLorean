@@ -332,7 +332,7 @@ sample.genes.and.cells <- function(
 prepare.for.stan <- function(
     dl,
     num.test = 101,
-    num.inducing = 20,  # M
+    num.inducing = 10,  # M
     period = 0,
     hold.out = 0
 ) {
