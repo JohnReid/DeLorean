@@ -1,5 +1,4 @@
-Low rank approximations
------------------------
+# Low rank approximations
 
 We define a covariance structure $K_{\tau,\tau}$ between the cells based on
 their pseudotimes. The expression of each gene then follows a normal
@@ -16,6 +15,8 @@ choose Snelson and Ghahramanani's sparse approximation as it does not
 underestimate the variance at pseudotimes away from the inducing inputs. We
 prefer the variance to be overestimated to encourage the cell pseudotimes to
 stay within the range of the inducing pseudotimes.
+
+## Low rank calculations
 
 Note that we choose $M=|u|$ to be smaller than $C=|\tau|$ so that the
 approximation gives us computational savings.  In particular we can use the
@@ -42,3 +43,12 @@ decomposition of $K_{u,u}$ multiplied by $K_{\tau,u}$. If $K_{u,u}=R R^T$ then
 $$A_{u,\tau} = R^{-1} K_{u,\tau}$$ Note also that the Cholesky decomposition of
 $K_{u,u}$ and its inverse can be done ahead of time as the inducing points are
 fixed (unlike the $\tau$ which are parameters to be inferred).
+
+## Predictive mean and variance
+
+The predictive mean for gene $g$ is
+$$\frac{\psi_g}{\omega_g} K_{\star,u} \Sigma K_{u,\tau} x$$
+and the predictive variance is
+$$\psi_g(K_{\star,\star} - Q_{\star,\star} + K_{\star,u} \Sigma K_{u,\star})$$
+where
+$$\Sigma = \bigg[\frac{\psi_g}{\omega_g} K_{u,\tau} K_{\tau,u} + K_{u,u}\bigg]^{-1}$$
