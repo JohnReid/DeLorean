@@ -205,8 +205,8 @@ model {
     KminusQdiag <- 1 - columns_dot_self(Aut)';
     # Check that diag(Ktautau - Qtt) is positive
     for (c in 1:C) {
-        if (KminusQdiag[c] > 0) {
-            reject("KminusQdiag must be less than 1.", KminusQdiag[c]);
+        if (KminusQdiag[c] < 0) {
+            reject("KminusQdiag must be greater or equal to 0. : ", KminusQdiag[c]);
         }
     }
     #
