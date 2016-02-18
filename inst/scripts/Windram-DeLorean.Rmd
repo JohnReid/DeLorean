@@ -155,7 +155,7 @@ dl <- filter.genes(dl, gene.filter)
 
 Format the data for Stan and fit the model.
 ```{r fitModel, eval=fit.model}
-dl <- prepare.for.stan(dl, num.inducing=14)
+dl <- prepare.for.stan(dl, num.inducing=30)
 # Save for input to Monocle
 saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
         file='Data/Windram-input.rds')

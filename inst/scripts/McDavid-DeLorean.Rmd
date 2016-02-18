@@ -490,8 +490,8 @@ ggsave('McDavid-profiles.pdf', plot=plots$profiles,
 # Save DeLorean object without fit component
 saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Data/McDavid.rds")
 saveRDS(plots, "Data/McDavid-plots.rds")
-dl <- readRDS("Data/McDavid.rds")
-plots <- readRDS("Data/McDavid-plots.rds")
+# dl <- readRDS("Data/McDavid.rds")
+# plots <- readRDS("Data/McDavid-plots.rds")
 ```
 
 
