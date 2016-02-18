@@ -200,13 +200,13 @@ model {
     #
     # Approximation to pseudotime covariance matrix
     matrix[M,C] Aut;  # Sqrt of approximation
-    vector[C] Qttdiag;   # Approximation to covariance
+    vector[C] KminusQdiag;   # Diagonal adjustment to approximate covariance
     Aut <- mdivide_left_tri_low(KuuChol, cov(u, tau, periodic, period, l));
-    Qttdiag <- columns_dot_self(Aut)';
+    KminusQdiag <- 1 - columns_dot_self(Aut)';
     # Check that diag(Ktautau - Qtt) is positive
     for (c in 1:C) {
-        if (Qttdiag[c] > 1) {
-            reject("Qttdiag must be less than 1.", Qttdiag[c]);
+        if (KminusQdiag[c] > 0) {
+            reject("KminusQdiag must be less than 1.", KminusQdiag[c]);
         }
     }
     #
@@ -223,26 +223,29 @@ model {
         vector[C] Binvy;
         vector[M] b;  # Aut * B-1 * y
         matrix[M,M] Vchol;  # Low dimension decomposition
-        real det_cov;  # The determinant of the covariance
+        real log_det_cov;  # The logarithm of the determinant of the covariance
         #
         # Inverse of high dimensional covariance diagonal
         # Here we are assuming that the diagonal of Ktautau is 1
-        Binv <- 1 ./ (omega[g] + psi[g] * (1 - Qttdiag));
+        Binv <- 1 ./ (omega[g] + psi[g] * KminusQdiag);
         Binvy <- Binv .* expradj[g];
         #
         # Invert low dimensional matrix
         Vchol <- cholesky_decompose(
-            diag_matrix(rep_vector(psi[g], M))
+            diag_matrix(rep_vector(1/psi[g], M))
             + diag_post_multiply(Aut, Binv) * Aut');
         #
         # Calculate term in quadratic form part of likelihood
         b <- mdivide_left_tri_low(Vchol, Aut * Binvy);
         #
         # Calculate determinant of the covariance
-        det_cov <- square(prod(diagonal(Vchol))) / prod(Binv);
+        log_det_cov <-
+          2*sum(log(diagonal(Vchol)))  # Twice log determinant of Cholesky
+          + M * log(psi[g]) # Add log determinant of psi_g I
+          - sum(log(Binv)); # Add log determinant of B
         #
         # Increment log probability with multivariate normal log likelihood
-        increment_log_prob(-.5 * (log(det_cov)
+        increment_log_prob(-.5 * (log_det_cov
                                   + dot_product(expradj[g], Binvy)
                                   - dot_self(b)));
     }
