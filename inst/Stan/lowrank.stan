@@ -88,25 +88,32 @@ functions {
     #
     matrix
     calc_approx_prec(
-        matrix Autau,
+        matrix Aut,
         real psi_g,
         real omega_g
     ) {
-        vector[cols(Autau)] Binv;
-        vector[cols(Autau)] Binvsqrt;
-        Binv <- psi_g * (diagonal(crossprod(Autau) - 1) + omega_g);
-        for(c in 1:cols(Autau)) {
+        vector[cols(Aut)] Binv;
+        vector[cols(Aut)] Binvsqrt;
+        Binv <- psi_g * (diagonal(crossprod(Aut) - 1) + omega_g);
+        for(c in 1:cols(Aut)) {
             Binvsqrt[c] <- sqrt(Binv[c]);
         }
-        Binv <- psi_g * (diagonal(crossprod(Autau) - 1) + omega_g);
+        Binv <- psi_g * (diagonal(crossprod(Aut) - 1) + omega_g);
         return
             diag_matrix(Binv)
             - psi_g * tcrossprod(mdivide_right_tri_low(
-                diag_pre_multiply(Binv, Autau'),
+                diag_pre_multiply(Binv, Aut'),
                 cholesky_decompose(
-                    diag_matrix(rep_vector(1, rows(Autau)))
-                    + psi_g*tcrossprod(diag_post_multiply(Autau,
+                    diag_matrix(rep_vector(1, rows(Aut)))
+                    + psi_g*tcrossprod(diag_post_multiply(Aut,
                                                           Binvsqrt)))));
+    }
+    #
+    # Calculate diagonal of Q
+    #
+    vector
+    calc_Q_diag(matrix KuuChol, matrix Kux) {
+      return columns_dot_self(mdivide_left_tri_low(KuuChol, Kux))';
     }
     void
     pretty_print_tri_lower(matrix x) {
@@ -163,30 +170,43 @@ data {
     row_vector[numtest] testinput; # Test inputs for predictions
 }
 transformed data {
-    vector[C] expradj[G+H];  # Mean adjusted expression
-    cholesky_factor_cov[M] KuuChol; # pseudotime covariance Cholesky
-    KuuChol <- cholesky_decompose(cov_symmetric(u, periodic, period, l));
-    # Calculate adjusted genes
-    for (g in 1:(G+H)) {
-        expradj[g] <- expr[g] - phi[g];
-    }
+  ##
+  ## Subscripts:
+  ##   s - test inputs (star)
+  ##   u - inducing inputs
+  ##   t - pseudotime (observed/training) inputs
+  vector[C] expradj[G+H];  # Mean adjusted expression
+  matrix[M,M] Kuu; # Covariance between inducing points
+  matrix[M,numtest] Kus; # Covariance between inducing and test inputs
+  cholesky_factor_cov[M] KuuChol; # pseudotime covariance Cholesky
+  Kuu <- cov_symmetric(u, periodic, period, l);
+  Kus <- cov(u, testinput, periodic, period, l);
+  KuuChol <- cholesky_decompose(Kuu);
+  # Calculate adjusted gene expression
+  for (g in 1:(G+H)) {
+    expradj[g] <- expr[g] - phi[g];
+  }
 }
 parameters {
-    row_vector[C] tau;    # Pseudotime
+    row_vector[C] tauoffsets;    # Pseudotime
     row_vector<lower=0>[G] psi;    # Between time variance
     row_vector<lower=0>[G] omega;  # Within time variance
+}
+transformed parameters {
+    row_vector[C] tau;    # Pseudotime
+    tau <- time + tauoffsets;
 }
 model {
     #
     # Approximation to pseudotime covariance matrix
-    matrix[M,C] Autau;  # Sqrt of approximation
-    vector[C] Qtautaudiag;   # Approximation to covariance
-    Autau <- mdivide_left_tri_low(KuuChol, cov(u, tau, periodic, period, l));
-    Qtautaudiag <- columns_dot_self(Autau)';
-    # Check that diag(Ktautau - Qtautau) is positive
+    matrix[M,C] Aut;  # Sqrt of approximation
+    vector[C] Qttdiag;   # Approximation to covariance
+    Aut <- mdivide_left_tri_low(KuuChol, cov(u, tau, periodic, period, l));
+    Qttdiag <- columns_dot_self(Aut)';
+    # Check that diag(Ktautau - Qtt) is positive
     for (c in 1:C) {
-        if (Qtautaudiag[c] > 1) {
-            reject("Qtautaudiag must be less than 1.", Qtautaudiag[c]);
+        if (Qttdiag[c] > 1) {
+            reject("Qttdiag must be less than 1.", Qttdiag[c]);
         }
     }
     #
@@ -195,43 +215,77 @@ model {
     omega ~ lognormal(mu_omega, sigma_omega);  # Noise
     #
     # Sample pseudotime
-    tau ~ normal(time, sigma_tau);  # Pseudotime
+    tauoffsets ~ normal(0, sigma_tau);  # Pseudotime
     #
     # Expression values for each gene
     for (g in 1:G) {
         vector[C] Binv;
         vector[C] Binvy;
-        vector[M] b;  # Autau * B-1 * y
+        vector[M] b;  # Aut * B-1 * y
         matrix[M,M] Vchol;  # Low dimension decomposition
         real det_cov;  # The determinant of the covariance
         #
-        # Approximation to pseudotime cross-covariance matrix
-        #
-        # Sample covariance parameters
-        psi ~ lognormal(mu_psi, sigma_psi);  # Temporal variation
-        omega ~ lognormal(mu_omega, sigma_omega);  # Noise
-        #
         # Inverse of high dimensional covariance diagonal
         # Here we are assuming that the diagonal of Ktautau is 1
-        Binv <- 1 ./ (omega[g] + psi[g] * (1 - Qtautaudiag));
+        Binv <- 1 ./ (omega[g] + psi[g] * (1 - Qttdiag));
         Binvy <- Binv .* expradj[g];
         #
         # Invert low dimensional matrix
         Vchol <- cholesky_decompose(
             diag_matrix(rep_vector(psi[g], M))
-            + diag_post_multiply(Autau, Binv) * Autau');
+            + diag_post_multiply(Aut, Binv) * Aut');
         #
         # Calculate term in quadratic form part of likelihood
-        b <- mdivide_left_tri_low(Vchol, Autau * Binvy);
+        b <- mdivide_left_tri_low(Vchol, Aut * Binvy);
         #
         # Calculate determinant of the covariance
         det_cov <- square(prod(diagonal(Vchol))) / prod(Binv);
         #
         # Increment log probability with multivariate normal log likelihood
         increment_log_prob(-.5 * (log(det_cov)
-                                    + dot_product(expradj[g], Binvy)
-                                    - psi[g] * dot_self(b)));
+                                  + dot_product(expradj[g], Binvy)
+                                  - dot_self(b)));
     }
 }
 generated quantities {
+  vector[numtest] predictedmean[G+H];
+  vector[numtest] predictedvar[G+H];
+  real logmarglike[G+H];
+  {
+    matrix[M,C] Kut;
+    Kut <- cov(u, tau, periodic, period, l);
+    #
+    # For each gene (including held out genes)
+    for (g in 1:(G+H)) {
+      matrix[numtest,M] KsuSigmag;
+      real psi_g;
+      real omega_g;
+      real ratio;
+      #
+      # Get the temporal variance and noise parameters
+      if (g <= G) { # Sampled parameters
+          psi_g <- psi[g];
+          omega_g <- omega[g];
+      } else { # Parameters for held out genes
+          psi_g <- heldout_psi[g-G];
+          omega_g <- heldout_omega[g-G];
+      }
+      #
+      # Pre-calculate some useful terms
+      ratio <- psi_g/omega_g;
+      KsuSigmag <- Kus' / (ratio*tcrossprod(Kut) + Kuu);
+      #
+      # Calculate the predicted mean
+      predictedmean[g] <- ratio*KsuSigmag*Kut*expradj[g];
+      #
+      # Calculate the predicted variance
+      predictedvar[g] <- psi_g * (
+        1
+        - calc_Q_diag(KuuChol, cov(u, testinput, periodic, period, l))
+        + diagonal(KsuSigmag * Kus));
+      #
+      # Calculate log marginal likelihood
+      logmarglike[g] <- 0;
+    }
+  }
 }
