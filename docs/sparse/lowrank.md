@@ -25,18 +25,21 @@ approximation and hence efficiently evaluate the likelihood. Suppose that we
 have a $M \times C$ matrix $A_{u,\tau}$ such that $Q_{\tau,\tau}=A_{u,\tau}^T
 A_{u,\tau}$ then the precision $$\bigg[\psi_g(Q_{\tau,\tau} +
 \textrm{diag}[K_{\tau,\tau} - Q_{\tau,\tau}]) + \omega_g I\bigg]^{-1}$$ is the
-inverse of a low rank update, $\psi_g Q_{\tau,\tau}$, to the easily invertible
-diagonal matrix $B = \omega_g I + \psi_g \textrm{diag}[K_{\tau,\tau} -
+inverse of a low rank update, $\psi_g A_{u,\tau}^T A_{u, \tau}$, to the easily invertible
+diagonal matrix $B_g = \omega_g I + \psi_g \textrm{diag}[K_{\tau,\tau} -
 Q_{\tau,\tau}]$.  The Matrix Inversion Lemma allows us to calculate this at
 the $\mathcal{O}(M^3)$ computational cost of an inversion of a $M \times M$
 matrix and some $\mathcal{O}(C^2 M)$ matrix multiplications:
 $$
-B^{-1} -
-B^{-1} A_{u,\tau}^T (\psi_g I_m + A_{u,\tau} B^{-1} A_{u,\tau}^T)^{-1}
-A_{u,\tau} B^{-1} $$
+B_g^{-1} -
+B_g^{-1} A_{u,\tau}^T
+    \bigg[
+        \frac{1}{\psi_g} I_m + A_{u,\tau} B_g^{-1} A_{u,\tau}^T
+    \bigg]^{-1}
+A_{u,\tau} B_g^{-1} $$
 The Matrix Determinant Lemma allows us to cheaply
 calculate the determinant of the covariance as $$ \textrm{det}(I_m+\psi_g
-A_{u,\tau} B^{-1} A^T_{u,\tau}) \textrm{det}(B) $$
+A_{u,\tau} B_g^{-1} A^T_{u,\tau}) \textrm{det}(B_g) $$
 
 This $A_{u,\tau}$ is easy to find through the inverse of a Cholesky
 decomposition of $K_{u,u}$ multiplied by $K_{\tau,u}$. If $K_{u,u}=R R^T$ then
