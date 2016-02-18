@@ -18,7 +18,6 @@ devtools::load_all('..')
 # fit.model <- FALSE
 fit.model <- TRUE
 rmarkdown::render('Windram-DeLorean.Rmd')
-
 ```
 
 
@@ -52,7 +51,6 @@ if (file.exists("config.R")) {
     source("config.R")
 }
 source(system.file("scripts/shared.R", package="DeLorean"))
-
 ```
 
 ```{r loadLibs, echo=FALSE, message=FALSE}
@@ -66,7 +64,6 @@ options(markdown.HTML.stylesheet = system.file(file.path('Rmd', 'foghorn.css'),
 font.family <- "Verdana"
 font.theme <- theme_update(text=element_text(family=font.family))
 theme_set(font.theme)
-
 ```
 
 `r date()`
@@ -81,7 +78,6 @@ Windram et al.'s data is available in the `DeLorean` R package.
 ```{r loadLib}
 library(DeLorean)
 data(WindramDeLorean)
-
 ```
 
 
@@ -99,7 +95,6 @@ windram.cell.meta$capture <- (
     factor(as.character(windram.cell.meta$obstime),
            ordered=TRUE,
            levels=unique(as.character(windram.cell.meta$obstime))))
-
 ```
 
 Just consider the *Botrytis* cells and select some at random if we have
@@ -111,7 +106,6 @@ dl <- de.lorean(
     windram.cell.meta)
 botrytis.cells <- dl$cell.meta %>% filter(condition == "Botrytis")
 dl <- filter.cells(dl, cells=botrytis.cells$cell)
-
 ```
 
 
@@ -119,7 +113,6 @@ dl <- filter.cells(dl, cells=botrytis.cells$cell)
 set.seed(getOption("Windram.seed", 1))
 max.cells <- min(getOption("Windram.max.cells", 24))
 dl <- filter.cells(dl, number=max.cells)
-
 ```
 
 ```{r child=report.file("data")}
@@ -131,7 +124,6 @@ dl <- filter.cells(dl, number=max.cells)
 ```{r testCellSize}
 dl <- adjust.by.cell.sizes(dl)
 ggplot(dl$cell.sizes, aes(x=capture, y=size)) + geom_boxplot()
-
 ```
 
 
@@ -139,12 +131,11 @@ ggplot(dl$cell.sizes, aes(x=capture, y=size)) + geom_boxplot()
 
 Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes, eval=fit.model}
-dl <- estimate.hyper(dl, sigma.tau=group.size / 2)
+dl <- estimate.hyper(dl, sigma.tau=group.size/2, model.name='lowrank')
 fits.omega <- test.fit(dl$gene.var$Omega)
 print(fits.omega$gp)
 fits.psi <- test.fit(dl$gene.var$Psi)
 print(fits.psi$gp)
-
 ```
 
 ```{r child=report.file("hyper-parameters")}
@@ -159,21 +150,20 @@ max.genes <- min(getOption("Windram.max.genes", 30))
 sampled.genes <- sample_n(dl$gene.meta, max.genes)$gene
 gene.filter <- function(genes) genes %in% sampled.genes
 dl <- filter.genes(dl, gene.filter)
-
 ```
 
 
 Format the data for Stan and fit the model.
 ```{r fitModel, eval=fit.model}
-dl <- prepare.for.stan(dl)
+dl <- prepare.for.stan(dl, num.inducing=14)
 # Save for input to Monocle
 saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
         file='Data/Windram-input.rds')
 dl <- compile.model(dl)
-# dl <- find.smooth.tau(dl)
-dl <- find.best.tau(dl)
-system.time(dl <- fit.model(dl))
-
+# dl <- find.best.tau(dl, num.cores=1)
+dl <- find.best.tau(dl, num.tau.candidates=20000)
+# system.time(dl <- fit.model(dl, method='vb'))
+system.time(dl <- fit.model(dl, method='sample', iter=5000))
 ```
 
 
@@ -181,9 +171,7 @@ system.time(dl <- fit.model(dl))
 
 ```{r examConv}
 dl <- examine.convergence(dl)
-
 ```
-
 ```{r child=report.file("convergence")}
 ```
 
@@ -195,7 +183,6 @@ Examine posterior.
 ```{r posterior}
 dl <- process.posterior(dl)
 dl <- analyse.noise.levels(dl)
-
 ```
 ```{r child=report.file("posterior")}
 ```
@@ -360,7 +347,7 @@ ggsave('Windram-roughnesses.png', plots$roughnesses + plos.theme)
 ```{r echo=FALSE}
 # Save DeLorean object without fit component
 saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Data/Windram.rds")
-dl <- readRDS("Data/Windram.rds")
+# dl <- readRDS("Data/Windram.rds")
 ```
 
 Save plots.

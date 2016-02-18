@@ -12,6 +12,10 @@
 #'
 NULL
 
+.onLoad <- function(libname, pkgname) { # nocov start
+  # loadRcppModules()
+} # nocov end
+
 #' Initialise DeLorean object
 #'
 #' @param expr Expression array
