@@ -436,40 +436,39 @@ prepare.for.stan <- function(
 #' @export
 #'
 compile.model <- function(dl) {
-    library(Rcpp)
-    stan.model.file <- system.file(file.path('Stan',
-                                             sprintf('%s.stan',
-                                                     dl$opts$model.name)),
-                                   package='DeLorean',
-                                   mustWork=TRUE)
-    data.dir <- system.file('extdata', package='DeLorean')
-    compiled.model.file <- paste(data.dir,
-                                 sprintf("%s.rds", dl$opts$model.name),
-                                 sep='/')
-    within(dl, {
-        if (file.exists(compiled.model.file)
-            &&
-            file.info(compiled.model.file)$mtime
-                > file.info(stan.model.file)$mtime)
-        {
-            message("Loading pre-compiled model from ", compiled.model.file)
-            compiled <- readRDS(compiled.model.file)
-        } else {
-            message("Compiling model")
-            compiled <- rstan::stan(file=stan.model.file, chains=0,
-                                    data=stan.data)
-            message("Saving compiled model to ", compiled.model.file)
-            saveRDS(compiled, compiled.model.file)
-        }
-        # Try one iteration to check everything is OK
-        # message("Trying iteration")
-        fit <- rstan::stan(fit=compiled,
-                    data=stan.data,
-                    init=make.chain.init.fn(dl),
-                    warmup=1,
-                    iter=1,
-                    chains=1)
-    })
+  stan.model.file <- system.file(file.path('Stan',
+                                            sprintf('%s.stan',
+                                                    dl$opts$model.name)),
+                                  package='DeLorean',
+                                  mustWork=TRUE)
+  data.dir <- system.file('extdata', package='DeLorean')
+  compiled.model.file <- paste(data.dir,
+                               sprintf("%s.rds", dl$opts$model.name),
+                               sep='/')
+  within(dl, {
+    if (file.exists(compiled.model.file)
+        &&
+        file.info(compiled.model.file)$mtime
+            > file.info(stan.model.file)$mtime)
+    {
+      message("Loading pre-compiled model from ", compiled.model.file)
+      compiled <- readRDS(compiled.model.file)
+    } else {
+      message("Compiling model")
+      compiled <- rstan::stan(file=stan.model.file, chains=0,
+                              data=stan.data)
+      message("Saving compiled model to ", compiled.model.file)
+      saveRDS(compiled, compiled.model.file)
+    }
+    # Try one iteration to check everything is OK
+    # message("Trying iteration")
+    fit <- rstan::stan(fit=compiled,
+                       data=stan.data,
+                       init=make.chain.init.fn(dl),
+                       warmup=1,
+                       iter=1,
+                       chains=1)
+  })
 }
 
 
@@ -478,22 +477,22 @@ compile.model <- function(dl) {
 # @param dl de.lorean object
 #
 make.chain.init.fn <- function(dl) {
-    function() {
-        with(dl$stan.data, {
-            # message("Creating initialisation")
-            init <- list(
-                S=dl$cell.map$S.hat,
-                tau=rnorm(C, mean=time, sd=sigma_tau),
-                psi=rlnorm(G, meanlog=mu_psi, sdlog=sigma_psi),
-                omega=rlnorm(G, meanlog=mu_omega, sdlog=sigma_omega)
-            )
-            # If estimating phi, include it.
-            if (dl$opts$estimate.phi) {
-                init$phi <- rnorm(G, mean=mu_phi, sd=sigma_phi)
-            }
-            init
-        })
-    }
+  function() {
+    with(dl$stan.data, {
+      # message("Creating initialisation")
+      init <- list(
+        S=dl$cell.map$S.hat,
+        tau=rnorm(C, mean=time, sd=sigma_tau),
+        psi=rlnorm(G, meanlog=mu_psi, sdlog=sigma_psi),
+        omega=rlnorm(G, meanlog=mu_omega, sdlog=sigma_omega)
+      )
+      # If estimating phi, include it.
+      if (dl$opts$estimate.phi) {
+        init$phi <- rnorm(G, mean=mu_phi, sd=sigma_phi)
+      }
+      init
+    })
+  }
 }
 
 
@@ -774,7 +773,6 @@ find.best.tau <- function(dl,
 #' Fit the model using specified method (sampling or variational Bayes).
 #'
 #' @param dl de.lorean object
-#' @param method Either "sample" or "vb"
 #' @param method Fitting method:
 #'   \itemize{
 #'     \item 'sample': Use a Stan sampler.
