@@ -47,8 +47,8 @@ fixed (unlike the $\tau$ which are parameters to be inferred).
 ## Predictive mean and variance
 
 The predictive mean for gene $g$ is
-$$\frac{\psi_g}{\omega_g} K_{\star,u} \Sigma K_{u,\tau} x$$
+$$\frac{\psi_g}{\omega_g} K_{\star,u} \Sigma_g K_{u,\tau} x$$
 and the predictive variance is
-$$\psi_g(K_{\star,\star} - Q_{\star,\star} + K_{\star,u} \Sigma K_{u,\star})$$
+$$\psi_g(K_{\star,\star} - Q_{\star,\star} + K_{\star,u} \Sigma_g K_{u,\star})$$
 where
-$$\Sigma = \bigg[\frac{\psi_g}{\omega_g} K_{u,\tau} K_{\tau,u} + K_{u,u}\bigg]^{-1}$$
+$$\Sigma_g = \bigg[\frac{\psi_g}{\omega_g} K_{u,\tau} K_{\tau,u} + K_{u,u}\bigg]^{-1}$$
