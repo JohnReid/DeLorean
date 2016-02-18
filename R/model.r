@@ -147,12 +147,20 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
 }
 
 
-#' Estimate hyperparameters for model using empirical Bayes
+#' Estimate hyperparameters for model using empirical Bayes.
 #'
 #' @param dl de.lorean object
-#' @param sigma.tau Noise s.d. in temporal dimension
-#' @param length.scale Length scale for stationary GP covariance function
-#' @param model.name Choose model
+#' @param sigma.tau Noise s.d. in temporal dimension, that is prior s.d. for tau
+#' @param length.scale Length scale for stationary GP covariance function.
+#'   Defaults to the range of the observed capture times.
+#' @param model.name The model's name:
+#'   \itemize{
+#'     \item 'simplest-model': The simplest model (does not estimate the gene
+#'       means).
+#'     \item 'simple-model': Like 'simplest-model' but estimates the gene
+#'       means.
+#'     \item 'lowrank': Low rank approximation to the 'simplest-model'.
+#'   }
 #'
 #' @export
 #'
@@ -162,69 +170,69 @@ estimate.hyper <- function(
     length.scale = NULL,
     model.name = 'simplest-model'
 ) {
-    dl <- within(dl, {
-        #
-        # Remember options that depend on the model
-        #
-        opts$model.name <- model.name
-        opts$estimate.phi <- switch(
-            opts$model.name,
-            "simple-model" = TRUE,
-            "simplest-model" = FALSE,
-            "lowrank" = FALSE,
-            NA)
-        opts$adjust.cell.sizes <- switch(
-            opts$model.name,
-            "simple-model" = TRUE,
-            "simplest-model" = FALSE,
-            "lowrank" = FALSE,
-            NA)
-        #
-        # Set up temporal hyper-parameters
-        #
-        opts$sigma.tau <- sigma.tau
-        time.range <- range(cell.meta$obstime)
-        time.width <- time.range[2] - time.range[1]
-        if (is.null(length.scale)) {
-            opts$length.scale <- time.width
-        } else {
-            opts$length.scale <- length.scale
-        }
-        # message("Length scale: ", opts$length.scale)
-    })
-    dl <- analyse.variance(dl, dl$opts$adjust.cell.sizes)
-    # Expected variance of samples from zero-mean Gaussian with covariance K.obs
-    V.obs <- with(dl,
-        expected.sample.var(
-            cov.matern.32(
-                cov.calc.dists(unique(dl$cell.meta$obstime)),
-                dl$opts$length.scale)))
-    within(dl, {
-        gene.var <- gene.var %>% left_join(
-            gene.time.expr
-            %>% group_by(gene)
-            %>% dplyr::summarise(omega.hat=mean(Vgc),
-                                 psi.hat=var(Mgc)/V.obs)
-            %>% filter(! is.na(psi.hat),
-                       ! is.na(omega.hat),
-                       omega.hat > 0,
-                       psi.hat > 0)
-        )
-        hyper <- list(
-            mu_S=mean(cell.expr$S.hat),
-            sigma_S=sd(cell.expr$S.hat),
-            mu_phi=mean(gene.expr$phi.hat),
-            sigma_phi=sd(gene.expr$phi.hat),
-            mu_psi=mean(log(gene.var$psi.hat), na.rm=TRUE),
-            sigma_psi=sd(log(gene.var$psi.hat), na.rm=TRUE),
-            mu_omega=mean(log(gene.var$omega.hat), na.rm=TRUE),
-            sigma_omega=sd(log(gene.var$omega.hat), na.rm=TRUE),
-            sigma_tau=opts$sigma.tau,
-            l=opts$length.scale
-        )
-        print(hyper)
-        stopifnot(all(! sapply(hyper, is.na)))
-    })
+  dl <- within(dl, {
+    #
+    # Remember options that depend on the model
+    #
+    opts$model.name <- model.name
+    opts$estimate.phi <- switch(
+        opts$model.name,
+        "simple-model" = TRUE,
+        "simplest-model" = FALSE,
+        "lowrank" = FALSE,
+        NA)
+    opts$adjust.cell.sizes <- switch(
+        opts$model.name,
+        "simple-model" = TRUE,
+        "simplest-model" = FALSE,
+        "lowrank" = FALSE,
+        NA)
+    #
+    # Set up temporal hyper-parameters
+    #
+    opts$sigma.tau <- sigma.tau
+    time.range <- range(cell.meta$obstime)
+    time.width <- time.range[2] - time.range[1]
+    if (is.null(length.scale)) {
+        opts$length.scale <- time.width
+    } else {
+        opts$length.scale <- length.scale
+    }
+    # message("Length scale: ", opts$length.scale)
+  })
+  dl <- analyse.variance(dl, dl$opts$adjust.cell.sizes)
+  # Expected variance of samples from zero-mean Gaussian with covariance K.obs
+  V.obs <- with(dl,
+    expected.sample.var(
+      cov.matern.32(
+        cov.calc.dists(unique(dl$cell.meta$obstime)),
+        dl$opts$length.scale)))
+  within(dl, {
+    gene.var <- gene.var %>% left_join(
+      gene.time.expr
+      %>% group_by(gene)
+      %>% dplyr::summarise(omega.hat=mean(Vgc),
+                           psi.hat=var(Mgc)/V.obs)
+      %>% filter(! is.na(psi.hat),
+                 ! is.na(omega.hat),
+                 omega.hat > 0,
+                 psi.hat > 0)
+    )
+    hyper <- list(
+      mu_S=mean(cell.expr$S.hat),
+      sigma_S=sd(cell.expr$S.hat),
+      mu_phi=mean(gene.expr$phi.hat),
+      sigma_phi=sd(gene.expr$phi.hat),
+      mu_psi=mean(log(gene.var$psi.hat), na.rm=TRUE),
+      sigma_psi=sd(log(gene.var$psi.hat), na.rm=TRUE),
+      mu_omega=mean(log(gene.var$omega.hat), na.rm=TRUE),
+      sigma_omega=sd(log(gene.var$omega.hat), na.rm=TRUE),
+      sigma_tau=opts$sigma.tau,
+      l=opts$length.scale
+    )
+    print(hyper)
+    stopifnot(all(! sapply(hyper, is.na)))
+  })
 }
 
 
@@ -421,7 +429,7 @@ prepare.for.stan <- function(
     })
 }
 
-#' Define and compile the model.
+#' Compile the model and cache the DSO to avoid unnecessary recompilation.
 #'
 #' @param dl de.lorean object
 #'
@@ -448,7 +456,8 @@ compile.model <- function(dl) {
             compiled <- readRDS(compiled.model.file)
         } else {
             message("Compiling model")
-            compiled <- rstan::stan(file=stan.model.file, chains=0)
+            compiled <- rstan::stan(file=stan.model.file, chains=0,
+                                    data=stan.data)
             message("Saving compiled model to ", compiled.model.file)
             saveRDS(compiled, compiled.model.file)
         }
@@ -708,6 +717,7 @@ init.chain.sample.tau <- function(dl) {
             psi=dl$gene.map$psi.hat[1:G],
             omega=dl$gene.map$omega.hat[1:G]
         )
+        init$tauoffsets <- init$tau - time
         # If not estimating phi, don't include it.
         if (! dl$opts$estimate.phi) {
             init$phi <- NULL
@@ -717,14 +727,14 @@ init.chain.sample.tau <- function(dl) {
 }
 
 
-#' Find best tau to initialise chains with by using empirical Bayes parameter
-#' estimates and sampling tau from its prior.
+#' Find best tau to initialise chains with by sampling tau from the prior
+#' and using empirical Bayes parameter estimates for the other parameters.
 #'
 #' @param dl de.lorean object
 #' @param num.tau.candidates How many candidates to examine. Defaults to 6000.
 #' @param num.tau.to.keep How many candidates to keep. Defaults to num.cores.
 #' @param num.cores Number of cores to run on.
-#'          Defaults to getOption("DL.num.cores", max(parallel::detectCores()-1, 1))
+#'   Defaults to getOption("DL.num.cores", max(parallel::detectCores()-1, 1))
 #'
 #' @export
 #'
@@ -761,10 +771,17 @@ find.best.tau <- function(dl,
 }
 
 
-#' Fit the model using specified method (sampling or variational Bayes)
+#' Fit the model using specified method (sampling or variational Bayes).
 #'
 #' @param dl de.lorean object
 #' @param method Either "sample" or "vb"
+#' @param method Fitting method:
+#'   \itemize{
+#'     \item 'sample': Use a Stan sampler.
+#'       See \code{\link{fit.model.sample}}.
+#'     \item 'vb': Use Stan ADVI variational Bayes algorithm.
+#'       See \code{\link{fit.model.vb}}.
+#'   }
 #' @param ... Extra arguments for method
 #'
 #' @export
@@ -858,7 +875,9 @@ fit.model.vb <- function(dl, ...) {
 }
 
 
-#' Examine convergence
+#' Analyse the samples and gather the convergence statistics. Note this
+#' only makes sense if a sampling method was used to fit the model as
+#' opposed to variational Bayes.
 #'
 #' @param dl de.lorean object
 #'
@@ -942,7 +961,9 @@ join.tau.samples <- function(dl, tau.samples) {
 }
 
 
-#' Process the posterior
+#' Process the posterior, that is extract and reformat the samples from
+#' Stan. We also determine which sample has the highest likelihood, this
+#' is labelled as the 'best' sample.
 #'
 #' @param dl de.lorean object
 #'
@@ -1038,7 +1059,9 @@ optimise.best.sample <- function(
 }
 
 
-#' Analyse noise levels
+#' Analyse noise levels and assess which genes have the greatest
+#' ratio of temporal variance to noise. This are labelled as the
+#' 'gene.high.psi' genes.
 #'
 #' @param dl de.lorean object
 #' @param num.high.psi How many genes with high variance to examine
