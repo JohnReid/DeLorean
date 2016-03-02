@@ -209,7 +209,7 @@ dl <- estimate.hyper(
     dl,
     sigma.tau=getOption("Shalek.sigma.tau", 1),
     length.scale=getOption("Shalek.length.scale", 5),
-    model.name=getOption("Shalek.model", 'simplest-model'))
+    model.name=getOption("Shalek.model", 'lowrank'))
 ```
 ```{r child=report.file("hyper-parameters")}
 ```
