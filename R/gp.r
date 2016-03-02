@@ -1,3 +1,14 @@
+#' Centralises a periodic position into [period/2, period)
+#' by shifting by n*period, n \in N
+#'
+#' @param x Position
+#' @param period Period
+#'
+centralise <- function(x, period=1) {
+  y <- x / period + .5
+  (y - floor(y) - .5) * period
+}
+
 #' Makes a distance periodic
 #'
 #' @param r Distance
