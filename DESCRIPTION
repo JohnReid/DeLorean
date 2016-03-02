@@ -18,13 +18,15 @@ Imports:
     coda,
     parallel,
     functional,
-    Rcpp
+    Rcpp (>= 0.12.0)
 Suggests:
     knitr (>= 1.8),
     knitcitations,
     rmarkdown,
+    formatR,
     extrafont,
     testthat,
+    svglite,
     VGAM
 License: MIT + file LICENSE
 LazyData: true
