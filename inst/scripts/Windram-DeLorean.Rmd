@@ -80,7 +80,6 @@ Windram et al.'s data is available in the `DeLorean` R package.
 ```{r loadLib}
 library(DeLorean)
 data(WindramDeLorean)
-
 ```
 
 
@@ -113,6 +112,7 @@ dl <- filter.cells(dl, cells=botrytis.cells$cell)
 
 ```{r sampleCells, eval=fit.model}
 set.seed(getOption("Windram.seed", 1))
+# 24 is all the cells
 max.cells <- min(getOption("Windram.max.cells", 24))
 dl <- filter.cells(dl, number=max.cells)
 ```
@@ -146,7 +146,7 @@ print(fits.psi$gp)
 
 Choose a few genes.
 ```{r filterGenes, eval=fit.model}
-max.genes <- min(getOption("Windram.max.genes", 30))
+max.genes <- min(getOption("Windram.max.genes", 100))
 sampled.genes <- sample_n(dl$gene.meta, max.genes)$gene
 gene.filter <- function(genes) genes %in% sampled.genes
 dl <- filter.genes(dl, gene.filter)
