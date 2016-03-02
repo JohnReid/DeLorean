@@ -206,7 +206,8 @@ model {
     # Check that diag(Ktautau - Qtt) is positive
     for (c in 1:C) {
         if (KminusQdiag[c] < 0) {
-            reject("KminusQdiag must be greater or equal to 0. : ", KminusQdiag[c]);
+            reject("KminusQdiag must be greater or equal to 0. : ",
+                   KminusQdiag[c]);
         }
     }
     #
