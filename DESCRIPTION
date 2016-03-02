@@ -18,13 +18,16 @@ Imports:
     MASS (>= 7.3),
     coda,
     parallel,
-    functional
+    functional,
+    Rcpp (>= 0.12.0)
 Suggests:
     knitr (>= 1.8),
     knitcitations,
     rmarkdown,
+    formatR,
     extrafont,
     testthat,
+    svglite,
     VGAM
 License: MIT + file LICENSE
 LazyData: true

@@ -230,7 +230,6 @@ estimate.hyper <- function(
       sigma_tau=opts$sigma.tau,
       l=opts$length.scale
     )
-    print(hyper)
     stopifnot(all(! sapply(hyper, is.na)))
   })
 }

@@ -14,7 +14,7 @@ output:
 -->
 
 ```{r build, echo=FALSE, eval=FALSE}
-devtools::load_all('..')
+devtools::load_all('../..')
 # fit.model <- FALSE
 fit.model <- TRUE
 rmarkdown::render('Windram-DeLorean.Rmd')
@@ -108,13 +108,12 @@ botrytis.cells <- dl$cell.meta %>% filter(condition == "Botrytis")
 dl <- filter.cells(dl, cells=botrytis.cells$cell)
 ```
 
-
 ```{r sampleCells, eval=fit.model}
 set.seed(getOption("Windram.seed", 1))
+# 24 is all the cells
 max.cells <- min(getOption("Windram.max.cells", 24))
 dl <- filter.cells(dl, number=max.cells)
 ```
-
 ```{r child=report.file("data")}
 ```
 
@@ -137,7 +136,6 @@ print(fits.omega$gp)
 fits.psi <- test.fit(dl$gene.var$Psi)
 print(fits.psi$gp)
 ```
-
 ```{r child=report.file("hyper-parameters")}
 ```
 
@@ -146,7 +144,7 @@ print(fits.psi$gp)
 
 Choose a few genes.
 ```{r filterGenes, eval=fit.model}
-max.genes <- min(getOption("Windram.max.genes", 30))
+max.genes <- min(getOption("Windram.max.genes", 100))
 sampled.genes <- sample_n(dl$gene.meta, max.genes)$gene
 gene.filter <- function(genes) genes %in% sampled.genes
 dl <- filter.genes(dl, gene.filter)
@@ -160,10 +158,8 @@ dl <- prepare.for.stan(dl, num.inducing=30)
 saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
         file='Data/Windram-input.rds')
 dl <- compile.model(dl)
-# dl <- find.best.tau(dl, num.cores=1)
-dl <- find.best.tau(dl, num.tau.candidates=20000)
+dl <- find.best.tau(dl)
 system.time(dl <- fit.model(dl, method='vb'))
-# system.time(dl <- fit.model(dl, method='sample', iter=5000))
 ```
 
 

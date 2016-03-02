@@ -139,7 +139,7 @@ dl <- filter.genes(dl, genes=induced.genes$gene)
 Choose genes: take those with highest variance between time points
 relative to the noise level.
 ```{r filterGenes, eval=fit.model}
-max.genes <- min(getOption("Shalek.max.genes", 13))
+max.genes <- min(getOption("Shalek.max.genes", 74))
 shalek.key.genes <- unique(toupper(c(
     #
     # Cluster I d (core antiviral module; enriched for annotated antiviral and
@@ -187,7 +187,7 @@ qplot(genes.for.stan$cluster)
 Choose a few cells but make sure we have the precocious cells.
 ```{r filterCells, eval=fit.model}
 set.seed(getOption("Shalek.seed", 1))
-max.cells <- getOption("Shalek.max.cells", 12)
+max.cells <- getOption("Shalek.max.cells", 37)
 sampled.cells <- sample(colnames(dl$expr), max.cells)
 if (! "LPS_1h_S51" %in% sampled.cells) {
     sampled.cells[1] <- "LPS_1h_S51"
@@ -231,9 +231,8 @@ Format the data for Stan and fit the model.
 ```{r fitModel, eval=fit.model}
 dl <- prepare.for.stan(dl)
 dl <- compile.model(dl)
-# system.time(dl <- find.smooth.tau(dl, num.tau.to.try=detectCores()*2))
 system.time(dl <- find.best.tau(dl))
-system.time(dl <- fit.model(dl))
+system.time(dl <- fit.model(dl, getOption("Shalek.method", "vb")))
 ```
 
 
@@ -371,7 +370,7 @@ ggsave('Shalek-core.pdf', plots$core + plos.theme,
 ```{r checkPrecocious}
 S51.dists <- with(
     dl,
-    melt(expr - expr[,"LPS_1h_S51"], varnames=c("gene", "cell"))
+    reshape2::melt(expr - expr[,"LPS_1h_S51"], varnames=c("gene", "cell"))
     %>% mutate(gene=factor(gene, levels=levels(gene.map$gene)))
     %>% mutate(cell=factor(cell, levels=levels(cell.map$cell)))
     %>% left_join(gene.map)
@@ -389,6 +388,7 @@ gp <- (
 png('S51-dists.png', width=960, height=960)
 print(gp)
 dev.off()
+print(gp)
 ```
 
 
@@ -476,10 +476,7 @@ ggsave('Shalek-tau-offset.png', plots$tau.offset + plos.theme)
 
 
 ```{r totalVar, echo=FALSE, eval=FALSE}
-expr.l <- (
-    dl$expr
-    %>% melt(varnames=c("gene", "cell"), value.name="x")
-    %>% left_join(dl$cell.meta))
+expr.l <- melt.expr(dl) %>% left_join(dl$cell.meta)
 expr.gene.time <- (
     expr.l
     %>% group_by(gene, capture)
