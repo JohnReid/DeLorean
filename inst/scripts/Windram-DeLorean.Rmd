@@ -162,8 +162,8 @@ saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
 dl <- compile.model(dl)
 # dl <- find.best.tau(dl, num.cores=1)
 dl <- find.best.tau(dl, num.tau.candidates=20000)
-# system.time(dl <- fit.model(dl, method='vb'))
-system.time(dl <- fit.model(dl, method='sample', iter=5000))
+system.time(dl <- fit.model(dl, method='vb'))
+# system.time(dl <- fit.model(dl, method='sample', iter=5000))
 ```
 
 
