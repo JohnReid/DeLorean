@@ -100,6 +100,12 @@ dim.de.lorean <- function(x) {
     dim(x$expr)
 }
 
+#' Default number of cores to use.
+#'
+default.num.cores <- function() {
+  getOption("DL.num.cores", max(parallel::detectCores() - 1, 1))
+}
+
 # Summarise DeLorean object
 #
 # @param object de.lorean object

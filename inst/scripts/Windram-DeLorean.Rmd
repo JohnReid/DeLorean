@@ -77,6 +77,8 @@ in 2 conditions.
 Windram et al.'s data is available in the `DeLorean` R package.
 ```{r loadLib}
 library(DeLorean)
+library(dplyr)
+library(ggplot2)
 data(WindramDeLorean)
 ```
 

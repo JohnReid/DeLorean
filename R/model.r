@@ -528,63 +528,63 @@ find.smooth.tau <- function(
     method = "metropolis",
     ...
 ) {
-    log.likelihood <- ordering.log.likelihood.fn(dl, psi, omega)
-    dl$tau.inits <- with(dl, {
-        # Maximise the sum of the log marginal likelihoods
-        ordering.search <- function(seed) {
-            set.seed(seed)
-            # Choose a starting point by random projection
-            expr.centre <- t(scale(t(expr), center=T, scale=F))
-            init.ordering <- order(rnorm(nrow(expr.centre)) %*% expr.centre)
-            # init.ordering <- sample(stan.data$C)
-            metropolis.fn <- function(ordering, log.likelihood, ...) {
-                mh.run <- ordering.metropolis.hastings(
-                    ordering,
-                    log.likelihood,
-                    proposal.fn=ordering.random.block.move,
-                    ...)
-                best.sample <- which.max(mh.run$log.likelihoods)
-                #ordering.maximise(mh.run$chain[best.sample,], log.likelihood)
-                mh.run$chain[best.sample,]
-            }
-            method.fn <- switch(method,
-                                "maximise"=ordering.maximise,
-                                "metropolis"=metropolis.fn,
-                                NA)
-            ordering <- method.fn(init.ordering, log.likelihood, ...)
-            stopifnot(! is.null(ordering))
-            # Reverse the ordering if it makes it correlate better with
-            # the capture times
-            capture.order <- order(stan.data$time)
-            if (cor(capture.order, ordering) <
-                cor(capture.order, rev(ordering)))
-            {
-                ordering <- rev(ordering)
-            }
-            ordering
-        }
-        # Choose seeds
-        seeds <- sample.int(.Machine$integer.max, num.tau.to.try)
-        # Run in parallel or not?
-        if (num.cores > 1) {
-            orderings <- parallel::mclapply(seeds,
-                                  mc.cores=num.cores,
-                                  ordering.search)
-        } else {
-            orderings <- lapply(seeds, ordering.search)
-        }
-        # Order the taus by the best orderings
-        lls <- sapply(orderings, function(o) -log.likelihood(o))
-        best.order <- order(lls)
-        # Make the complete chain initialisation with the tau.
-        lapply(orderings[best.order[1:num.tau.to.keep]],
-               function(ordering) {
-                   init <- init.chain.sample.tau(dl)
-                   init$tau <- even.tau.spread(dl)[ordering.invert(ordering)]
-                   init
-               })
-    })
-    dl
+  log.likelihood <- ordering.log.likelihood.fn(dl, psi, omega)
+  dl$tau.inits <- with(dl, {
+    # Maximise the sum of the log marginal likelihoods
+    ordering.search <- function(seed) {
+      set.seed(seed)
+      # Choose a starting point by random projection
+      expr.centre <- t(scale(t(expr), center=T, scale=F))
+      init.ordering <- order(rnorm(nrow(expr.centre)) %*% expr.centre)
+      # init.ordering <- sample(stan.data$C)
+      metropolis.fn <- function(ordering, log.likelihood, ...) {
+        mh.run <- ordering.metropolis.hastings(
+          ordering,
+          log.likelihood,
+          proposal.fn=ordering.random.block.move,
+          ...)
+        best.sample <- which.max(mh.run$log.likelihoods)
+        #ordering.maximise(mh.run$chain[best.sample,], log.likelihood)
+        mh.run$chain[best.sample,]
+      }
+      method.fn <- switch(method,
+                          "maximise"=ordering.maximise,
+                          "metropolis"=metropolis.fn,
+                          NA)
+      ordering <- method.fn(init.ordering, log.likelihood, ...)
+      stopifnot(! is.null(ordering))
+      # Reverse the ordering if it makes it correlate better with
+      # the capture times
+      capture.order <- order(stan.data$time)
+      if (cor(capture.order, ordering) <
+          cor(capture.order, rev(ordering)))
+      {
+        ordering <- rev(ordering)
+      }
+      ordering
+    }
+    # Choose seeds
+    seeds <- sample.int(.Machine$integer.max, num.tau.to.try)
+    # Run in parallel or not?
+    if (num.cores > 1) {
+      orderings <- parallel::mclapply(seeds,
+                                      mc.cores=num.cores,
+                                      ordering.search)
+    } else {
+      orderings <- lapply(seeds, ordering.search)
+    }
+    # Order the taus by the best orderings
+    lls <- sapply(orderings, function(o) -log.likelihood(o))
+    best.order <- order(lls)
+    # Make the complete chain initialisation with the tau.
+    lapply(orderings[best.order[1:num.tau.to.keep]],
+           function(ordering) {
+             init <- init.chain.sample.tau(dl)
+             init$tau <- even.tau.spread(dl)[ordering.invert(ordering)]
+             init
+           })
+  })
+  dl
 }
 
 
@@ -736,12 +736,12 @@ init.chain.sample.tau <- function(dl) {
 #'
 #' @export
 #'
-find.best.tau <- function(dl,
-                          num.tau.candidates = 6000,
-                          num.tau.to.keep = num.cores,
-                          num.cores = getOption("DL.num.cores",
-                                                max(parallel::detectCores() - 1, 1))
-) {
+find.best.tau <- function(
+  dl,
+  num.tau.candidates = 6000,
+  num.tau.to.keep = num.cores,
+  num.cores = getOption("DL.num.cores", max(parallel::detectCores() - 1, 1)))
+{
     within(dl, {
         # Define a function that calculates log probability for
         # random seeded tau
@@ -800,7 +800,7 @@ fit.model <- function(
 #'
 #' @param dl de.lorean object
 #' @param num.cores Number of cores to run on.
-#'          Defaults to getOption("DL.num.cores", max(parallel::detectCores()-1, 1))
+#'   Defaults to getOption("DL.num.cores", max(parallel::detectCores()-1, 1))
 #' @param chains Number of chains to run on each core
 #' @param thin How many samples to generate before retaining one
 #' @param ... Extra arguments for rstan::stan() sampling call
@@ -814,26 +814,25 @@ fit.model.sample <- function(
     thin = 50,
     ...)
 {
-    init.chain.good.tau <- make.init.fn(dl)
-    # Run the chains in parallel
-    sflist <- parallel::mclapply(
-        1:num.cores,
-        mc.cores=num.cores,
-        function(i)
-            rstan::stan(
-                fit=dl$fit,
-                data=dl$stan.data,
-                thin=thin,
-                init=init.chain.good.tau,
-                seed=i,
-                chains=chains,
-                chain_id=i,
-                refresh=-1,
-                ...))
-    dl$fit <- rstan::sflist2stanfit(sflist)
-    dl$compiled <- NULL  # Delete large unneeded object
-    dl$sflist <- NULL  # Delete large unneeded object
-    return(dl)
+  init.chain.good.tau <- make.init.fn(dl)
+  # Run the chains in parallel
+  sflist <- parallel::mclapply(
+    1:num.cores,
+    mc.cores=num.cores,
+    function(i)
+      rstan::stan(
+        fit=dl$fit,
+        data=dl$stan.data,
+        thin=thin,
+        init=init.chain.good.tau,
+        seed=i,
+        chains=chains,
+        chain_id=i,
+        refresh=-1,
+        ...))
+  dl$fit <- rstan::sflist2stanfit(sflist)
+  dl$compiled <- NULL  # Delete large unneeded object
+  return(dl)
 }
 
 
@@ -842,33 +841,63 @@ fit.model.sample <- function(
 #' @param dl de.lorean object
 #'
 make.init.fn <- function(dl) {
-    function(chain_id) {
-        #
-        # Create random parameters
-        pars <- make.chain.init.fn(dl)()
-        #
-        # Replace tau with good tau
-        pars$tau <- dl$tau.inits[[chain_id]]$tau
-        pars
-    }
+  function(chain_id) {
+    stopifnot(chain_id <= length(dl$tau.inits))
+    #
+    # Create random parameters
+    pars <- make.chain.init.fn(dl)()
+    #
+    # Replace tau with good tau
+    pars$tau <- dl$tau.inits[[chain_id]]$tau
+    pars
+  }
 }
 
 
 #' Fit the model using Stan variational Bayes
 #'
 #' @param dl de.lorean object
+#' @param num.cores Number of cores to run on. Defaults to default.num.cores()
+#' @param init.idx Which initialisation to use
 #' @param ... Extra arguments for rstan::vb()
 #'
 #' @export
 #'
-fit.model.vb <- function(dl, ...) {
-    # Run variational Bayes
+fit.model.vb <- function(
+    dl,
+    num.cores = default.num.cores(),
+    init.idx = 1,
+    ...)
+{
+  if (num.cores > 1) {
+    # Run variational Bayes in parallel
+    sflist <- parallel::mclapply(
+      1:num.cores,
+      mc.cores=num.cores,
+      function(i)
+        rstan::vb(
+          rstan::get_stanmodel(dl$fit),
+          data=dl$stan.data,
+          seed=i,
+          init=make.init.fn(dl)(i),
+          ...))
+    calc.lp <- function(fit)
+      rstan::log_prob(
+        dl$fit,
+        rstan::unconstrain_pars(dl$fit, rstan::get_inits(fit)))
+    lps <- lapply(sflist, calc.lp)
+    best.idx <- which.max(lps)
+    dl$fit <- sflist[[best.idx]]
+  } else {
+    # Run single variational Bayes
     dl$fit <- rstan::vb(
-        attributes(dl$fit)$stanmodel,
-        data=dl$stan.data,
-        init=make.init.fn(dl)(1),
-        ...)
-    return(dl)
+      rstan::get_stanmodel(dl$fit),
+      data=dl$stan.data,
+      seed=1,
+      init=make.init.fn(dl)(init.idx),
+      ...)
+  }
+  return(dl)
 }
 
 
