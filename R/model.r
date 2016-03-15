@@ -522,8 +522,9 @@ seriation.find.orderings <- function(
   .methods = c("ARSA", "TSP", "R2E", "HC", "GW", "OLO"),
   # .methods = c("TSP", "R2E", "HC", "GW", "OLO"),
   scaled = c('scaled', 'unscaled'),
-  dim.red = c('none', 'pca', 'kfa'),
-  dims = geom.series(base=2, max=nrow(dl$expr)-1),
+  dim.red = c('none', 'pca', 'kfa', 'ica', 'mds'),
+  # dim.red = c('mds'),
+  dims = geom.series(base=2, max=min(8, nrow(dl$expr)-1)),
   num.tau.to.keep = default.num.cores())
 {
   #
@@ -548,8 +549,10 @@ seriation.find.orderings <- function(
     switch(dim.red,
       none = expr,
       pca = prcomp(expr)$x[,1:dims],
+      ica = fastICA::fastICA(expr, n.comp=dims)$S,
       kfa = t(kernlab::kfa(t(expr), features=dims)@xmatrix),
-      stop('dim.red must be "none", "kfa" or "pca"'))
+      mds = cmdscale(dist(expr), k=dims),
+      stop('dim.red must be "none", "ica", "kfa", "mds" or "pca"'))
   }
   get.red.mem <- memoise::memoise(get.red)
   get.dist <- function(scaled, dim.red, dims=5) {
