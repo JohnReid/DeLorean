@@ -32,6 +32,7 @@ plot.de.lorean <- function(x, type="profiles", ...) {
         expr.data=expr.data.plot(x, ...),
         roughnesses=roughnesses.plot(x, ...),
         marg.like=marg.like.plot(x, ...),
+        orderings=orderings.plot(x, ...),
         tau.offsets=tau.offsets.plot(x, ...)
     )
     if (is.null(result)) {
@@ -342,4 +343,47 @@ expr.data.plot <- function(dl, genes=NULL, num.genes=12) {
                           geom="line") +
              facet_wrap(~ gene)
     })
+}
+
+#' Plot two sets of pseudotimes against each other.
+#'
+#' @param dl The DeLorean object
+#' @param fits Fit indexes
+#'
+#' @export
+#'
+pseudotimes.pair.plot <- function(dl, fits=NULL) {
+  stopifnot(all(dim(dl$best.orderings) == dim(dl$vb.tau)))
+  #
+  # Create a data frame with the best orderings
+  best.o <- sapply(dl$best.orderings, function(O) O$.order)
+  best.o.m <- reshape2::melt(best.o, varnames=c('c', 'fit'),
+                             value.name='ordering.idx') %>%
+              dplyr::left_join(data.frame(
+                ordering.idx=1:dl$stan.data$C,
+                ordering=even.tau.spread(dl)))
+  #
+  # Create a data frame with the best pseudotimes
+  best.tau.m <- reshape2::melt(dl$vb.tau, varnames=c('c', 'fit'),
+                               value.name='pseudotime')
+  #
+  # If not plotting all fits then filter data frames
+  if (! is.null(fits)) {
+    best.o.m <- filter(best.o.m, fit %in% fits)
+    best.tau.m <- filter(best.tau.m, fit %in% fits)
+  }
+  #
+  # Combine the data frames and join other data
+  df. <- best.o.m %>%
+    left_join(best.tau.m) %>%
+    dplyr::mutate(
+      ordering.label=factor('ordering', c('ordering', 'pseudotime')),
+      pseudotime.label=factor('pseudotime', c('ordering', 'pseudotime'))) %>%
+    dplyr::left_join(dl$cell.map)
+  ggplot2::ggplot(
+      df.,
+      aes(x=ordering.label, xend=pseudotime.label,
+          y=ordering, yend=pseudotime,
+          color=capture)) +
+    ggplot2::geom_segment(alpha=.3) + facet_wrap(~ fit)
 }

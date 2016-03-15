@@ -160,7 +160,9 @@ dl <- prepare.for.stan(dl, num.inducing=30)
 saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
         file='Data/Windram-input.rds')
 dl <- compile.model(dl)
-dl <- find.best.tau(dl)
+dl <- find.good.ordering(dl, seriation.find.orderings)
+plot(dl, type='orderings')
+dl <- pseudotimes.from.orderings(dl)
 system.time(dl <- fit.model(dl, method='vb'))
 ```
 

@@ -13,6 +13,7 @@ output:
 # Execute this block to render the Rmarkdown.
 #
 devtools::load_all('../..')
+devtools::load_all('../../../DeLoreanData/')
 # fit.model <- FALSE
 fit.model <- TRUE
 rmarkdown::render('Shalek-DeLorean.Rmd')
@@ -80,6 +81,9 @@ Shalek et al.'s data `r citet(bib[["shalek_single-cell_2014"]])`
 is available in the `DeLorean` R package.
 ```{r loadLib, eval=fit.model}
 library(DeLorean)
+library(DeLoreanData)
+library(dplyr)
+library(ggplot2)
 data(ShalekDeLorean)
 ```
 
@@ -90,6 +94,8 @@ dl <- de.lorean(
     shalek.A.expr,
     shalek.A.gene.meta,
     shalek.A.cell.meta)
+dl$cell.meta <- mutate(dl$cell.meta,
+                       precocious=cell %in% c('LPS_1h_S51', 'LPS_1h_S52'))
 ```
 
 
@@ -139,7 +145,6 @@ dl <- filter.genes(dl, genes=induced.genes$gene)
 Choose genes: take those with highest variance between time points
 relative to the noise level.
 ```{r filterGenes, eval=fit.model}
-max.genes <- min(getOption("Shalek.max.genes", 74))
 shalek.key.genes <- unique(toupper(c(
     #
     # Cluster I d (core antiviral module; enriched for annotated antiviral and
@@ -178,7 +183,7 @@ genes.for.stan <- (
     %>% mutate(key=gene %in% shalek.key.genes)
     %>% filter(cluster %in% clusters)
     %>% arrange(- Psi / Omega)
-    %>% head(max.genes))
+    %>% head(getOption("Shalek.max.genes", 74)))
 dl <- filter.genes(dl, genes=genes.for.stan$gene)
 # How many come from each cluster?
 qplot(genes.for.stan$cluster)
@@ -187,8 +192,7 @@ qplot(genes.for.stan$cluster)
 Choose a few cells but make sure we have the precocious cells.
 ```{r filterCells, eval=fit.model}
 set.seed(getOption("Shalek.seed", 1))
-max.cells <- getOption("Shalek.max.cells", 37)
-sampled.cells <- sample(colnames(dl$expr), max.cells)
+sampled.cells <- sample(colnames(dl$expr), getOption("Shalek.max.cells", 307))
 if (! "LPS_1h_S51" %in% sampled.cells) {
     sampled.cells[1] <- "LPS_1h_S51"
 }
@@ -231,8 +235,17 @@ Format the data for Stan and fit the model.
 ```{r fitModel, eval=fit.model}
 dl <- prepare.for.stan(dl)
 dl <- compile.model(dl)
-system.time(dl <- find.best.tau(dl))
-system.time(dl <- fit.model(dl, getOption("Shalek.method", "vb")))
+# system.time(dl <- find.best.tau(dl))
+# system.time(dl <- find.smooth.tau(dl))
+dl <- find.good.ordering(dl, seriation.find.orderings)
+# dl <- find.good.ordering(dl, magda.find.orderings)
+plot(dl, type='orderings')
+num.inits <- getOption("Shalek.num.inits", 60)
+dl <- pseudotimes.from.orderings(dl, num.to.keep=num.inits)
+system.time(dl <- fit.model(dl,
+                            method=getOption("Shalek.method", "vb"),
+                            num.inits=num.inits))
+pseudotimes.pair.plot(dl)
 ```
 
 
@@ -250,7 +263,6 @@ dl <- examine.convergence(dl)
 Examine posterior and optimise best sample.
 ```{r posterior}
 dl <- process.posterior(dl)
-# dl <- optimise.best.sample(dl)
 dl <- analyse.noise.levels(dl)
 ```
 ```{r child=report.file("posterior")}

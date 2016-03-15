@@ -502,6 +502,204 @@ even.tau.spread <- function(dl) {
              length=C))
 }
 
+# From http://stackoverflow.com/questions/11094822/numbers-in-geometric-progression
+geom.series <- function(base, max) {
+  base^(0:floor(log(max, base)))
+}
+
+#' Use seriation package to find good orderings
+#'
+#' @param dl de.lorean object
+#' @param psi Temporal variation
+#' @param omega Noise
+#' @param num.tau.to.keep How many initialisations to keep
+#'
+#' @export
+#'
+seriation.find.orderings <- function(
+  dl,
+  number_paths = 5,
+  .methods = c("ARSA", "TSP", "R2E", "HC", "GW", "OLO"),
+  # .methods = c("TSP", "R2E", "HC", "GW", "OLO"),
+  scaled = c('scaled', 'unscaled'),
+  dim.red = c('none', 'pca', 'kfa'),
+  dims = geom.series(base=2, max=nrow(dl$expr)-1),
+  num.tau.to.keep = default.num.cores())
+{
+  #
+  # Calculate all combinations of parameters
+  combinations <- expand.grid(method=.methods,
+                              scaled=scaled,
+                              dim.red=dim.red,
+                              dims=dims,
+                              stringsAsFactors=FALSE) %>%
+    # Only keep one combination with no dimensionality reduction
+    dplyr::filter(dim.red != 'none' | 1 == dims) %>%
+    # Cannot do KFA with 1 dimension
+    dplyr::filter(dim.red != 'kfa' | 1 != dims)
+  get.expr <- function(scaled) switch(scaled,
+    scaled = scale(t(dl$expr)),
+    unscaled = t(dl$expr),
+    stop('scaled must be "scaled" or "unscaled"')
+  )
+  get.expr.mem <- memoise::memoise(get.expr)
+  get.red <- function(scaled, dim.red, dims=5) {
+    expr <- get.expr(scaled)
+    switch(dim.red,
+      none = expr,
+      pca = prcomp(expr)$x[,1:dims],
+      kfa = t(kernlab::kfa(t(expr), features=dims)@xmatrix),
+      stop('dim.red must be "none", "kfa" or "pca"'))
+  }
+  get.red.mem <- memoise::memoise(get.red)
+  get.dist <- function(scaled, dim.red, dims=5) {
+    dist(get.red.mem(scaled, dim.red, dims))
+  }
+  get.dist.mem <- memoise::memoise(get.dist)
+  parallel::mclapply(
+    1:nrow(combinations),
+    function(i) with(combinations[i,], within(list(), {
+      method.name <- stringr::str_c(method,
+                                    ':', scaled,
+                                    ':', dim.red,
+                                    ':', dims)
+      elapsed <- system.time(
+        per <- seriation::seriate(dist(get.red.mem(scaled, dim.red, dims)),
+                                  method=method))
+      .order <- seriation::get_order(per)
+      ll <- dl$ordering.ll(.order)
+      message(method.name, '; time=', elapsed[3], 's; LL=', ll)
+    })),
+    # mc.cores=1)
+    mc.cores=default.num.cores())
+}
+
+
+#' Run a find good ordering method and append results to existing orderings
+#'
+#' @param dl de.lorean object
+#' @param method Function that runs the method
+#' @param ... Any other arguments for the method
+#'
+#' @export
+#'
+find.good.ordering <- function(dl, method, ...)
+{
+  dl <- create.ordering.ll.fn(dl)
+  dl$order.inits <- c(
+    dl$order.inits,
+    lapply(
+      method(dl, ...),
+      function(i) {
+        i$.order <- rev.order.if.better(dl, i$.order)
+        i
+      }))
+  dl
+}
+
+#' Plot likelihoods of orderings against elapsed times taken
+#' to generate them
+#'
+#' @param dl The DeLorean object
+#'
+#' @export
+#'
+orderings.plot <- function(dl) with(dl, {
+  results.df <- data.frame(
+    method=sapply(order.inits, function(r) r$method.name),
+    elapsed=sapply(order.inits, function(r) r$elapsed[3]),
+    ll=sapply(order.inits, function(r) r$ll))
+  ggplot2::ggplot(results.df, aes(x=elapsed, y=ll, label=method)) +
+    ggplot2::geom_text()
+})
+
+#' Use Magda's code to find good orderings
+#'
+#' @param dl de.lorean object
+#' @param number_paths Number of paths for each starting point
+#'
+#' @export
+#'
+magda.find.orderings <- function(
+    dl,
+    number_paths = 5)
+{
+  #
+  # Determine which cell indexes have either the highest or lowest
+  # observation times, we will use these as starting points
+  max.obs <- max(dl$cell.map$obstime)
+  min.obs <- min(dl$cell.map$obstime)
+  starting_points <-
+    (1:dl$.C)[which(dl$cell.map$obstime %in% c(max.obs, min.obs))]
+  #
+  # Call Magda's function to generate paths from these starting points
+  elapsed <- system.time(
+    magda.paths <- CombfuncPaths(
+      dl$expr,
+      starting_points=starting_points,
+      number_paths=number_paths))
+  #
+  # Convert Magda's paths into our format
+  lapply(
+    1:ncol(magda.paths),
+    function(c) within(list(), {
+      method.name <- stringr::str_c('Magda:', c)
+      elapsed <- elapsed / ncol(magda.paths)
+      .order <- magda.paths[,c]
+      ll <- dl$ordering.ll(.order)
+    }))
+}
+
+# Reverse ordering if it is better correlated with observed times
+rev.order.if.better <- function(dl, .order) {
+  rev.order <- rev(.order)
+  if (cor(.order, dl$cell.map$obstime) < cor(rev.order, dl$cell.map$obstime)) {
+    .order <- rev.order
+  }
+  .order
+}
+
+# Deduplicate orderings
+#
+deduplicate.orderings <- function(dl) {
+  orderings <- sapply(dl$order.inits, function(i) i$.order)
+  dupd <- duplicated(t(orderings))
+  dl$order.inits <- dl$order.inits[!dupd]
+  dl
+}
+
+#' Convert best orderings into initialisations
+#'
+#' @param dl The DeLorean object
+#' @param num.to.keep The number to keep (defaults to default.num.cores())
+#'
+#' @export
+#'
+pseudotimes.from.orderings <- function(
+  dl,
+  num.to.keep=default.num.cores())
+within(deduplicate.orderings(dl), {
+  order.orderings <- order(sapply(order.inits, function(i) i$ll),
+                           decreasing=TRUE)
+  #
+  # Make sure we don't try to keep too many (due to duplicates, etc...)
+  actually.keep <- min(length(order.orderings), num.to.keep)
+  if (actually.keep < num.to.keep) {
+    warning("Don't have enough ", num.to.keep, " pseudotimes to keep,",
+            " only have ", actually.keep)
+  }
+  best.orderings <- order.inits[order.orderings[1:actually.keep]]
+  tau.inits <- lapply(
+    best.orderings,
+    function(O) {
+      message('Using ordering ', O$method.name, '; LL=', O$ll)
+      # Create an initialisation using the ordering
+      init <- init.chain.sample.tau(dl)
+      init$tau <- even.tau.spread(dl)[O$.order]
+      init
+    })
+})
+
 
 #' Find best order of the samples assuming some smooth GP prior on the
 #' expression profiles over this ordering.
@@ -509,8 +707,7 @@ even.tau.spread <- function(dl) {
 #' @param dl de.lorean object
 #' @param psi Temporal variation
 #' @param omega Noise
-#' @param num.cores Number of cores to run on.
-#'          Defaults to getOption("DL.num.cores", max(parallel::detectCores()-1, 1))
+#' @param num.cores Number of cores to run on. Defaults to default.num.cores()
 #' @param num.tau.to.try How many initialisations to try
 #' @param num.tau.to.keep How many initialisations to keep
 #' @param method Method to use "maximise" or "metropolis"
@@ -522,13 +719,14 @@ find.smooth.tau <- function(
     dl,
     psi = exp(dl$hyper$mu_psi),
     omega = exp(dl$hyper$mu_omega),
-    num.cores = getOption("DL.num.cores", max(parallel::detectCores() - 1, 1)),
+    num.cores = default.num.cores(),
     num.tau.to.try = num.cores,
     num.tau.to.keep = num.cores,
     method = "metropolis",
     ...
 ) {
-  log.likelihood <- ordering.log.likelihood.fn(dl, psi, omega)
+  dl <- create.ordering.ll.fn(dl)
+  log.likelihood <- dl$ordering.ll
   dl$tau.inits <- with(dl, {
     # Maximise the sum of the log marginal likelihoods
     ordering.search <- function(seed) {
@@ -606,7 +804,8 @@ test.mh <- function(
     iterations = 1000,
     thin = 15
 ) {
-    log.likelihood <- ordering.log.likelihood.fn(dl, psi, omega)
+    dl <- create.ordering.ll.fn(dl)
+    log.likelihood <- dl$ordering.ll
     dl$tau.inits <- with(dl, {
         # Maximise the sum of the log marginal likelihoods
         ordering.search <- function(seed) {
@@ -634,71 +833,10 @@ test.mh <- function(
     })
 }
 
-
 # The covariance function for the DeLorean object.
 cov.fn.for <- function(dl) {
     cov.matern.32
 }
-
-
-#' Create a log likelihood function suitable for evaluating smooth orderings.
-#'
-#' @param dl de.lorean object
-#' @param psi Temporal variation
-#' @param omega Noise
-#' @param cov.fn Covariance function
-#'
-ordering.log.likelihood.fn <- function(
-    dl,
-    psi = mean(dl$gene.map$psi.hat),
-    omega = mean(dl$gene.map$omega.hat),
-    cov.fn = cov.fn.for(dl))
-{
-    with(dl, {
-        # Evenly spread tau over range of capture times
-        even.tau <- even.tau.spread(dl)
-        # Calculate the distances
-        r <- outer(even.tau, even.tau, FUN="-")
-        # Make periodic if necessary
-        if (opts$periodic) {
-            r <- cov.periodise(r, opts$period)
-        }
-        # Use the same kernel for each gene
-        K <- (
-            psi * cov.fn(r, stan.data$l)
-            + omega * diag(nrow(r)))
-        # Do Cholesky decomposition once and use in each subsequent smoothing
-        U <- chol(K)
-        # Make every gene zero mean
-        expr.centre <- t(scale(t(dl$expr), scale=FALSE, center=TRUE))
-        # Return the function that is the log likelihood of the ordering
-        function(o) {
-            stopifnot(! is.null(o))
-            tryCatch({
-                sum(sapply(1:stan.data$G,
-                           function(g) {
-                               gp.log.marg.like(expr.centre[g,o], U=U)
-                           }))
-            },
-            warning=function(condition) {
-                message(
-                    "WARNING: log.likelihood\n\t",
-                    condition,
-                    "\n",
-                    o)
-                warning(condition)
-            }, error = function(condition) {
-                message(
-                    "ERROR: log.likelihood\n\t",
-                    condition,
-                    "\n\tOrdering: ",
-                    o)
-                stop(condition)
-            })
-        }
-    })
-}
-
 
 # Choose an initialisation by sampling tau from the prior.
 #
@@ -731,8 +869,7 @@ init.chain.sample.tau <- function(dl) {
 #' @param dl de.lorean object
 #' @param num.tau.candidates How many candidates to examine. Defaults to 6000.
 #' @param num.tau.to.keep How many candidates to keep. Defaults to num.cores.
-#' @param num.cores Number of cores to run on.
-#'   Defaults to getOption("DL.num.cores", max(parallel::detectCores()-1, 1))
+#' @param num.cores Number of cores to run on. Defaults to default.num.cores()
 #'
 #' @export
 #'
@@ -740,32 +877,32 @@ find.best.tau <- function(
   dl,
   num.tau.candidates = 6000,
   num.tau.to.keep = num.cores,
-  num.cores = getOption("DL.num.cores", max(parallel::detectCores() - 1, 1)))
+  num.cores = default.num.cores())
 {
-    within(dl, {
-        # Define a function that calculates log probability for
-        # random seeded tau
-        try.tau.init <- function(i) {
-            set.seed(i)
-            pars <- init.chain.sample.tau(dl)
-            lp <- rstan::log_prob(fit, rstan::unconstrain_pars(fit, pars))
-            list(lp=lp, tau=pars$tau)
-        }
-        # Choose tau several times and calculate log probability
-        if (num.cores > 1) {
-            tau.inits <- parallel::mclapply(1:num.tau.candidates,
-                                  mc.cores=num.cores,
-                                  try.tau.init)
-        } else {
-            tau.inits <- lapply(1:num.tau.candidates, try.tau.init)
-        }
-        # qplot(sapply(tau.inits, function(init) init$lp))
-        # Which tau gave highest log probability?
-        tau.inits.order <- order(sapply(tau.inits, function(init) -init$lp))
-        # Just keep so many best tau inits
-        tau.inits <- tau.inits[tau.inits.order[1:num.tau.to.keep]]
-        rm(tau.inits.order, try.tau.init)
-    })
+  within(dl, {
+    # Define a function that calculates log probability for
+    # random seeded tau
+    try.tau.init <- function(i) {
+      set.seed(i)
+      pars <- init.chain.sample.tau(dl)
+      lp <- rstan::log_prob(fit, rstan::unconstrain_pars(fit, pars))
+      list(lp=lp, tau=pars$tau)
+    }
+    # Choose tau several times and calculate log probability
+    if (num.cores > 1) {
+      tau.inits <- parallel::mclapply(1:num.tau.candidates,
+                                      mc.cores=num.cores,
+                                      try.tau.init)
+    } else {
+      tau.inits <- lapply(1:num.tau.candidates, try.tau.init)
+    }
+    # qplot(sapply(tau.inits, function(init) init$lp))
+    # Which tau gave highest log probability?
+    tau.inits.order <- order(sapply(tau.inits, function(init) -init$lp))
+    # Just keep so many best tau inits
+    tau.inits <- tau.inits[tau.inits.order[1:num.tau.to.keep]]
+    rm(tau.inits.order, try.tau.init)
+  })
 }
 
 
@@ -853,12 +990,42 @@ make.init.fn <- function(dl) {
   }
 }
 
+# post.mean <- rstan::get_inits(dl$fit)
+# post.mean$psi
+# post.mean$omega
+# class(post.mean)
+# names(post.mean)
+# upars <- rstan::unconstrain_pars(dl$fit, post.mean)
+# rstan::log_prob(dl$fit, upars)
+
+#' Average across a parameters samples.
+#'
+#' @param s An array of any dimension in which the first dimensions
+#'   indexes the samples
+#'
+avg.par.samples <- function(s) {
+  n.dims <- length(dim(s))
+  if (n.dims > 1) {
+    apply(s, 2:n.dims, mean)
+  } else {
+    mean(s)
+  }
+}
+
+#' Get posterior mean of samples
+#'
+#' @param extract A named list of samples
+#'
+#' @export
+#'
+get.posterior.mean <- function(extract) lapply(extract, avg.par.samples)
 
 #' Fit the model using Stan variational Bayes
 #'
 #' @param dl de.lorean object
 #' @param num.cores Number of cores to run on. Defaults to default.num.cores()
-#' @param init.idx Which initialisation to use
+#' @param num.inits Number initialisations to try. Defaults to num.cores
+#' @param init.idx Which initialisation to use if only using one
 #' @param ... Extra arguments for rstan::vb()
 #'
 #' @export
@@ -866,35 +1033,44 @@ make.init.fn <- function(dl) {
 fit.model.vb <- function(
     dl,
     num.cores = default.num.cores(),
+    num.inits = num.cores,
     init.idx = 1,
     ...)
 {
+  init.chain.good.tau <- make.init.fn(dl)
   if (num.cores > 1) {
     # Run variational Bayes in parallel
     sflist <- parallel::mclapply(
-      1:num.cores,
+      1:num.inits,
       mc.cores=num.cores,
-      function(i)
-        rstan::vb(
+      # mc.cores=1,
+      function(i) within(list(), {
+        fit <- rstan::vb(
           rstan::get_stanmodel(dl$fit),
           data=dl$stan.data,
           seed=i,
-          init=make.init.fn(dl)(i),
-          ...))
-    calc.lp <- function(fit)
-      rstan::log_prob(
-        dl$fit,
-        rstan::unconstrain_pars(dl$fit, rstan::get_inits(fit)))
-    lps <- lapply(sflist, calc.lp)
-    best.idx <- which.max(lps)
-    dl$fit <- sflist[[best.idx]]
+          init=init.chain.good.tau(i),
+          ...)
+        pars <- get.posterior.mean(rstan::extract(fit))
+        upars <- rstan::unconstrain_pars(fit, pars)
+        lp <- rstan::log_prob(fit, upars)}))
+    dl$vb.lls <- sapply(sflist, function(sf) sf$lp)
+    #
+    # Calculate which run had best lp for posterior mean parameters
+    best.idx <- which.max(dl$vb.lls)
+    #
+    # Save the estimated tau for analysis
+    dl$vb.tau <- sapply(sflist, function(sf) sf$pars$tau)
+    #
+    # Use those results
+    dl$fit <- sflist[[best.idx]]$fit
   } else {
     # Run single variational Bayes
     dl$fit <- rstan::vb(
       rstan::get_stanmodel(dl$fit),
       data=dl$stan.data,
-      seed=1,
-      init=make.init.fn(dl)(init.idx),
+      seed=init.idx,
+      init=init.chain.good.tau(init.idx),
       ...)
   }
   return(dl)

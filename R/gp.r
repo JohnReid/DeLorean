@@ -63,7 +63,7 @@ cov.calc.dl.dists <- function(dl,
             tau <- c(tau, test.input)
         }
         if (exists('periodic', opts) && opts$periodic) {
-            cov.calc.dists(tau, opts$period)
+            cov.calc.dists(tau, period=opts$period)
         } else {
             cov.calc.dists(tau)
         }
@@ -264,3 +264,123 @@ gaussian.condition <- function(
 #' @export
 #'
 expected.sample.var <- function(K) mean(diag(K)) - mean(K)
+
+#' Calculate the covariance structure of the tau
+#'
+#' @param cov.fn Covariance function
+#' @param length.scale Length scale
+#' @param period The period of the covariance function
+#' @param tau Pseudotimes
+#' @param psi The temporal variation for each gene
+#' @param omega The noise level for each gene
+#'
+#' @export
+#'
+gene.covariances <- function(
+  cov.fn,
+  length.scale,
+  period=NULL,
+  tau,
+  psi,
+  omega)
+{
+  stopifnot(length(psi) == length(omega))
+  #
+  # Calculate covariance between inducing inputs
+  r <- cov.calc.dists(tau.1=tau, period=period)
+  within(list(), {
+    K <- cov.fn(r, length.scale)
+    .G <- length(psi)
+    .T <- length(tau)
+    gene.K <- array(dim=c(.G, .T, .T))
+    gene.K.chol <- array(dim=c(.G, .T, .T))
+    log.K.det <- rep(NA, .G)
+    for (g in 1:.G) {
+      gene.K[g,,] <- psi[g] * K + diag(omega, .T)
+      gene.K.chol[g,,] <- chol(gene.K[g,,])
+      log.K.det[g] <- sum(log(diag(gene.K.chol[g,,])))
+    }
+  })
+}
+
+#' Calculate the covariance structure of evenly spread tau and
+#' create a function that calculates the log likelihood of
+#' orderings.
+#'
+#' @param dl The DeLorean object
+#' @param cov.fn The covariance function
+#'
+#' @export
+create.ordering.ll.fn <- function(dl, cov.fn=cov.fn.for(dl)) within(dl, {
+  if (! exists('even.tau.cov')) {
+    even.tau.cov <- gene.covariances(cov.fn, opts$length.scale,
+                                    opts$period, even.tau.spread(dl),
+                                    gene.var$psi.hat,
+                                    gene.var$omega.hat)
+    expr.centre <- t(scale(t(expr), scale=FALSE, center=TRUE))
+    ordering.ll <- function(o) {
+      # Return the sum of the marginal log likelihoods for each gene
+      sum(sapply(1:stan.data$G,
+                 function(g) {
+                   gp.log.marg.like(expr.centre[g,o],
+                                    U=even.tau.cov$gene.K.chol[g,,])
+                 }))
+    }
+    order.inits <- list()
+  }
+})
+
+#' Calculate the covariance structure of the inducing points
+#'
+#' @param cov.fn Covariance function
+#' @param length.scale Length scale
+#' @param period The period of the covariance function
+#' @param tau Pseudotimes
+#' @param num.inducing How many inducing points to use
+#' @param u The inducing points
+#'
+#' @export
+#'
+inducing.covariance <- function(
+  cov.fn,
+  length.scale,
+  period=NULL,
+  tau,
+  num.inducing,
+  u=seq(min(tau), max(tau), length.out=num.inducing))
+{
+  #
+  # Calculate covariance between inducing inputs
+  r.uu <- cov.calc.dists(tau.1=u, period=period)
+  K.uu <- cov.fn(r.uu, length.scale)
+  within(list(), {
+    u <- u
+    K.uu.chol <- chol(K.uu)
+    .T <- length(tau)
+    .U <- length(u)
+    #
+    # Calculate approximate covariance between evenly spread pseudotimes
+    K.ut <- cov.calc.dists(tau.1=u, tau.2=tau, period=period)
+    K.tau.sqrt <- backsolve(K.uu.chol, K.ut, transpose=TRUE)
+  })
+}
+
+#' Calculate gene specific approximate precision from inducing covariance
+#' structure
+#'
+#' @param 
+#'
+#' @export
+#'
+induced.gene.prec <- function(inducing, psi, omega) with(inducing, {
+  # print(.U)
+  # print(dim(inducing$K.tau.sqrt))
+  # print(dim(diag(omega**2/psi, .U)))
+  # print(dim(omega*tcrossprod(K.tau.sqrt)))
+  chol.term <- chol(diag(omega**2/psi, .U) + omega*tcrossprod(K.tau.sqrt))
+  print('Done chol')
+  # print(dim(crossprod(backsolve(chol.term, K.tau.sqrt, transpose=TRUE))))
+  K.inv <-
+    diag(1/omega, .T) -
+    crossprod(backsolve(t(chol.term), K.tau.sqrt, transpose=TRUE))
+})
