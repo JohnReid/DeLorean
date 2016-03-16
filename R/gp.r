@@ -1,5 +1,5 @@
 #' Centralises a periodic position into [period/2, period)
-#' by shifting by n*period, n \in N
+#' by shifting by n*period, where n is an integer
 #'
 #' @param x Position
 #' @param period Period

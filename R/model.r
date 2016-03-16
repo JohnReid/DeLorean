@@ -510,6 +510,11 @@ geom.series <- function(base, max) {
 #' Use seriation package to find good orderings
 #'
 #' @param dl de.lorean object
+#' @param .methods The seriation methods to apply
+#' @param scaled Whether to use the scaled and/or unscaled expression data
+#' @param dim.red Dimension reduction methods to apply
+#' @param dims Number of dimensions to reduce to
+#' @param num.cores Number of cores to use in parallel
 #' @param num.tau.to.keep How many initialisations to keep
 #'
 #' @export
@@ -522,6 +527,7 @@ seriation.find.orderings <- function(
   dim.red = c('none', 'pca', 'kfa', 'ica', 'mds'),
   # dim.red = c('mds'),
   dims = geom.series(base=2, max=min(8, nrow(dl$expr)-1)),
+  num.cores = default.num.cores(),
   num.tau.to.keep = default.num.cores())
 {
   #
