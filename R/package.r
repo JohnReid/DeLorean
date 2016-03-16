@@ -12,7 +12,7 @@
 #'
 NULL
 
-utils::suppressForeignCheck(names=c(
+utils::globalVariables(names=c(
   "order.inits",
   "ordering.label",
   "pseudotime.label",
