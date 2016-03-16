@@ -248,6 +248,19 @@ system.time(dl <- fit.model(dl,
 pseudotimes.pair.plot(dl)
 ```
 
+Analyse different ordering methods
+```{r orderingMethods}
+mn.list <- sapply(dl$order.inits, function(i) i$method.name)
+mn.mat <- stringr::str_split_fixed(mn.list, ':', 4)
+colnames(mn.mat) <- c('method', 'scaled', 'dim.red', 'dims')
+mn.df <- as.data.frame(mn.mat) %>%
+    mutate(ll=sapply(dl$order.inits, function(i) i$ll))
+ggplot2::ggplot(mn.df, aes(x=method, y=ll)) + geom_boxplot()
+ggplot2::ggplot(mn.df, aes(x=dim.red, y=ll)) + geom_boxplot()
+ggplot2::ggplot(mn.df, aes(x=dims, y=ll)) + geom_boxplot()
+ggplot2::ggplot(mn.df, aes(x=scaled, y=ll)) + geom_boxplot()
+
+```
 
 # Examine convergence.
 
