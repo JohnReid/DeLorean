@@ -365,13 +365,9 @@ inducing.covariance <- function(
   })
 }
 
-#' Calculate gene specific approximate precision from inducing covariance
-#' structure
-#'
-#' @param 
-#'
-#' @export
-#'
+# Calculate gene specific approximate precision from inducing covariance
+# structure
+#
 induced.gene.prec <- function(inducing, psi, omega) with(inducing, {
   # print(.U)
   # print(dim(inducing$K.tau.sqrt))
