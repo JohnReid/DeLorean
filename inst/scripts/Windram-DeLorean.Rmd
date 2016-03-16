@@ -162,8 +162,12 @@ saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
 dl <- compile.model(dl)
 dl <- find.good.ordering(dl, seriation.find.orderings)
 plot(dl, type='orderings')
-dl <- pseudotimes.from.orderings(dl)
-system.time(dl <- fit.model(dl, method='vb'))
+num.inits <- getOption("Windram.num.inits", 20)
+dl <- pseudotimes.from.orderings(dl, num.to.keep=num.inits)
+system.time(dl <- fit.model(dl,
+                            method=getOption("Windram.method", "vb"),
+                            num.inits=num.inits))
+pseudotimes.pair.plot(dl)
 ```
 
 

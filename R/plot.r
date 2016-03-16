@@ -356,7 +356,7 @@ pseudotimes.pair.plot <- function(dl, fits=NULL) {
   stopifnot(all(dim(dl$best.orderings) == dim(dl$vb.tau)))
   #
   # Create a data frame with the best orderings
-  best.o <- sapply(dl$best.orderings, function(O) O$.order)
+  best.o <- sapply(dl$best.orderings, function(O) O$ser.order)
   best.o.m <- reshape2::melt(best.o, varnames=c('c', 'fit'),
                              value.name='ordering.idx') %>%
               dplyr::left_join(data.frame(

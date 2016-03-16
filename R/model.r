@@ -510,20 +510,18 @@ geom.series <- function(base, max) {
 #' Use seriation package to find good orderings
 #'
 #' @param dl de.lorean object
-#' @param psi Temporal variation
-#' @param omega Noise
 #' @param num.tau.to.keep How many initialisations to keep
 #'
 #' @export
 #'
 seriation.find.orderings <- function(
   dl,
-  number_paths = 5,
-  .methods = c("ARSA", "TSP", "R2E", "HC", "GW", "OLO"),
-  # .methods = c("TSP", "R2E", "HC", "GW", "OLO"),
+  # .methods = c("ARSA", "TSP", "R2E", "HC", "GW", "OLO"),
+  .methods = c("TSP", "R2E", "HC", "GW", "OLO"),
   scaled = c('scaled', 'unscaled'),
   dim.red = c('none', 'pca', 'kfa'),
-  dims = geom.series(base=2, max=nrow(dl$expr)-1),
+  dims = geom.series(base=2, max=ncol(dl$expr)-1),
+  num.cores = default.num.cores(),
   num.tau.to.keep = default.num.cores())
 {
   #
@@ -556,7 +554,7 @@ seriation.find.orderings <- function(
     dist(get.red.mem(scaled, dim.red, dims))
   }
   get.dist.mem <- memoise::memoise(get.dist)
-  parallel::mclapply(
+  result <- parallel::mclapply(
     1:nrow(combinations),
     function(i) with(combinations[i,], within(list(), {
       method.name <- stringr::str_c(method,
@@ -564,14 +562,14 @@ seriation.find.orderings <- function(
                                     ':', dim.red,
                                     ':', dims)
       elapsed <- system.time(
-        per <- seriation::seriate(dist(get.red.mem(scaled, dim.red, dims)),
-                                  method=method))
-      .order <- seriation::get_order(per)
-      ll <- dl$ordering.ll(.order)
+        per <- seriation::seriate(get.dist.mem(scaled, dim.red, dims),
+                                   method=method))
+      ser.order <- seriation::get_order(per)
+      ll <- dl$ordering.ll(ser.order)
       message(method.name, '; time=', elapsed[3], 's; LL=', ll)
     })),
-    # mc.cores=1)
-    mc.cores=default.num.cores())
+    mc.cores=num.cores)
+  result
 }
 
 
@@ -591,7 +589,7 @@ find.good.ordering <- function(dl, method, ...)
     lapply(
       method(dl, ...),
       function(i) {
-        i$.order <- rev.order.if.better(dl, i$.order)
+        i$ser.order <- rev.order.if.better(dl, i$ser.order)
         i
       }))
   dl
@@ -645,24 +643,24 @@ magda.find.orderings <- function(
     function(c) within(list(), {
       method.name <- stringr::str_c('Magda:', c)
       elapsed <- elapsed / ncol(magda.paths)
-      .order <- magda.paths[,c]
-      ll <- dl$ordering.ll(.order)
+      ser.order <- magda.paths[,c]
+      ll <- dl$ordering.ll(ser.order)
     }))
 }
 
 # Reverse ordering if it is better correlated with observed times
-rev.order.if.better <- function(dl, .order) {
-  rev.order <- rev(.order)
-  if (cor(.order, dl$cell.map$obstime) < cor(rev.order, dl$cell.map$obstime)) {
-    .order <- rev.order
+rev.order.if.better <- function(dl, ser.order) {
+  rev.order <- rev(ser.order)
+  if (cor(ser.order, dl$cell.map$obstime) < cor(rev.order, dl$cell.map$obstime)) {
+    ser.order <- rev.order
   }
-  .order
+  ser.order
 }
 
 # Deduplicate orderings
 #
 deduplicate.orderings <- function(dl) {
-  orderings <- sapply(dl$order.inits, function(i) i$.order)
+  orderings <- sapply(dl$order.inits, function(i) i$ser.order)
   dupd <- duplicated(t(orderings))
   dl$order.inits <- dl$order.inits[!dupd]
   dl
@@ -695,7 +693,7 @@ within(deduplicate.orderings(dl), {
       message('Using ordering ', O$method.name, '; LL=', O$ll)
       # Create an initialisation using the ordering
       init <- init.chain.sample.tau(dl)
-      init$tau <- even.tau.spread(dl)[O$.order]
+      init$tau <- even.tau.spread(dl)[O$ser.order]
       init
     })
 })
