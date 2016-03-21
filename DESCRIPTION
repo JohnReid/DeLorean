@@ -2,14 +2,14 @@ Package: DeLorean
 Title: Estimates Pseudotimes for Single Cell Expression Data
 Author: John Reid <john.reid@mrc-bsu.cam.ac.uk>
 Maintainer: John Reid <john.reid@mrc-bsu.cam.ac.uk>
-Version: 1.0
+Version: 1.1
 Description: Implements the DeLorean model to estimate pseudotimes for
     single cell expression data. The DeLorean model uses a Gaussian process
     latent variable model to model uncertainty in the capture time of
     cross-sectional data.
 Depends:
     R (>= 3.0.2),
-    Rcpp (>= 0.11.0)
+    Rcpp (>= 0.12.0)
 Imports:
     rstan (>= 2.9.0),
     dplyr (>= 0.4.1.9000),
@@ -23,7 +23,7 @@ Imports:
     kernlab,
     fastICA,
     seriation,
-    Rcpp (>= 0.12.0)
+    memoise
 Suggests:
     knitr (>= 1.8),
     knitcitations,
@@ -32,6 +32,7 @@ Suggests:
     extrafont,
     testthat,
     svglite,
+    fields,
     VGAM
 License: MIT + file LICENSE
 LazyData: true

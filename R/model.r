@@ -510,6 +510,11 @@ geom.series <- function(base, max) {
 #' Use seriation package to find good orderings
 #'
 #' @param dl de.lorean object
+#' @param .methods The seriation methods to apply
+#' @param scaled Whether to use the scaled and/or unscaled expression data
+#' @param dim.red Dimension reduction methods to apply
+#' @param dims Number of dimensions to reduce to
+#' @param num.cores Number of cores to use in parallel
 #' @param num.tau.to.keep How many initialisations to keep
 #'
 #' @export

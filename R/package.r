@@ -12,6 +12,13 @@
 #'
 NULL
 
+utils::globalVariables(names=c(
+  "order.inits",
+  "ordering.label",
+  "pseudotime.label",
+  "ordering",
+  "pseudotime"))
+
 .onLoad <- function(libname, pkgname) { # nocov start
   # loadRcppModules()
 } # nocov end

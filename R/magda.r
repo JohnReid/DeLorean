@@ -126,6 +126,6 @@ CombfuncPaths <- function(data,starting_points, number_paths=1000,n=10)
 ###Simply using TSP
 TSP_order <- function(data)
 {
-  a<-seriate(as.dist(fields::rdist(t(data),t(data))),method="TSP")
-  return(get_order(a))
+  a<-seriation::seriate(as.dist(fields::rdist(t(data),t(data))),method="TSP")
+  return(seriation::get_order(a))
 }

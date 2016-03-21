@@ -1,5 +1,5 @@
 #' Centralises a periodic position into [period/2, period)
-#' by shifting by n*period, n \in N
+#' by shifting by n*period, where n is an integer
 #'
 #' @param x Position
 #' @param period Period
@@ -365,13 +365,9 @@ inducing.covariance <- function(
   })
 }
 
-#' Calculate gene specific approximate precision from inducing covariance
-#' structure
-#'
-#' @param 
-#'
-#' @export
-#'
+# Calculate gene specific approximate precision from inducing covariance
+# structure
+#
 induced.gene.prec <- function(inducing, psi, omega) with(inducing, {
   # print(.U)
   # print(dim(inducing$K.tau.sqrt))
