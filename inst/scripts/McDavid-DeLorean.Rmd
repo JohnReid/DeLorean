@@ -15,6 +15,9 @@ output:
 
 
 ```{r build, echo=FALSE, eval=FALSE}
+#
+# Execute this block to render the script.
+#
 devtools::load_all('../..')
 devtools::load_all('../../../DeLoreanData')
 rmarkdown::render('McDavid-DeLorean.Rmd')
@@ -178,9 +181,14 @@ Define and compile the model, find the best initialisation, and fit the model.
 ```{r model}
 dl <- prepare.for.stan(dl, period=3, hold.out=3)
 dl <- compile.model(dl)
-dl <- find.best.tau(dl)
-# dl <- find.smooth.tau(dl)
-system.time(dl <- fit.model(dl, method='vb'))
+dl <- find.good.ordering(dl, seriation.find.orderings)
+plot(dl, type='orderings')
+num.inits <- getOption("McDavid.num.inits", 20)
+dl <- pseudotimes.from.orderings(dl, num.to.keep=num.inits)
+system.time(dl <- fit.model(dl,
+                            method=getOption("McDavid.method", "vb"),
+                            num.inits=num.inits))
+pseudotimes.pair.plot(dl)
 ```
 
 
