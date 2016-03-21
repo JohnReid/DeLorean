@@ -235,9 +235,8 @@ Format the data for Stan and fit the model.
 ```{r fitModel, eval=fit.model}
 dl <- prepare.for.stan(dl)
 dl <- compile.model(dl)
-# system.time(dl <- find.best.tau(dl))
-# system.time(dl <- find.smooth.tau(dl))
 dl <- find.good.ordering(dl, seriation.find.orderings)
+# dl <- find.good.ordering(dl, seriation.find.orderings, num.cores=2)
 # dl <- find.good.ordering(dl, magda.find.orderings)
 plot(dl, type='orderings')
 num.inits <- getOption("Shalek.num.inits", 60)

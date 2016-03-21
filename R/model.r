@@ -522,6 +522,7 @@ seriation.find.orderings <- function(
   dim.red = c('none', 'pca', 'kfa', 'ica', 'mds'),
   # dim.red = c('mds'),
   dims = geom.series(base=2, max=min(8, nrow(dl$expr)-1)),
+  num.cores = default.num.cores(),
   num.tau.to.keep = default.num.cores())
 {
   #
@@ -1039,6 +1040,7 @@ fit.model.vb <- function(
 {
   init.chain.good.tau <- make.init.fn(dl)
   if (num.cores > 1) {
+    #
     # Run variational Bayes in parallel
     sflist <- parallel::mclapply(
       1:num.inits,
@@ -1054,6 +1056,17 @@ fit.model.vb <- function(
         pars <- get.posterior.mean(rstan::extract(fit))
         upars <- rstan::unconstrain_pars(fit, pars)
         lp <- rstan::log_prob(fit, upars)}))
+    #
+    # Only keep results that worked
+    sflist <- Filter(function(x) ! is.null(x$lp), sflist)
+    n.worked <- length(sflist)
+    if (0 == n.worked) {
+      stop('No VB fits worked.')
+    } else if (n.worked < num.inits) {
+      warning('Only ', n.worked, '/', num.inits, ' VB fits succeeded.')
+    }
+    #
+    # Get the log likelihoods as a vector
     dl$vb.lls <- sapply(sflist, function(sf) sf$lp)
     #
     # Calculate which run had best lp for posterior mean parameters
