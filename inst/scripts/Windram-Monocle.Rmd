@@ -1,7 +1,7 @@
 ---
 title: Monocle analysis of Windram et al. arabidopsis data
 author: John Reid
-bibliography: ../../vignettes/DeLorean.bib
+bibliography: ../../inst/scripts/DeLorean.bib
 output: html_document
 ---
 
@@ -11,7 +11,6 @@ library(devtools)
 load_all('../..')
 library(rmarkdown)
 render('Windram-Monocle.Rmd')
-
 ```
 
 ```{r config, echo=FALSE, message=FALSE}
@@ -39,12 +38,12 @@ cite_options(
     cite.style = "numeric",
     check.entries = TRUE)
     # hyperlink = TRUE)
-bib <- read.bibtex("../../vignettes/DeLorean.bib")
+bib.file <- system.file("inst/scripts/DeLorean.bib", package="DeLorean")
+bib <- read.bibtex(bib.file)
 if (file.exists("config.R")) {
     source("config.R")
 }
-source(system.file("vignettes/shared.R", package="DeLorean"))
-
+source(system.file("inst/scripts/shared.R", package="DeLorean"))
 ```
 
 ```{r init, echo=FALSE, message=FALSE, warning=FALSE}
@@ -58,7 +57,6 @@ options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
 font.family <- "Verdana"
 font.theme <- theme_update(text=element_text(family=font.family))
 theme_set(font.theme)
-
 ```
 
 
@@ -68,7 +66,7 @@ Load the data that we used for the DeLorean analysis and create a
 `CellDataSet` for use with `Monocle`.
 ```{r loadLib}
 library(monocle)
-.data <- readRDS('Windram-input.rds')
+.data <- readRDS('Data/Windram-input.rds')
 colnames(.data$expr) <- rownames(.data$cell.meta) <- .data$cell.meta$cell
 rownames(.data$expr) <- rownames(.data$gene.meta) <- .data$gene.meta$gene
 cds <- new("CellDataSet",
@@ -78,7 +76,6 @@ cds <- new("CellDataSet",
            featureData=new("AnnotatedDataFrame",
                            data=as.data.frame(.data$gene.meta)))
 cds@expressionFamily <- gaussianff()
-
 ```
 
 
@@ -89,7 +86,7 @@ cds@expressionFamily <- gaussianff()
 L <- log(exprs(cds))
 # Standardize each gene, so that they are all on the same scale,
 # Then melt the data with plyr so we can plot it easily"
-melted_dens_df <- melt(t(scale(t(L))))
+melted_dens_df <- reshape2::melt(t(scale(t(L))))
 # Plot the distribution of the standardized gene expression values.
 (
     qplot(value, geom = "density", data =melted_dens_df)
@@ -97,7 +94,6 @@ melted_dens_df <- melt(t(scale(t(L))))
     # + xlab("Standardized log(FPKM)")
     + ylab("Density")
 )
-
 ```
 
 
@@ -106,14 +102,12 @@ melted_dens_df <- melt(t(scale(t(L))))
 ```{r}
 set.seed(37)
 cds <- reduceDimension(cds, use_irlba=F)
-
 ```
 
 # Order cells
 
 ```{r}
 cds <- orderCells(cds, reverse=F)
-
 ```
 
 Plot the spanning tree.
@@ -127,7 +121,6 @@ png('Windram-Monocle-order.png', width=fig.width, height=fig.height,
     units="in", res=300)
 print(gp.mst)
 dev.off()
-
 ```
 
 Plot some genes in pseudotime.
@@ -138,7 +131,6 @@ print(p)
 pdf('Windram-Monocle-pseudotime.pdf', width=fig.width, height=fig.height)
 print(p)
 dev.off()
-
 ```
 
 Plot pseudotime against true capture time.
@@ -156,7 +148,6 @@ ggsave('Windram-Monocle-compare.eps', gp.monocle.pseudo + bioinf.theme,
        width=bioinf.single.w, height=bioinf.single.h, units="in")
 # What is the correlation?
 with(.data, cor(obstime.orig, Pseudotime, method="spearman"))
-
 ```
 
 
