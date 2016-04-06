@@ -28,3 +28,10 @@ Now you can install the development version of `DeLorean` with:
 
     devtools::install_github('JohnReid/DeLorean')
 
+
+Documentation
+-------------
+
+Read the vignette:
+
+    vignette('DeLorean')
