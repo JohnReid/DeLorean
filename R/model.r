@@ -461,12 +461,13 @@ compile.model <- function(dl) {
     }
     # Try one iteration to check everything is OK
     # message("Trying iteration")
-    fit <- rstan::stan(fit=compiled,
-                       data=stan.data,
-                       init=make.chain.init.fn(dl),
-                       warmup=1,
-                       iter=1,
-                       chains=1)
+    fit <- rstan::stan(
+      fit=compiled,
+      data=stan.data,
+      init=make.chain.init.fn(dl),
+      warmup=1,
+      iter=1,
+      chains=1)
   })
 }
 
@@ -602,6 +603,7 @@ find.good.ordering <- function(dl, method, ...)
       }))
   dl
 }
+
 
 #' Plot likelihoods of orderings against elapsed times taken
 #' to generate them
@@ -912,6 +914,40 @@ find.best.tau <- function(
 }
 
 
+#' Perform all the steps necessary to fit the model.
+#' - prepare the data
+#' - compile the model
+#' - find suitable initialisations
+#' - fit the model using the specified method (sampling or variational Bayes)
+#' - process the posterior.
+#'
+#' @param dl de.lorean object
+#' @param method Fitting method:
+#'   \itemize{
+#'     \item 'sample': Use a Stan sampler.
+#'       See \code{\link{fit.model.sample}}.
+#'     \item 'vb': Use Stan ADVI variational Bayes algorithm.
+#'       See \code{\link{fit.model.vb}}.
+#'   }
+#' @param ... Extra arguments for fitting method
+#'
+#' @export
+#'
+fit.dl <- function(
+    dl,
+    method = 'sample',
+    ...)
+{
+  dl <- prepare.for.stan(dl)
+  dl <- compile.model(dl)
+  dl <- find.good.ordering(dl, seriation.find.orderings)
+  dl <- pseudotimes.from.orderings(dl)
+  dl <- fit.model(dl, method=method, ...)
+  dl <- process.posterior(dl)
+  dl <- analyse.noise.levels(dl)
+}
+
+
 #' Fit the model using specified method (sampling or variational Bayes).
 #'
 #' @param dl de.lorean object
@@ -996,13 +1032,6 @@ make.init.fn <- function(dl) {
   }
 }
 
-# post.mean <- rstan::get_inits(dl$fit)
-# post.mean$psi
-# post.mean$omega
-# class(post.mean)
-# names(post.mean)
-# upars <- rstan::unconstrain_pars(dl$fit, post.mean)
-# rstan::log_prob(dl$fit, upars)
 
 #' Average across a parameters samples.
 #'
@@ -1025,6 +1054,7 @@ avg.par.samples <- function(s) {
 #' @export
 #'
 get.posterior.mean <- function(extract) lapply(extract, avg.par.samples)
+
 
 #' Fit the model using Stan variational Bayes
 #'
