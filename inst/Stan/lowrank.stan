@@ -128,46 +128,46 @@ functions {
     }
 }
 data {
-    #
-    # Dimensions
-    #
-    int<lower=2> C;  # Number of cells
-    int<lower=2> G;  # Number of genes
-    int<lower=0> H;  # Number of held out genes
-    int<lower=0> M;  # Number of inducing pseudotimes
-    #
-    # Data
-    #
-    # Time data
-    int periodic; # Are the expression patterns periodic?
-    real period;  # Cyclic period
-    row_vector<lower=0>[C] time;  # Time index for cell c
-    # Expression data
-    vector[C] expr[G+H];
-    row_vector[G+H] phi;  # gene mean
-    #
-    # Inducing pseudotimes
-    #
-    row_vector[M] u; # pseudotimes
-    #
-    # Hyperparameters
-    #
-    real mu_psi;  # Mean of log between time variation, psi
-    real<lower=0> sigma_psi;  # S.d. of log between time variation, psi
-    real mu_omega;  # Mean of log within time variation, omega
-    real<lower=0> sigma_omega;  # S.d. of log within time variation, omega
-    real l;  # Length scale
-    real<lower=0> sigma_tau;  # Standard deviation for pseudotime
-    #
-    # Held out parameters
-    #
-    row_vector<lower=0>[H] heldout_psi;    # Between time variance
-    row_vector<lower=0>[H] heldout_omega;  # Within time variance
-    #
-    # Generated quantities
-    #
-    int numtest; # Number of test inputs for predictions
-    row_vector[numtest] testinput; # Test inputs for predictions
+  #
+  # Dimensions
+  #
+  int<lower=2> C;  # Number of cells
+  int<lower=2> G;  # Number of genes
+  int<lower=0> H;  # Number of held out genes
+  int<lower=0> M;  # Number of inducing pseudotimes
+  #
+  # Data
+  #
+  # Time data
+  int periodic; # Are the expression patterns periodic?
+  real period;  # Cyclic period
+  row_vector<lower=0>[C] time;  # Time index for cell c
+  # Expression data
+  vector[C] expr[G+H];
+  row_vector[G+H] phi;  # gene mean
+  #
+  # Inducing pseudotimes
+  #
+  row_vector[M] u; # pseudotimes
+  #
+  # Hyperparameters
+  #
+  real mu_psi;  # Mean of log between time variation, psi
+  real<lower=0> sigma_psi;  # S.d. of log between time variation, psi
+  real mu_omega;  # Mean of log within time variation, omega
+  real<lower=0> sigma_omega;  # S.d. of log within time variation, omega
+  real l;  # Length scale
+  real<lower=0> sigma_tau;  # Standard deviation for pseudotime
+  #
+  # Held out parameters
+  #
+  row_vector<lower=0>[H] heldout_psi;    # Between time variance
+  row_vector<lower=0>[H] heldout_omega;  # Within time variance
+  #
+  # Generated quantities
+  #
+  int numtest; # Number of test inputs for predictions
+  row_vector[numtest] testinput; # Test inputs for predictions
 }
 transformed data {
   ##
@@ -188,73 +188,73 @@ transformed data {
   }
 }
 parameters {
-    row_vector[C] tauoffsets;    # Pseudotime
-    row_vector<lower=0>[G] psi;    # Between time variance
-    row_vector<lower=0>[G] omega;  # Within time variance
+  row_vector[C] tauoffsets;    # Pseudotime
+  row_vector<lower=0>[G] psi;    # Between time variance
+  row_vector<lower=0>[G] omega;  # Within time variance
 }
 transformed parameters {
-    row_vector[C] tau;    # Pseudotime
-    tau <- time + tauoffsets;
+  row_vector[C] tau;    # Pseudotime
+  tau <- time + tauoffsets;
 }
 model {
+  #
+  # Approximation to pseudotime covariance matrix
+  matrix[M,C] Aut;  # Sqrt of approximation
+  vector[C] KminusQdiag;   # Diagonal adjustment to approximate covariance
+  #
+  # Calculate the square root of Qtautau. Complexity: O(CM^2)
+  Aut <- mdivide_left_tri_low(KuuChol, cov(u, tau, periodic, period, l));
+  KminusQdiag <- 1 - columns_dot_self(Aut)';
+  # Check that diag(Ktautau - Qtt) is positive
+  for (c in 1:C) {
+      if (KminusQdiag[c] < 0) {
+          reject("KminusQdiag must be greater or equal to 0. : ",
+                  KminusQdiag[c]);
+      }
+  }
+  #
+  # Sample gene-specific factors
+  psi ~ lognormal(mu_psi, sigma_psi);  # Temporal variation
+  omega ~ lognormal(mu_omega, sigma_omega);  # Noise
+  #
+  # Sample pseudotime
+  tauoffsets ~ normal(0, sigma_tau);  # Pseudotime
+  #
+  # Expression values for each gene
+  for (g in 1:G) {
+    vector[C] Binv;
+    vector[C] Binvy;
+    vector[M] b;  # Aut * B-1 * y
+    matrix[M,M] Vchol;  # Low dimension decomposition
+    real log_det_cov;  # The logarithm of the determinant of the covariance
     #
-    # Approximation to pseudotime covariance matrix
-    matrix[M,C] Aut;  # Sqrt of approximation
-    vector[C] KminusQdiag;   # Diagonal adjustment to approximate covariance
+    # Inverse of high dimensional covariance diagonal
+    # Here we are assuming that the diagonal of Ktautau is 1
+    Binv <- 1 ./ (omega[g] + psi[g] * KminusQdiag);
+    Binvy <- Binv .* expradj[g];
     #
-    # Calculate the square root of Qtautau. Complexity: O(CM^2)
-    Aut <- mdivide_left_tri_low(KuuChol, cov(u, tau, periodic, period, l));
-    KminusQdiag <- 1 - columns_dot_self(Aut)';
-    # Check that diag(Ktautau - Qtt) is positive
-    for (c in 1:C) {
-        if (KminusQdiag[c] < 0) {
-            reject("KminusQdiag must be greater or equal to 0. : ",
-                   KminusQdiag[c]);
-        }
-    }
+    # Invert low dimensional matrix
+    # Complexity: O(GM^3)
+    Vchol <- cholesky_decompose(
+        diag_matrix(rep_vector(1/psi[g], M))
+        + diag_post_multiply(Aut, Binv) * Aut');
     #
-    # Sample gene-specific factors
-    psi ~ lognormal(mu_psi, sigma_psi);  # Temporal variation
-    omega ~ lognormal(mu_omega, sigma_omega);  # Noise
+    # Calculate term in quadratic form part of likelihood
+    # Complexity: O(GM^2 + GMC)
+    b <- mdivide_left_tri_low(Vchol, Aut * Binvy);
     #
-    # Sample pseudotime
-    tauoffsets ~ normal(0, sigma_tau);  # Pseudotime
+    # Calculate determinant of the covariance
+    log_det_cov <-
+      2*sum(log(diagonal(Vchol)))  # Twice log determinant of Cholesky
+      + M * log(psi[g]) # Add log determinant of psi_g I
+      - sum(log(Binv)); # Add log determinant of B
     #
-    # Expression values for each gene
-    for (g in 1:G) {
-        vector[C] Binv;
-        vector[C] Binvy;
-        vector[M] b;  # Aut * B-1 * y
-        matrix[M,M] Vchol;  # Low dimension decomposition
-        real log_det_cov;  # The logarithm of the determinant of the covariance
-        #
-        # Inverse of high dimensional covariance diagonal
-        # Here we are assuming that the diagonal of Ktautau is 1
-        Binv <- 1 ./ (omega[g] + psi[g] * KminusQdiag);
-        Binvy <- Binv .* expradj[g];
-        #
-        # Invert low dimensional matrix
-        # Complexity: O(GM^3)
-        Vchol <- cholesky_decompose(
-            diag_matrix(rep_vector(1/psi[g], M))
-            + diag_post_multiply(Aut, Binv) * Aut');
-        #
-        # Calculate term in quadratic form part of likelihood
-        # Complexity: O(GM^2 + GMC)
-        b <- mdivide_left_tri_low(Vchol, Aut * Binvy);
-        #
-        # Calculate determinant of the covariance
-        log_det_cov <-
-          2*sum(log(diagonal(Vchol)))  # Twice log determinant of Cholesky
-          + M * log(psi[g]) # Add log determinant of psi_g I
-          - sum(log(Binv)); # Add log determinant of B
-        #
-        # Increment log probability with multivariate normal log likelihood
-        # Complexity: O(GC)
-        increment_log_prob(-.5 * (log_det_cov
-                                  + dot_product(expradj[g], Binvy)
-                                  - dot_self(b)));
-    }
+    # Increment log probability with multivariate normal log likelihood
+    # Complexity: O(GC)
+    increment_log_prob(-.5 * (log_det_cov
+                              + dot_product(expradj[g], Binvy)
+                              - dot_self(b)));
+  }
 }
 generated quantities {
   vector[numtest] predictedmean[G+H];
