@@ -326,6 +326,27 @@ sample.genes.and.cells <- function(
 }
 
 
+#' Calculate inducing pseudotimes for sparse approximation
+#'
+#' @param dl de.lorean object
+#' @param num.inducing Number of inducing points
+#' @param period Period of expression patterns
+#'
+#' @export prepare.for.stan
+#'
+calc.inducing.pseudotimes <- function(dl, num.inducing, period = 0) with(dl, {
+  if (period > 0) {
+    seq(from=0,
+        to=period * (1 - 1/num.inducing),
+        length.out=num.inducing)
+  } else {
+    seq(from=time.range[1] - 3 * hyper$sigma_tau,
+        to=time.range[2] + 3 * hyper$sigma_tau,
+        length.out=num.inducing)
+  }
+})
+
+
 #' Prepare for Stan
 #'
 #' @param dl de.lorean object
@@ -406,9 +427,7 @@ prepare.for.stan <- function(
                 time=cell.map$obstime,
                 expr=expr,
                 # Inducing pseudotimes
-                u=seq(from=time.range[1] - 3*hyper$sigma_tau,
-                      to=time.range[2] + 3*hyper$sigma_tau,
-                      length.out=num.inducing),
+                u=calc.inducing.pseudotimes(dl, num.inducing, period),
                 # Held out parameters
                 heldout_psi=filter(gene.map, g > .G)$psi.hat,
                 heldout_omega=filter(gene.map, g > .G)$omega.hat,
