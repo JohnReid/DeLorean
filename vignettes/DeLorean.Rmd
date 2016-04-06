@@ -4,7 +4,7 @@ author: "John Reid"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteIndexEntry{DeLorean}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -66,12 +66,10 @@ variable model with a structured prior on the latent variable (pseudotime).
 ## Example
 
 Guo et al. assayed single cell expression values at 7 time points in mouse
-embryonic cells and the data is contained in the `DeLorean` package.
-We will load this data and analyse a subset of it corresponding to
-the epiblast lineage. First we must build a `de.lorean` object with the correct
-data.
-
-Load the data
+embryonic cells and the data is contained in the `DeLorean` package.  We will
+load this data and analyse a subset of it corresponding to the epiblast
+lineage. First we must build a `de.lorean` object with the correct data.
+Load the data.
 ```{r guoData}
 library(DeLorean)
 library(dplyr)
@@ -83,10 +81,13 @@ Create a de.lorean object from the full data set.
 dl <- de.lorean(guo.expr, guo.gene.meta, guo.cell.meta)
 ```
 
-Estimate hyperparameters for the model from the whole data set.
+Estimate hyperparameters for the model from the whole data set. Here we set
+the width of the normal prior on the pseudotimes to be `0.5`.
 ```{r}
 dl <- estimate.hyper(dl, sigma.tau=0.5)
 ```
+
+### Choose cells
 
 Choose a few cells from each capture point from the epiblast lineage.
 ```{r}
@@ -100,36 +101,65 @@ epi.sampled.cells <- guo.cell.meta %>%
 dl <- filter.cells(dl, cells=epi.sampled.cells$cell)
 ```
 
-Now we have the data we can prepare it for fitting and plot the raw data of some
-of the genes as violin plots.
-```{r prepare}
-dl <- prepare.for.stan(dl)
-plot(dl, type='expr.data')
+### Choose genes
+
+We only have data for a few genes and can easily model them all which is
+typical for qPCR data. RNA-seq data often has far too many genes for the model
+to fit. In any case most are probably irrelevant. In these cases we recommend
+an analysis of variance across the capture times to choose those genes whose
+means vary most across time. These are most likely to be relevant for fitting
+the model.
+```{r aov}
+dl <- aov.dl(dl)
+```
+The most temporally variable genes (by p-value) are at the head of the result:
+```{r}
+head(dl$aov)
 ```
 
-Compile and fit the model using Stan's ADVI variational Bayes (VB) algorithm. We could
-also use one of Stan's samplers with `method='sample'`.
-```{r fit, cache=T}
-dl <- compile.model(dl)
-dl <- find.best.tau(dl)
-dl <- fit.model(dl, method='vb', seed=2)
-dl <- examine.convergence(dl)
-dl <- process.posterior(dl)
-dl <- analyse.noise.levels(dl)
+The least temporally variable genes (by p-value) are at the tail of the result:
+```{r}
+tail(dl$aov)
 ```
+
+and for instance you could run the model on the 20 most variable
+genes by executing
+```{r, exec=FALSE}
+dl <- filter.genes(dl, genes=head(dl$aov, 20)$gene)
+```
+otherwise do not call `filter.genes` and `DeLorean` will use all the genes.
+
+
+### Fit the model
+
+Now we have the data we can fit our model using Stan's ADVI variational Bayes
+algorithm. To run the No-U-Turn sampler use `method='sample'`.
+```{r fitDL, cache=TRUE, results='hide'}
+dl <- fit.dl(dl, method='vb')
+```
+
+
+### Examine convergence
 
 If running a sampler, Stan provides $\hat{R}$ statistics that can aid detecting
 convergence problems. This makes no sense for ADVI but we show how to produce
 the boxplots here for users of the samplers.
 ```{r}
+dl <- examine.convergence(dl)
 plot(dl, type='Rhat')
 ```
+
+
+### Estimated pseudotimes
 
 Plot the pseudotimes from the best sample (best in the sense of highest
 likelihood).  The prior means for the capture points are shown as dashed lines.
 ```{r plot}
 plot(dl, type='pseudotime')
 ```
+
+
+### Expression profiles
 
 Plot the expression data over the pseudotimes from the best sample.
 ```{r}
