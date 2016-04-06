@@ -201,6 +201,8 @@ model {
     # Approximation to pseudotime covariance matrix
     matrix[M,C] Aut;  # Sqrt of approximation
     vector[C] KminusQdiag;   # Diagonal adjustment to approximate covariance
+    #
+    # Calculate the square root of Qtautau. Complexity: O(CM^2)
     Aut <- mdivide_left_tri_low(KuuChol, cov(u, tau, periodic, period, l));
     KminusQdiag <- 1 - columns_dot_self(Aut)';
     # Check that diag(Ktautau - Qtt) is positive
@@ -232,11 +234,13 @@ model {
         Binvy <- Binv .* expradj[g];
         #
         # Invert low dimensional matrix
+        # Complexity: O(GM^3)
         Vchol <- cholesky_decompose(
             diag_matrix(rep_vector(1/psi[g], M))
             + diag_post_multiply(Aut, Binv) * Aut');
         #
         # Calculate term in quadratic form part of likelihood
+        # Complexity: O(GM^2 + GMC)
         b <- mdivide_left_tri_low(Vchol, Aut * Binvy);
         #
         # Calculate determinant of the covariance
@@ -246,6 +250,7 @@ model {
           - sum(log(Binv)); # Add log determinant of B
         #
         # Increment log probability with multivariate normal log likelihood
+        # Complexity: O(GC)
         increment_log_prob(-.5 * (log_det_cov
                                   + dot_product(expradj[g], Binvy)
                                   - dot_self(b)));
