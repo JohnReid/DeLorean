@@ -4,6 +4,8 @@ Data
 *.html
 *.svg
 *.tiff
+Shalek-expr.rds
+Windram-Monocle-compare.eps
 Guo-ICA.pdf
 Guo-rand-proj.html
 Windram-Monocle-compare.pdf
