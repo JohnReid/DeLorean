@@ -13,6 +13,8 @@
 NULL
 
 utils::globalVariables(names=c(
+  "term",
+  "p.value",
   "order.inits",
   "ordering.label",
   "pseudotime.label",
