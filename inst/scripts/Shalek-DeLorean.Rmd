@@ -19,11 +19,6 @@ fit.model <- TRUE
 rmarkdown::render('Shalek-DeLorean.Rmd')
 ```
 
-<!--
-%\VignetteEngine{knitr::rmarkdown}
-%\VignetteIndexEntry{DeLorean analysis of Shalek et al. primary mouse bone-marrow-derived dendritic cells data}
--->
-
 
 ```{r config, echo=FALSE, message=FALSE}
 library(knitr)
@@ -239,7 +234,7 @@ dl <- find.good.ordering(dl, seriation.find.orderings)
 # dl <- find.good.ordering(dl, seriation.find.orderings, num.cores=2)
 # dl <- find.good.ordering(dl, magda.find.orderings)
 plot(dl, type='orderings')
-num.inits <- getOption("Shalek.num.inits", 60)
+num.inits <- getOption("Shalek.num.inits", default.num.cores())
 dl <- pseudotimes.from.orderings(dl, num.to.keep=num.inits)
 system.time(dl <- fit.model(dl,
                             method=getOption("Shalek.method", "vb"),
