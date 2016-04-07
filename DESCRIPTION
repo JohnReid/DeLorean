@@ -17,6 +17,7 @@ Imports:
     stringr (>= 0.6.2),
     ggplot2 (>= 1.0.0),
     MASS (>= 7.3),
+    broom,
     coda,
     parallel,
     functional,
