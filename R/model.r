@@ -360,7 +360,7 @@ calc.inducing.pseudotimes <- function(dl, num.inducing, period = 0) with(dl, {
 prepare.for.stan <- function(
     dl,
     num.test = 101,
-    num.inducing = 10,  # M
+    num.inducing = 30,  # M
     period = 0,
     hold.out = 0
 ) {
