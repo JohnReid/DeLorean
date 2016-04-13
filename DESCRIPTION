@@ -2,7 +2,7 @@ Package: DeLorean
 Title: Estimates Pseudotimes for Single Cell Expression Data
 Author: John Reid <john.reid@mrc-bsu.cam.ac.uk>
 Maintainer: John Reid <john.reid@mrc-bsu.cam.ac.uk>
-Version: 1.1
+Version: 1.2.0
 Description: Implements the DeLorean model to estimate pseudotimes for
     single cell expression data. The DeLorean model uses a Gaussian process
     latent variable model to model uncertainty in the capture time of
