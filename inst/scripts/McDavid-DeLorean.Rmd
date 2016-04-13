@@ -8,12 +8,6 @@ output:
     fig_caption: true
 ---
 
-<!--
-%\VignetteEngine{knitr::rmarkdown}
-%\VignetteIndexEntry{DeLorean analysis of McDavid et al. cell cycle data}
--->
-
-
 ```{r build, echo=FALSE, eval=FALSE}
 #
 # Execute this block to render the script.
@@ -135,20 +129,22 @@ Choose a few cells from the PC3 cell line.
 ```{r filterCells}
 dl <- filter.cells(dl, cells=cells.PC3$cell)
 set.seed(getOption("McDavid.seed", 1))
-max.cells <- min(getOption("McDavid.max.cells", 17))
-dl <- filter.cells(dl, number=max.cells)
+max.cells <- getOption("McDavid.max.cells", 0)
+if (max.cells != 0) {
+    dl <- filter.cells(dl, number=max.cells)
+}
 ```
 
 
 Choose genes with low $p$-values from the McDavid et al.
 differential expression test.
 ```{r filterGenes}
-max.genes <- min(getOption("McDavid.max.genes", 21))
-genes.for.stan <- (
-    dl$gene.meta
-    %>% filter(pvalue > 10)
-    %>% sample_n(max.genes))
+genes.for.stan <- dl$gene.meta %>% filter(pvalue > 10)
 dl <- filter.genes(dl, genes=genes.for.stan$gene)
+max.genes <- min(getOption("McDavid.max.genes", 0))
+if (max.genes != 0) {
+    dl <- filter.genes(dl, number=max.genes)
+}
 ```
 
 
@@ -162,7 +158,7 @@ dl <- estimate.hyper(
     dl,
     sigma.tau=.5,
     length.scale=5,
-    model.name=getOption("McDavid.model", 'simple-model'))
+    model.name=getOption("McDavid.model", 'lowrank'))
 ```
 ```{r child=report.file("hyper-parameters")}
 ```
@@ -183,21 +179,19 @@ dl <- prepare.for.stan(dl, period=3, hold.out=3)
 dl <- compile.model(dl)
 dl <- find.good.ordering(dl, seriation.find.orderings)
 plot(dl, type='orderings')
-num.inits <- getOption("McDavid.num.inits", 20)
+num.inits <- getOption("McDavid.num.inits", default.num.cores())
 dl <- pseudotimes.from.orderings(dl, num.to.keep=num.inits)
-system.time(dl <- fit.model(dl,
-                            method=getOption("McDavid.method", "vb"),
-                            num.inits=num.inits))
-pseudotimes.pair.plot(dl)
+method <- getOption("McDavid.method", "vb")
+system.time(dl <- fit.model(dl, method=method, num.inits=num.inits))
+if ("vb" == method) {
+    pseudotimes.pair.plot(dl)
+}
 ```
 
-
-# Examine convergence.
-
-```{r examConv}
-dl <- examine.convergence(dl)
+```{r examConv, eval=("sample" == method)}
+    dl <- examine.convergence(dl)
 ```
-```{r child=report.file("convergence")}
+```{r child=report.file("convergence"), eval="sample" == method}
 ```
 
 
@@ -467,6 +461,9 @@ plots$profiles <- (
                          labels=c('G2/M', 'G0/G1', 'S', 'G2/M'))
     + theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1))
 )
+# Resize points and set transparency
+plots$profiles$layers[[3]]$aes_params$size <- 0.5
+plots$profiles$layers[[3]]$aes_params$alpha <- 0.5
 print(plots$profiles)
 ggsave('McDavid-profiles.svg', plots$profiles + plos.theme
        + theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1)),
@@ -496,5 +493,5 @@ date()
 ```
 R version and packages used:
 ```{r Rversion}
-sessionInfo()
+devtools::session_info()
 ```

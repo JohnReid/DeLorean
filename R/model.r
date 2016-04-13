@@ -332,7 +332,7 @@ sample.genes.and.cells <- function(
 #' @param num.inducing Number of inducing points
 #' @param period Period of expression patterns
 #'
-#' @export prepare.for.stan
+#' @export
 #'
 calc.inducing.pseudotimes <- function(dl, num.inducing, period = 0) with(dl, {
   if (period > 0) {
@@ -360,7 +360,7 @@ calc.inducing.pseudotimes <- function(dl, num.inducing, period = 0) with(dl, {
 prepare.for.stan <- function(
     dl,
     num.test = 101,
-    num.inducing = 10,  # M
+    num.inducing = 30,  # M
     period = 0,
     hold.out = 0
 ) {

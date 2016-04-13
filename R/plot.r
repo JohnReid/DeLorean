@@ -354,6 +354,7 @@ expr.data.plot <- function(dl, genes=NULL, num.genes=12) {
 #'
 pseudotimes.pair.plot <- function(dl, fits=NULL) {
   stopifnot(all(dim(dl$best.orderings) == dim(dl$vb.tau)))
+  stopifnot(! is.null(dl$vb.tau))  # Must have estimated tau.
   #
   # Create a data frame with the best orderings
   best.o <- sapply(dl$best.orderings, function(O) O$ser.order)
