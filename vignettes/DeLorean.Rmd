@@ -16,6 +16,7 @@ knitr::opts_chunk$set(
     out.width='685px',
     dpi=144,
     message=FALSE)
+options(DL.num.cores=min(default.num.cores(), 2))
 ```
 
 Our understanding of dynamical biological systems such as developmental
