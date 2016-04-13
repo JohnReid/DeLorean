@@ -112,7 +112,11 @@ dim.de.lorean <- function(x) {
 #' Default number of cores to use.
 #'
 default.num.cores <- function() {
-  getOption("DL.num.cores", max(parallel::detectCores() - 1, 1))
+  if ('Windows' == Sys.info()['sysname']) {
+    1
+  } else {
+    getOption("DL.num.cores", max(parallel::detectCores() - 1, 1))
+  }
 }
 
 # Summarise DeLorean object
