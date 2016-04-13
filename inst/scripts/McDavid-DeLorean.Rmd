@@ -158,7 +158,7 @@ dl <- estimate.hyper(
     dl,
     sigma.tau=.5,
     length.scale=5,
-    model.name=getOption("McDavid.model", 'simple-model'))
+    model.name=getOption("McDavid.model", 'lowrank'))
 ```
 ```{r child=report.file("hyper-parameters")}
 ```
@@ -461,6 +461,9 @@ plots$profiles <- (
                          labels=c('G2/M', 'G0/G1', 'S', 'G2/M'))
     + theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1))
 )
+# Resize points and set transparency
+plots$profiles$layers[[3]]$aes_params$size <- 0.5
+plots$profiles$layers[[3]]$aes_params$alpha <- 0.5
 print(plots$profiles)
 ggsave('McDavid-profiles.svg', plots$profiles + plos.theme
        + theme(axis.text.x=element_text(angle=90, vjust=0.5, hjust=1)),
@@ -490,5 +493,5 @@ date()
 ```
 R version and packages used:
 ```{r Rversion}
-sessionInfo()
+devtools::session_info()
 ```
