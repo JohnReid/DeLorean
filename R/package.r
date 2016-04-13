@@ -117,9 +117,9 @@ dim.de.lorean <- function(x) {
 #'
 default.num.cores <- function() {
   if ('Windows' == Sys.info()['sysname']) {
-    1
+    return(1)
   } else {
-    getOption("DL.num.cores", max(parallel::detectCores() - 1, 1))
+    return(getOption("DL.num.cores", max(parallel::detectCores() - 1, 1)))
   }
 }
 
