@@ -181,7 +181,7 @@ dl <- find.good.ordering(dl, seriation.find.orderings)
 plot(dl, type='orderings')
 num.inits <- getOption("McDavid.num.inits", default.num.cores())
 dl <- pseudotimes.from.orderings(dl, num.to.keep=num.inits)
-method <- getOption("McDavid.method", "vb")
+method <- getOption("McDavid.method", "sample")
 system.time(dl <- fit.model(dl, method=method, num.inits=num.inits))
 if ("vb" == method) {
     pseudotimes.pair.plot(dl)
