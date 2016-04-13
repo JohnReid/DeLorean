@@ -1,6 +1,6 @@
 ## Test environments
 * local ubuntu 15.10, R 3.2.4
-* ubuntu 12.04 (on travis-ci), R 3.2.4
+* travis-CI ubuntu 12.04 (old-rel, release and devel)
 * win-builder (devel and release)
 
 ## R CMD check results
