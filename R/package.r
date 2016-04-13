@@ -9,6 +9,10 @@
 #' @import reshape2
 #' @importFrom rstan stan sflist2stanfit vb monitor optimizing log_prob
 #'   unconstrain_pars extract
+#' @importFrom stats aov as.dist cmdscale cor dgamma
+#'   dist dlnorm median prcomp predict runif
+#'   sd t.test var weighted.mean
+#' @importFrom utils head tail
 #'
 NULL
 
