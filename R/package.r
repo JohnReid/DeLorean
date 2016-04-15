@@ -115,6 +115,8 @@ dim.de.lorean <- function(x) {
 
 #' Default number of cores to use.
 #'
+#' @export
+#'
 default.num.cores <- function() {
   if ('Windows' == Sys.info()['sysname']) {
     return(1)
