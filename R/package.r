@@ -9,6 +9,10 @@
 #' @import reshape2
 #' @importFrom rstan stan sflist2stanfit vb monitor optimizing log_prob
 #'   unconstrain_pars extract
+#' @importFrom stats aov as.dist cmdscale cor dgamma
+#'   dist dlnorm median prcomp predict runif
+#'   sd t.test var weighted.mean
+#' @importFrom utils head tail
 #'
 NULL
 
@@ -112,7 +116,11 @@ dim.de.lorean <- function(x) {
 #' Default number of cores to use.
 #'
 default.num.cores <- function() {
-  getOption("DL.num.cores", max(parallel::detectCores() - 1, 1))
+  if ('Windows' == Sys.info()['sysname']) {
+    return(1)
+  } else {
+    return(getOption("DL.num.cores", max(parallel::detectCores() - 1, 1)))
+  }
 }
 
 # Summarise DeLorean object

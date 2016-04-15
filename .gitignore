@@ -8,7 +8,6 @@ sandbox
 .Rdata
 # RStudio files
 .Rproj.user/
-man/
 inst/doc
 
 .Rd2pdf*

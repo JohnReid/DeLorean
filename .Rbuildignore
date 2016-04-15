@@ -4,6 +4,8 @@
 ^DeLorean_.*\.tar.gz
 ^docs/posters
 ^docs/sparse
+^vignettes/DeLorean_cache
+^vignettes/DeLorean_files
 ^inst/Stan/.*\.rda
 ^inst/scripts/figures
 ^inst/scripts/Data
@@ -14,3 +16,5 @@
 ^inst/scripts/.*\.pdf
 ^inst/scripts/.*\.rds
 ^inst/extdata/.*\.rds
+^cran-comments.md
+^\.travis\.yml$

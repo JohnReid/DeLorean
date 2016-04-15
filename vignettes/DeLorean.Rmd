@@ -74,6 +74,7 @@ Load the data.
 library(DeLorean)
 library(dplyr)
 data(GuoDeLorean)
+options(DL.num.cores=min(default.num.cores(), 2))  # Limit number of cores to 2 for CRAN
 ```
 
 Create a de.lorean object from the full data set.
