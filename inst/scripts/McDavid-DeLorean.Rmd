@@ -158,7 +158,7 @@ dl <- estimate.hyper(
     dl,
     sigma.tau=.5,
     length.scale=5,
-    model.name=getOption("McDavid.model", 'lowrank'))
+    model.name=getOption("McDavid.model", 'simplest-model'))
 ```
 ```{r child=report.file("hyper-parameters")}
 ```
