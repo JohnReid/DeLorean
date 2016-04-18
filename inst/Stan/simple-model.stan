@@ -19,7 +19,7 @@ functions {
     real
     matern32_cov(real r, real l) {
         real x;
-        x <- sqrt(3) * fabs(r / l);
+        x <- sqrt(3.) * fabs(r / l);
         return (1 + x) * exp(- x);
     }
     #
