@@ -154,11 +154,8 @@ Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes}
 dl <- adjust.by.cell.sizes(dl)
 ggplot(dl$cell.sizes, aes(x=capture, y=size)) + geom_boxplot()
-dl <- estimate.hyper(
-    dl,
-    sigma.tau=.5,
-    length.scale=5,
-    model.name=getOption("McDavid.model", 'simplest-model'))
+model.name <- getOption("McDavid.model", 'simplest-model')
+dl <- estimate.hyper(dl, sigma.tau=.5, length.scale=5, model.name=model.name)
 ```
 ```{r child=report.file("hyper-parameters")}
 ```
@@ -173,25 +170,32 @@ saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
 
 # Compile and fit model
 
+```{r params}
+inf.method <- getOption("McDavid.method", "sample")
+num.inits <- getOption("McDavid.num.inits", default.num.cores())
+```
+
 Define and compile the model, find the best initialisation, and fit the model.
+The model name is "`r model.name`", the inference method is "`r inf.method`"
+with `r num.inits` initialisations and the data have `r dim(dl)[1]` genes and
+`r dim(dl)[2]` cells.
+
 ```{r model}
 dl <- prepare.for.stan(dl, period=3, hold.out=3)
 dl <- compile.model(dl)
 dl <- find.good.ordering(dl, seriation.find.orderings)
 plot(dl, type='orderings')
-num.inits <- getOption("McDavid.num.inits", default.num.cores())
 dl <- pseudotimes.from.orderings(dl, num.to.keep=num.inits)
-method <- getOption("McDavid.method", "sample")
-system.time(dl <- fit.model(dl, method=method, num.inits=num.inits))
-if ("vb" == method) {
+system.time(dl <- fit.model(dl, method=inf.method, num.inits=num.inits))
+if ("vb" == inf.method) {
     pseudotimes.pair.plot(dl)
 }
 ```
 
-```{r examConv, eval=("sample" == method)}
+```{r examConv, eval=("sample" == inf.method)}
     dl <- examine.convergence(dl)
 ```
-```{r child=report.file("convergence"), eval="sample" == method}
+```{r child=report.file("convergence"), eval="sample" == inf.method}
 ```
 
 
