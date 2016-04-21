@@ -81,7 +81,8 @@ library(DeLoreanData)
 library(dplyr)
 library(ggplot2)
 data(McDavidDeLorean)
-set.seed(getOption("McDavid.seed", 1))
+seed <- getOption("McDavid.seed", 1)
+set.seed(seed)
 ```
 
 Shift positively expressed genes closer to unexpressed genes to improve fit.
@@ -177,8 +178,8 @@ num.inits <- getOption("McDavid.num.inits", default.num.cores())
 
 Define and compile the model, find the best initialisation, and fit the model.
 The model name is "`r model.name`", the inference method is "`r inf.method`"
-with `r num.inits` initialisations and the data have `r dim(dl)[1]` genes and
-`r dim(dl)[2]` cells.
+with `r num.inits` initialisations, the seed is `r seed` and the data have `r
+dim(dl)[1]` genes and `r dim(dl)[2]` cells.
 
 ```{r model}
 dl <- prepare.for.stan(dl, period=3, hold.out=3)
@@ -193,7 +194,7 @@ if ("vb" == inf.method) {
 ```
 
 ```{r examConv, eval=("sample" == inf.method)}
-    dl <- examine.convergence(dl)
+dl <- examine.convergence(dl)
 ```
 ```{r child=report.file("convergence"), eval="sample" == inf.method}
 ```

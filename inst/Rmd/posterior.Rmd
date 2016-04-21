@@ -89,6 +89,13 @@ The within time variation compared to the temporal variation (on log-log scale):
 ```
 
 
+```{r echo=FALSE}
+have.cell.sizes <- 'S' %in% names(samples.l)
+```
+```{r child=report.file("cellsizes"), eval=have.cell.sizes}
+```
+
+
 ### Other posteriors
 
 The posterior for the model log probability:

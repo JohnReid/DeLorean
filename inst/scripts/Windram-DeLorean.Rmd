@@ -111,7 +111,8 @@ dl <- filter.cells(dl, cells=botrytis.cells$cell)
 ```
 
 ```{r sampleCells, eval=fit.model}
-set.seed(getOption("Windram.seed", 1))
+seed <- getOption("Windram.seed", 1)
+set.seed(seed)
 # 24 is all the cells
 max.cells <- min(getOption("Windram.max.cells", 24))
 dl <- filter.cells(dl, number=max.cells)
@@ -132,7 +133,8 @@ ggplot(dl$cell.sizes, aes(x=capture, y=size)) + geom_boxplot()
 
 Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes, eval=fit.model}
-dl <- estimate.hyper(dl, sigma.tau=group.size/2, model.name='lowrank')
+model.name <- getOption('Windram.model', 'simple-model')
+dl <- estimate.hyper(dl, sigma.tau=group.size/2, model.name=model.name)
 fits.omega <- test.fit(dl$gene.var$Omega)
 print(fits.omega$gp)
 fits.psi <- test.fit(dl$gene.var$Psi)
@@ -153,7 +155,18 @@ dl <- filter.genes(dl, gene.filter)
 ```
 
 
-Format the data for Stan and fit the model.
+# Fit model
+
+```{r options}
+num.inits <- getOption("Windram.num.inits", default.num.cores())
+inf.method=getOption("Windram.method", "vb")
+```
+
+Define and compile the model, find the best initialisation, and fit the model.
+The model name is "`r model.name`", the inference method is "`r inf.method`"
+with `r num.inits` initialisations, the seed is `r seed` and the data have
+`r dim(dl)[1]` genes and `r dim(dl)[2]` cells.
+
 ```{r fitModel, eval=fit.model}
 dl <- prepare.for.stan(dl, num.inducing=30)
 # Save for input to Monocle
@@ -162,21 +175,18 @@ saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
 dl <- compile.model(dl)
 dl <- find.good.ordering(dl, seriation.find.orderings)
 plot(dl, type='orderings')
-num.inits <- getOption("Windram.num.inits", 20)
 dl <- pseudotimes.from.orderings(dl, num.to.keep=num.inits)
-system.time(dl <- fit.model(dl,
-                            method=getOption("Windram.method", "vb"),
-                            num.inits=num.inits))
-pseudotimes.pair.plot(dl)
+system.time(dl <- fit.model(dl, method=inf.method, num.inits=num.inits))
+if ("vb" == inf.method) {
+    pseudotimes.pair.plot(dl)
+}
 ```
 
 
-# Examine convergence.
-
-```{r examConv}
+```{r examConv, eval=("sample" == inf.method)}
 dl <- examine.convergence(dl)
 ```
-```{r child=report.file("convergence")}
+```{r child=report.file("convergence"), eval=("sample" == inf.method)}
 ```
 
 

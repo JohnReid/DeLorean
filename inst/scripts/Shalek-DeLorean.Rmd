@@ -172,13 +172,14 @@ clusters <- c("Id", "IIIb", "IIIc", "IIId")
 # clusters <- c("Id")
 dl <- analyse.variance(dl, adjust.cell.sizes=TRUE)
 gene.variances <- dl$gene.var  # Save copy for later
+max.genes <- getOption("Shalek.max.genes", 74)
 genes.for.stan <- (
     dl$gene.var
     %>% left_join(dl$gene.meta)
     %>% mutate(key=gene %in% shalek.key.genes)
     %>% filter(cluster %in% clusters)
     %>% arrange(- Psi / Omega)
-    %>% head(getOption("Shalek.max.genes", 74)))
+    %>% head(max.genes))
 dl <- filter.genes(dl, genes=genes.for.stan$gene)
 # How many come from each cluster?
 qplot(genes.for.stan$cluster)
@@ -186,8 +187,10 @@ qplot(genes.for.stan$cluster)
 
 Choose a few cells but make sure we have the precocious cells.
 ```{r filterCells, eval=fit.model}
-set.seed(getOption("Shalek.seed", 1))
-sampled.cells <- sample(colnames(dl$expr), getOption("Shalek.max.cells", 307))
+seed <- getOption("Shalek.seed", 1)
+set.seed(seed)
+max.cells <- getOption("Shalek.max.cells", 307)
+sampled.cells <- sample(colnames(dl$expr), max.cells)
 if (! "LPS_1h_S51" %in% sampled.cells) {
     sampled.cells[1] <- "LPS_1h_S51"
 }
@@ -204,11 +207,12 @@ dl <- filter.cells(dl, cells=sampled.cells)
 
 Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes, eval=fit.model}
+model.name <- getOption("Shalek.model", 'lowrank')
 dl <- estimate.hyper(
     dl,
     sigma.tau=getOption("Shalek.sigma.tau", 1),
     length.scale=getOption("Shalek.length.scale", 5),
-    model.name=getOption("Shalek.model", 'lowrank'))
+    model.name=model.name)
 ```
 ```{r child=report.file("hyper-parameters")}
 ```
@@ -226,7 +230,16 @@ saveRDS(list(expr=dl$expr,
 
 # Fit model
 
-Format the data for Stan and fit the model.
+```{r options}
+num.inits <- getOption("Shalek.num.inits", default.num.cores())
+inf.method <- getOption("Shalek.method", "vb")
+```
+
+Define and compile the model, find the best initialisation, and fit the model.
+The model name is "`r model.name`", the inference method is "`r inf.method`"
+with `r num.inits` initialisations, the seed is `r seed` and the data have
+`r dim(dl)[1]` genes and `r dim(dl)[2]` cells.
+
 ```{r fitModel, eval=fit.model}
 dl <- prepare.for.stan(dl)
 dl <- compile.model(dl)
@@ -234,11 +247,9 @@ dl <- find.good.ordering(dl, seriation.find.orderings)
 # dl <- find.good.ordering(dl, seriation.find.orderings, num.cores=2)
 # dl <- find.good.ordering(dl, magda.find.orderings)
 plot(dl, type='orderings')
-num.inits <- getOption("Shalek.num.inits", default.num.cores())
 dl <- pseudotimes.from.orderings(dl, num.to.keep=num.inits)
-method <- getOption("Shalek.method", "vb")
-system.time(dl <- fit.model(dl, method=method, num.inits=num.inits))
-if ("vb" == method) {
+system.time(dl <- fit.model(dl, method=inf.method, num.inits=num.inits))
+if ("vb" == inf.method) {
     pseudotimes.pair.plot(dl)
 }
 ```
@@ -257,10 +268,10 @@ ggplot2::ggplot(mn.df, aes(x=scaled, y=ll)) + geom_boxplot()
 
 ```
 
-```{r examConv, eval=("sample" == method)}
+```{r examConv, eval=("sample" == inf.method)}
 dl <- examine.convergence(dl)
 ```
-```{r child=report.file("convergence"), eval=("sample" == method)}
+```{r child=report.file("convergence"), eval=("sample" == inf.method)}
 ```
 
 
