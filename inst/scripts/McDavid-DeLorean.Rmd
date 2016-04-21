@@ -154,7 +154,7 @@ Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes}
 dl <- adjust.by.cell.sizes(dl)
 ggplot(dl$cell.sizes, aes(x=capture, y=size)) + geom_boxplot()
-model.name <- getOption("McDavid.model", 'simplest-model')
+model.name <- getOption("McDavid.model", 'simple-model')
 dl <- estimate.hyper(dl, sigma.tau=.5, length.scale=5, model.name=model.name)
 ```
 ```{r child=report.file("hyper-parameters")}
@@ -171,7 +171,7 @@ saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
 # Compile and fit model
 
 ```{r params}
-inf.method <- getOption("McDavid.method", "sample")
+inf.method <- getOption("McDavid.method", "vb")
 num.inits <- getOption("McDavid.num.inits", default.num.cores())
 ```
 
