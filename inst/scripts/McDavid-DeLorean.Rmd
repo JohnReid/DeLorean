@@ -81,6 +81,7 @@ library(DeLoreanData)
 library(dplyr)
 library(ggplot2)
 data(McDavidDeLorean)
+set.seed(getOption("McDavid.seed", 1))
 ```
 
 Shift positively expressed genes closer to unexpressed genes to improve fit.
@@ -128,7 +129,6 @@ ggplot(pc.scores, aes(x=PC1, y=PC3, color=capture)) + geom_point()
 Choose a few cells from the PC3 cell line.
 ```{r filterCells}
 dl <- filter.cells(dl, cells=cells.PC3$cell)
-set.seed(getOption("McDavid.seed", 1))
 max.cells <- getOption("McDavid.max.cells", 0)
 if (max.cells != 0) {
     dl <- filter.cells(dl, number=max.cells)
