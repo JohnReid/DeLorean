@@ -39,15 +39,26 @@ slidify('index.Rmd')
 
 --- .class #id
 ## Monocle
-
---- .class #id
-## Embeddr
+<img src="../Figures/monocle.png" alt="Monocle algorithm" height="300" width="800">
 
 --- .class #id
 ## Waterfall
 
 --- .class #id
+## Embeddr
+<img src="../Figures/embeddr.png" alt="Embeddr algorithm" height="500" width="700">
+
+--- .class #id
+## GPseudotime
+<img src="../Figures/gpseudotime.png" alt="GPseudotime algorithm" height="500" width="800">
+
+--- .class #id
+## Oscope
+<img src="../Figures/oscope.png" alt="Oscope algorithm" height="450" width="800">
+
+--- .class #id
 ## Wanderlust
+<img src="../Figures/wanderlust.png" alt="Wanderlust algorithm" height="500" width="500">
 
 --- .class #id
 ## Gaussian processes
