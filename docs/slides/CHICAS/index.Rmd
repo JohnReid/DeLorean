@@ -1,0 +1,86 @@
+---
+title       : Estimating pseudotimes for single-cell expression data
+subtitle    :
+author      : John Reid
+job         :
+framework   : io2012        # {io2012, html5slides, shower, dzslides, ...}
+highlighter : highlight.js  # {highlight.js, prettify, highlight}
+hitheme     : tomorrow      #
+widgets     : [mathjax]     # {mathjax, quiz, bootstrap}
+mode        : selfcontained # {standalone, draft}
+knit        : slidify::knit2slides
+---
+
+```{r compile, echo=FALSE, eval=FALSE}
+library(slidify)
+slidify('index.Rmd')
+```
+
+## Overview
+- Single cell transcriptomics and pseudotime estimaion
+- Existing methods
+- Gaussian process latent variable model
+- Results
+  * Arabidoposis response to infection
+  * Cell cycle
+  * Paracrine signalling
+
+--- .class #id
+## Single cell transcriptomics
+
+--- .class #id
+## Cross-sectional time series
+- Not longitudinal: samples are destroyed when assayed
+- Typically handful of capture times
+- Biological variation in the cells progression
+
+--- .class #id
+## Pseudotimes
+
+--- .class #id
+## Monocle
+
+--- .class #id
+## Embeddr
+
+--- .class #id
+## Waterfall
+
+--- .class #id
+## Wanderlust
+
+--- .class #id
+## Gaussian processes
+- Priors over functions
+- Covariance function encodes smoothness
+- Fully Bayesian treatment with uncertainty estimates
+- Complexity $\mathcal{O}(n^3)$
+- Low rank approximations exist
+
+--- .class #id
+## Model
+
+--- .class #id
+## Stan code
+
+--- .class #id
+## Low-rank approximation
+
+--- .class #id
+## Inference
+- Stan
+  * Gradient based samplers: No-U-Turn Sampler (NUTS), Hamiltonian Monte Carlo (HMC)
+  * Automatic Differentiation Variational Inference (ADVI)
+- Hard to explore combinatorial posterior
+
+--- .class #id
+## Held out smoothness
+
+--- .class #id
+## Arabidopsis response to infection
+
+--- .class #id
+## Cell cycle in PC3 cells
+
+--- .class #id
+## Paracrine signalling
