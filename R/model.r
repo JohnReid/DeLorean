@@ -180,13 +180,15 @@ estimate.hyper <- function(
         "simple-model" = TRUE,
         "simplest-model" = FALSE,
         "lowrank" = FALSE,
-        NA)
+        "lowrank-sizes" = FALSE,
+        stop('Unknown model name'))
     opts$adjust.cell.sizes <- switch(
         opts$model.name,
         "simple-model" = TRUE,
         "simplest-model" = FALSE,
         "lowrank" = FALSE,
-        NA)
+        "lowrank-sizes" = FALSE,
+        stop('Unknown model name'))
     #
     # Set up temporal hyper-parameters
     #
