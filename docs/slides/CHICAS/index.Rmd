@@ -1,6 +1,6 @@
 ---
-title       : Estimating pseudotimes for single-cell expression data
-subtitle    :
+title       : Pseudotime estimation
+subtitle    : Modelling noise in the temporal dimension
 author      : John Reid
 job         :
 framework   : io2012        # {io2012, html5slides, shower, dzslides, ...}
@@ -41,24 +41,37 @@ slidify('index.Rmd')
 ## Monocle
 <img src="../Figures/monocle.png" alt="Monocle algorithm" height="300" width="800">
 
+Trapnell *et al.* (Nature Biotech. 2014)
+
 --- .class #id
 ## Waterfall
+<img src="../Figures/waterfall.png" alt="Waterfall algorithm" height="500" width="350">
+
+Shin *et al.* (Cell Stem Cell 2015)
 
 --- .class #id
 ## Embeddr
 <img src="../Figures/embeddr.png" alt="Embeddr algorithm" height="500" width="700">
 
+Campbell *et al.* (bioRxiv 2015)
+
 --- .class #id
 ## GPseudotime
 <img src="../Figures/gpseudotime.png" alt="GPseudotime algorithm" height="500" width="800">
+
+Campbell and Yau (bioRxiv 2015)
 
 --- .class #id
 ## Oscope
 <img src="../Figures/oscope.png" alt="Oscope algorithm" height="450" width="800">
 
+Leng *et al.* (Nature Methods 2015)
+
 --- .class #id
 ## Wanderlust
 <img src="../Figures/wanderlust.png" alt="Wanderlust algorithm" height="500" width="500">
+
+Bendall *et al.* (Cell 2014)
 
 --- .class #id
 ## Gaussian processes
@@ -95,3 +108,6 @@ slidify('index.Rmd')
 
 --- .class #id
 ## Paracrine signalling
+
+--- .class #id
+## Conclusions
