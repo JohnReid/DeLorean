@@ -1,0 +1,228 @@
+---
+title: Oscope analysis of McDavid et al. cell cycle data
+author: John Reid
+bibliography: DeLorean.bib
+output:
+  html_document:
+    toc: true
+    fig_caption: true
+---
+
+```{r build, echo=FALSE, eval=FALSE}
+#
+# Execute this block to render the script.
+#
+devtools::load_all('../../../DeLoreanData')
+rmarkdown::render('McDavid-Oscope.Rmd')
+```
+
+
+```{r config, echo=FALSE, message=FALSE}
+library(knitr)
+library(knitcitations)
+library(rmarkdown)
+#
+# knitr options
+#
+opts_chunk$set(
+    fig.path = 'figures/McDavid-',
+    stop_on_error = TRUE,
+    fig.width = 12.5,
+    fig.height = 8)
+#
+# Citations
+#
+cleanbib()
+cite_options(
+    # hyperlink = 'to.doc',
+    hyperlink = TRUE,
+    # style = 'html',
+    # citation_format = 'text',
+    citation_format = "pandoc",
+    cite.style = "numeric",
+    check.entries = TRUE)
+    # hyperlink = TRUE)
+bib <- read.bibtex("DeLorean.bib")
+if (file.exists("config.R")) {
+    source("config.R")
+}
+source(system.file("scripts/shared.R", package="DeLorean"))
+```
+
+```{r init, echo=FALSE, message=FALSE, warning=FALSE}
+# suppressMessages(loadfonts())
+font.family <- "Verdana"
+font.theme <- theme_update(text=element_text(family=font.family))
+theme_set(font.theme)
+
+```
+
+
+`r citet(bib[["mcdavid_modeling_2014"]])` assayed actively cycling single
+cells in order to examine the confounding effect of the cell cycle on
+single cell expression analyses. They measured the expression of 333 genes
+in 930 cells across three cell cycle phases and three cell lines.
+
+
+## Data
+
+McDavid et al.'s data is available in the `DeLorean` R package. Not all 333
+genes are represented as several are rarely expressed.
+```{r loadLib}
+library(Oscope)
+library(DeLoreanData)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+data(McDavidDeLorean)
+seed <- getOption("McDavid.seed", 1)
+set.seed(seed)
+gene.levels <- levels(mcdavid.gene.meta$gene)
+cell.levels <- levels(mcdavid.cell.meta$cell)
+```
+
+## Choose genes and cells
+
+Choose a few cells from the PC3 cell line and those genes with -log pvalue greater than 10.
+```{r chooseCells}
+cells.PC3 <- mcdavid.cell.meta %>% filter("PC3" == cellline)
+# Shift positively expressed genes closer to unexpressed genes to improve fit.
+expr <- pmax(mcdavid.expr - .69, 0)[,as.character(cells.PC3$cell)]
+```
+
+## Normalise by median values.
+```{r normalise}
+oExpr <- exp(expr)
+Sizes = MedianNorm(oExpr)
+# Sizes = QuantileNorm(oExpr, .75)
+DataNorm <- GetNormalizedMat(oExpr, Sizes)
+
+MV <- data.frame(mean=rowMeans(oExpr), var=apply(oExpr, 1, var))
+ggplot(MV, aes(x=mean, y=var)) + geom_point()
+# MV <- CalcMV(Data=oExpr, Sizes=Sizes, MeanCutHigh=NULL, Plot=TRUE)
+
+expr.l <-
+    expr %>%
+    melt(varnames=c('gene', 'cell'), value.name='x') %>%
+    mutate(gene=factor(gene, levels=gene.levels),
+           cell=factor(cell, levels=cell.levels))
+sizes <-
+    expr.l %>%
+    group_by(gene) %>%
+    dplyr::summarise(prop.expr=mean(x>0)) %>%
+    filter(prop.expr > .5) %>%
+    left_join(expr.l) %>%
+    group_by(gene) %>%
+    dplyr::summarise(mu=mean(x)) %>%
+    left_join(expr.l) %>%
+    group_by(cell) %>%
+    dplyr::summarise(size=median(x-mu))
+Sizes <- sizes$size
+names(Sizes) <- sizes$cell
+expr.l <-
+    expr.l %>%
+    left_join(sizes) %>%
+    mutate(x.adj=x-size)
+```
+
+## Examine mean and variance of genes
+```{r meanVar}
+gene.mean.var <-
+    expr.l %>%
+    group_by(gene) %>%
+    dplyr::summarise(mu=mean(x.adj), var=var(x.adj)) %>%
+    left_join(mcdavid.gene.meta)
+ggplot(gene.mean.var, aes(x=mu, y=var, color=pvalue<10)) + geom_point()
+```
+
+
+## Choose genes
+```{r chooseGenes}
+genes.sig <- mcdavid.gene.meta %>% filter(pvalue > 10)
+expr.l <- filter(expr.l, gene %in% genes.sig$gene)
+expr <- acast(expr.l, gene ~ cell, value.var='x.adj')
+dim(expr)
+```
+
+## Normalise for paired-sine
+```{r normPairedSine}
+DataInput <- NormForSine(DataNorm)
+# DataInput <- NormForSine(DataNorm, qt1=0, qt2=1)
+```
+
+## Paired sine
+```{r pairedSine}
+SineRes <- OscopeSine(DataInput, parallel=TRUE)
+str(SineRes)
+```
+
+## K-medoids algorithm
+```{r kMedoids}
+KMRes <- OscopeKM(SineRes, quan=.5)
+print(KMRes)
+```
+Check the p-values of genes identified.
+```{r checkGenes}
+filter(mcdavid.gene.meta, gene %in% unlist(KMRes))
+```
+
+## Flag clusters
+```{r flagClusters}
+ToRM <- FlagCluster(SineRes, KMRes, DataInput)
+print(ToRM$FlagID_bysine)
+print(ToRM$FlagID_byphase)
+print(ToRM$FlagID) # all flagged clusters
+KMResUse <- KMRes[-ToRM$FlagID]
+print(KMResUse)
+```
+
+## Extended nearest insertion
+Calculate orderings for each cluster.
+```{r insertion}
+ENIRes <- OscopeENI(KMRes = KMRes, Data = DataInput, NCThre = 100, parallel=TRUE)
+print(ENIRes)
+```
+
+Compare orderings for the two clusters.
+```{r compareOrderings}
+ordering.invert <- function(ordering) {
+    result <- rep(0, length(ordering))
+    for (n in 1:length(result)) {
+        result[ordering[n]] <- n
+    }
+    result
+}
+orderings <- data.frame(order1=ENIRes[['cluster1']], order2=ENIRes[['cluster2']])
+invert1 <- ordering.invert(orderings$order1)
+invert2 <- ordering.invert(orderings$order2)
+ggplot(mutate(orderings, yend=invert2[order1]),
+       aes(y=1:nrow(orderings), yend=yend)) +
+    geom_segment(x=0, xend=1)
+cell.order <- data.frame(cell=factor(colnames(expr), levels=cell.levels),
+                         pos1=(1:nrow(orderings))[invert1],
+                         pos2=(1:nrow(orderings))[invert2])
+```
+
+Plot genes.
+```{r plotGenes}
+ggplot(expr.l %>% left_join(cell.order) %>% filter(gene %in% KMRes[['cluster1']]),
+       aes(x=pos1, y=x.adj, color=gene)) +
+    geom_point()
+
+cluster1 <- expr[KMRes[['cluster1']], ENIRes[['cluster1']]]
+cluster2 <- expr[KMRes[['cluster2']], ENIRes[['cluster2']]]
+qplot(x=1:ncol(expr), y=cluster1[1,])
+qplot(x=1:ncol(expr), y=cluster1[2,])
+qplot(x=1:ncol(expr), y=cluster2[1,])
+qplot(x=1:ncol(expr), y=cluster2[2,])
+```
+
+
+## Session information
+```{r date}
+date()
+```
+R version and packages used:
+```{r Rversion}
+devtools::session_info()
+```

@@ -105,9 +105,13 @@ print(sapply(dl, object.size))
 ```{r timeFit}
 seed <- getOption("Shalek.seed", 1)
 set.seed(seed)
+number.of.cells <- c(10, 18, 30, 55, 100, 180, 300)
+number.of.cells <- c(10, 18, 30)
+number.of.genes <- c(10, 20, 30, 40, 50, 60, 70)
+number.of.genes <- c(10, 20, 30)
+model.names <- c("simplest-model", "lowrank")
 num.inits <- getOption("Shalek.num.inits", default.num.cores())
 inf.method <- getOption("Shalek.method", "vb")
-model.name <- getOption("Shalek.model", 'lowrank')
 time.fit <- function(dl) {
     dl.2 <- prepare.for.stan(dl)
     dl.2 <- compile.model(dl.2)
@@ -115,36 +119,36 @@ time.fit <- function(dl) {
     dl.2 <- pseudotimes.from.orderings(dl.2, num.to.keep=num.inits)
     system.time(dl.2 <- fit.model(dl.2, method=inf.method, num.inits=num.inits))
 }
-number.of.cells <- c(10, 18, 30, 55, 100, 180, 300)
-number.of.cells <- c(10, 18, 30)
-cell.timings <- as.data.frame(t(sapply(
-    number.of.cells,
-    function(num.cells) time.fit(filter.cells(dl, number=num.cells))
-)))
-cell.timings <-
-    cell.timings %>%
-    mutate(
-        num.genes=dim(dl)[1],
-        num.cells=number.of.cells,
-        data="Shalek",
-        model.name=model.name,
-        inf.method=inf.method,
-        seed=seed)
-number.of.genes <- c(10, 20, 30, 40, 50, 60, 70)
-number.of.genes <- c(10, 20, 30)
-gene.timings <- as.data.frame(t(sapply(
-    number.of.genes,
-    function(num.genes) time.fit(filter.cells(filter.genes(dl, number=num.genes), number=30))
-)))
-gene.timings <-
-    gene.timings %>%
-    mutate(
-        num.genes=number.of.genes,
-        num.cells=30,
-        data="Shalek",
-        model.name=model.name,
-        inf.method=inf.method,
-        seed=seed)
+cell.timings <- NULL
+gene.timings <- NULL
+for (model.name in model.names) {
+    cell.timings <- rbind(
+        cell.timings,
+        as.data.frame(t(sapply(
+            number.of.cells,
+            function(num.cells) time.fit(filter.cells(dl, number=num.cells))
+        ))) %>%
+        mutate(
+            num.genes=dim(dl)[1],
+            num.cells=number.of.cells,
+            data="Shalek",
+            model.name=model.name,
+            inf.method=inf.method,
+            seed=seed))
+    gene.timings <- rbind(
+        gene.timings,
+        as.data.frame(t(sapply(
+            number.of.genes,
+            function(num.genes) time.fit(filter.cells(filter.genes(dl, number=num.genes), number=30))
+        ))) %>%
+        mutate(
+            num.genes=number.of.genes,
+            num.cells=30,
+            data="Shalek",
+            model.name=model.name,
+            inf.method=inf.method,
+            seed=seed))
+}
 ```
 
 
@@ -153,8 +157,8 @@ gene.timings <-
 The model name is "`r model.name`", the inference method is "`r inf.method`"
 with `r num.inits` initialisations and the seed is `r seed`.
 ```{r plotTimings}
-ggplot(gene.timings, aes(x=num.genes, y=elapsed)) + geom_line()
-ggplot(cell.timings, aes(x=num.cells, y=elapsed)) + geom_line()
+ggplot(gene.timings, aes(x=num.genes, y=elapsed, color=model.name)) + geom_line()
+ggplot(cell.timings, aes(x=num.cells, y=elapsed, color=model.name)) + geom_line()
 ```
 
 
