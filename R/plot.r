@@ -189,6 +189,7 @@ cmp.profiles.plot <- function(..., genes = NULL) {
 #' @param profile.color Colour for the profile
 #' @param add.data Add actual expression data to plot
 #' @param sample.iter Which sample to plot
+#' @param ignore.cell.sizes Ignore cell sizes if the model has estimated them
 #' @param ... Extra arguments
 #'
 #' @export
@@ -198,6 +199,7 @@ profiles.plot <- function(dl,
                           profile.color='black',
                           add.data=T,
                           sample.iter=dl$best.sample,
+                          ignore.cell.sizes=FALSE,
                           ...) {
     varargs <- list(...)
     with(dl, {
@@ -239,11 +241,13 @@ profiles.plot <- function(dl,
                 %>% left_join(samples.l$tau
                               %>% filter(sample.iter == iter)
                               %>% mutate(tau=modulo.period(tau))))
-            if (! is.null(varargs$cell.size.adj) && varargs$cell.size.adj) {
-                expr.data <- (
-                    expr.data
-                    %>% left_join(samples.l$S)
-                    %>% mutate(expr=expr - S))
+            #
+            # Adjust for cell sizes if they are there and we have not
+            # been asked to ignore them
+            if ('S' %in% names(samples.l) && ! ignore.cell.sizes) {
+                expr.data <- expr.data %>%
+                    left_join(samples.l$S) %>%
+                    mutate(expr=expr - S)
             }
             gp <- plot.add.expr(gp, .data=expr.data)
         }
@@ -288,14 +292,9 @@ adjust.predictions <- function(.data, adjust.model) {
 #' @param gp Plot object
 #' @param .data Expression data to add
 #'
-plot.add.expr <- function(gp, .data=NULL)
-{
-    (gp + geom_point(data=.data,
-                     aes(x=tau,
-                         y=expr,
-                         color=capture),
-                     size=4,
-                     alpha=.7))
+plot.add.expr <- function(gp, .data=NULL) {
+    gp + geom_point(data=.data, aes(x=tau, y=expr, color=capture),
+                    size=4, alpha=.7)
 }
 
 
