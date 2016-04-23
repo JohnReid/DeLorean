@@ -189,15 +189,17 @@ Choose a few cells but make sure we have the precocious cells.
 ```{r filterCells, eval=fit.model}
 seed <- getOption("Shalek.seed", 1)
 set.seed(seed)
-max.cells <- getOption("Shalek.max.cells", 307)
-sampled.cells <- sample(colnames(dl$expr), max.cells)
-if (! "LPS_1h_S51" %in% sampled.cells) {
-    sampled.cells[1] <- "LPS_1h_S51"
+max.cells <- getOption("Shalek.max.cells", 0)
+if (max.cells != 0) {
+    sampled.cells <- sample(colnames(dl$expr), max.cells)
+    if (! "LPS_1h_S51" %in% sampled.cells) {
+        sampled.cells[1] <- "LPS_1h_S51"
+    }
+    if (! "LPS_1h_S52" %in% sampled.cells) {
+        sampled.cells[2] <- "LPS_1h_S52"
+    }
+    dl <- filter.cells(dl, cells=sampled.cells)
 }
-if (! "LPS_1h_S52" %in% sampled.cells) {
-    sampled.cells[2] <- "LPS_1h_S52"
-}
-dl <- filter.cells(dl, cells=sampled.cells)
 ```
 
 
