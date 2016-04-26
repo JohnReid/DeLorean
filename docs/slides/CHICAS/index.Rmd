@@ -1,13 +1,13 @@
 ---
 title       : Pseudotime estimation
-subtitle    : Modelling noise in the temporal dimension
+subtitle    : Modelling uncertainty in the temporal dimension
 author      : John Reid
 job         :
 framework   : io2012        # {io2012, html5slides, shower, dzslides, ...}
 highlighter : highlight.js  # {highlight.js, prettify, highlight}
 hitheme     : tomorrow      #
 widgets     : [mathjax]     # {mathjax, quiz, bootstrap}
-mode        : selfcontained # {standalone, draft}
+mode        : standalone    # {selfcontained, draft}
 knit        : slidify::knit2slides
 ---
 
@@ -17,14 +17,23 @@ em {
 }
 </style>
 
-```{r compile, echo=FALSE, eval=FALSE}
+## Overview
+- Single cell transcriptomics and pseudotime estimation
+- Existing methods
+- Gaussian process latent variable model
+- Results
+  * Arabidoposis response to infection
+  * Cell cycle
+  * Paracrine signalling
+
+```{r compile, eval=FALSE, echo=FALSE}
 devtools::load_all("/home/john/Dev/DeLorean")
-library(slidify)
-slidify('index.Rmd')
+slidify::slidify('index.Rmd')
 ```
 
 ```{r knitConfig, echo=FALSE}
 knitr::opts_chunk$set(
+    echo = FALSE,
     fig.path = 'figures/slides-',
     # fig.width = 12,
     # fig.height = 8,
@@ -62,11 +71,10 @@ knitr::opts_template$set(prior.fig = list(
     out.width="900px",
     dpi=72*2))
 set.seed(2)
-y.axis = scale_y_continuous("f(x)")
-```
+y.axis <- scale_y_continuous("f(x)")
 ```
 
-```{r loadLibs, echo=FALSE, message=FALSE}
+```{r loadLibs, message=FALSE, echo=FALSE}
 library(gptk)
 library(matrixcalc)
 library(MASS)
@@ -90,7 +98,7 @@ mrc.colors <- c(
 )
 ```
 
-```{r exp-init, echo=FALSE, message=FALSE}
+```{r exp-init, message=FALSE, echo=FALSE}
 tmin <- 0
 tmax <- 3
 twidth <- tmax - tmin
@@ -259,27 +267,19 @@ lin.space <- function(start, stop, num.points) {
 }
 ```
 
-## Overview
-- Single cell transcriptomics and pseudotime estimaion
-- Existing methods
-- Gaussian process latent variable model
-- Results
-  * Arabidoposis response to infection
-  * Cell cycle
-  * Paracrine signalling
-
---- .class #id
+--- .class
 ## Single cell transcriptomics
+<img src="../Figures/scRNA.png" alt="Single cell transcriptomics" height="300" width="800">
 
---- .class #id
-## Cross-sectional time series
+- Variation within a cell population can be assayed
+- Noisy
 - Not longitudinal: samples are destroyed when assayed
 - Typically handful of capture times
 - Biological variation in the cells progression
 
---- .class #id
+--- .class
 ## Pseudotimes
-```{r exp-capture, opts.label="half.height.fig", echo=FALSE}
+```{r exp-capture, echo=FALSE, opts.label="half.height.fig"}
 gp.capture <- (
     ggplot(.data, aes(x=to.hours(as.integer(obstime)), y=mu+expr, color=obstime))
     + geom_point(alpha=.6, size=5)
@@ -305,61 +305,51 @@ gp.pseudotime <- (
 print(gp.pseudotime)
 ```
 
---- .class #id
+--- .class
 ## Monocle
-<img src="../Figures/monocle.png" alt="Monocle algorithm" height="300" width="800">
+<img src="../Figures/monocle.png" alt="Monocle algorithm" height="350" width="900">
 
 Trapnell *et al.* (Nature Biotech. 2014)
 
---- .class #id
+--- .class
 ## Waterfall
 <img src="../Figures/waterfall.png" alt="Waterfall algorithm" height="500" width="350">
 
 Shin *et al.* (Cell Stem Cell 2015)
 
---- .class #id
+--- .class
 ## Embeddr
 <img src="../Figures/embeddr.png" alt="Embeddr algorithm" height="500" width="700">
 
 Campbell *et al.* (bioRxiv 2015)
 
---- .class #id
+--- .class
 ## GPseudotime
 <img src="../Figures/gpseudotime.png" alt="GPseudotime algorithm" height="500" width="800">
 
 Campbell and Yau (bioRxiv 2015)
 
---- .class #id
+--- .class
 ## Oscope
 <img src="../Figures/oscope.png" alt="Oscope algorithm" height="450" width="800">
 
 Leng *et al.* (Nature Methods 2015)
 
---- .class #id
+--- .class
 ## Wanderlust
 <img src="../Figures/wanderlust.png" alt="Wanderlust algorithm" height="500" width="500">
 
 Bendall *et al.* (Cell 2014)
 
---- .class #id
+--- .class
 ## Gaussian processes
-- Priors over functions, $f(x) \sim \mathcal{GP}(\mu, \Sigma)$
+Priors over functions, $f(x) \sim \mathcal{GP}(\mu, \Sigma)$
 - Typically $x \in \mathbb{R}$ but can be applied to any domain
 - Natural non-linear extension of Bayesian linear regression
 - Characterised by mean function $\mu(x)$ and covariance
-   function $\Sigma(x_1, x_2)$
-- Covariance function encodes smoothness
-- Large choice of covariance functions that can capture typical prior beliefs
-- Particular choices of covariance function correspond to other models,
-   e.g. splines, neural networks
-- Analytic posterior gives full Bayesian treatment with uncertainty estimates
-- Inference of covariance structure and parameters possible
-- Require $O(n^3)$ inversion of covariance matrices
-- Low rank approximations exist
+  function $\Sigma(x_1, x_2)$
 
---- .class #id
-## Squared exponential covariance
-```{r seCov, opts.label="prior.fig"}
+```{r seCov, opts.label="half.height.fig"}
 samples.l <- sample.from.prior(rbfCreate(length.scale=.5))
 # samples.l <- sample.from.prior(n=7, rbfCreate(length.scale=2))
 ggplot(samples.l, aes(x=x, y=y, group=sample)) + geom_line() + y.axis
@@ -369,9 +359,15 @@ $$
 \Sigma(x_1, x_2) = \Sigma(r=|x_1 - x_2|) = \exp\bigg(-\frac{r^2}{2 l^2}\bigg)
 $$
 
---- .class #id
-## Periodic covariance
-```{r periodic, opts.label="prior.fig"}
+--- .class
+## Covariance functions
+- Covariance function encodes smoothness
+- Large choice that can capture typical prior beliefs
+- Particular choices correspond to other models, e.g. splines,
+  neural networks
+- Inference of covariance structure and parameters possible
+
+```{r periodic, opts.label="half.height.fig"}
 samples.l <- sample.from.prior(rbfCreate(length.scale=.5))
 samples.l$distance <- "r"
 periodic.l <- sample.from.prior(periodicRbfCreate(length.scale=.5, period=2))
@@ -388,9 +384,13 @@ u(r) = \frac{\omega}{2}\sin\bigg(\frac{\pi r}{\omega}\bigg), \qquad
 \Sigma(r) = \exp\bigg(-\frac{r^2}{2l^2}\bigg)
 $$
 
---- .class #id
+--- .class
 ## Analytic posterior
-```{r analytic, opts.label="prior.fig"}
+- Full Bayesian treatment with uncertainty estimates
+- Require $O(n^3)$ inversion of covariance matrix
+- Low rank approximations exist
+
+```{r analytic, opts.label="half.height.fig"}
 observed <- data.frame(
     x = (0:6)/2,
     y = 2 * (runif(n=7) - .5))
@@ -408,7 +408,7 @@ $$
 \Sigma(r) = \exp\bigg(-\frac{r^2}{2 l^2}\bigg)
 $$
 
---- .class #id
+--- .class
 ## Gaussian noise
 ```{r GaussianNoise, opts.label="prior.fig"}
 samples.l <- sample.from.posterior(kernRBF, eps=.2,
@@ -426,7 +426,7 @@ $$
 $$
 
 
---- .class #id
+--- .class
 ## Posterior representation
 ```{r posterior, opts.label="prior.fig"}
 cov.post <- posterior.covariance(kernRBF, eps=.2, x=observed$x, y=observed$y)
@@ -438,56 +438,227 @@ Ribbon shows two standard deviations either side of posterior mean (95%
 confidence interval)
 
 
---- .class #id
+--- .class
 ## Model
 - Estimate pseudotime for each cell
 - Infer smooth low-noise expression profiles with Gaussian processes
 - Model biological and technical cell size effects
 
---- .class #id
+--- .class
+## Model: pseudotime
+$$
+    \tau_c \sim \mathcal{N}(k_c, \sigma_\tau)
+$$
+
+```{r modelPseudo, echo=FALSE, fig.width=8, fig.height=4, out.width="900px", dpi=72*2}
+capture.gp <- (
+    ggplot(.data,
+           aes(x=to.hours(as.integer(obstime)), y=mu+expr, color=obstime))
+    + geom_point(alpha=.6, size=5)
+    + xlab("Cell capture time")
+    + ylab("Expression")
+    + scale.obs.time
+    + scale.x
+    + guides(color=FALSE)
+)
+tau.prior <- function(tau, mean) 20 * dnorm(tau, mean=mean, sd=8)
+print(gp.capture
+    + stat_function(fun=Curry(tau.prior, mean=00), colour=mrc.colors[1])
+    + stat_function(fun=Curry(tau.prior, mean=20), colour=mrc.colors[2])
+    + stat_function(fun=Curry(tau.prior, mean=40), colour=mrc.colors[3])
+    + stat_function(fun=Curry(tau.prior, mean=60), colour=mrc.colors[4])
+    + stat_function(fun=Curry(tau.prior, mean=80), colour=mrc.colors[5])
+)
+```
+
+--- .class
+## Model: expression profiles
+$$
+    x_g \sim \mathcal{GP}(\phi_g, \Sigma_g)
+$$
+the expression data is modelled as the value of the profile at the
+pseudotime
+$$
+    x_{g,c} = x_g(\tau_c) + S_c
+$$
+$S_c$ is a cell size parameter that allows for technical effects such as
+sequencing depth and lysis efficiency or biological effects such as cell
+size.
+
+```{r predictions, opts.label="half.height.fig"}
+predictions.gp <- plot.predictions(
+    make.predictions(sigma.gp=2 , sigma.noise=.3, length.scale=1))
+print(predictions.gp)
+
+```
+
+
+--- .class
+## Covariance structure
+The covariance structure is shared across genes
+$$
+    \Sigma_\tau(\tau, \tau')
+        = \textrm{Matern}_{3/2}(r=\frac{|\tau - \tau'|}{l})
+        = (1 + \sqrt{3}r) \exp(-\sqrt{3}r)
+$$
+with gene-specific magnitudes and noise terms
+$$
+    \Sigma_g(\tau, \tau')
+        = \psi_g \Sigma_\tau(\tau, \tau') + \omega_g \delta_{\tau,\tau'}
+$$
+
+```{r predictions2, opts.label="half.height.fig", echo=FALSE}
+print(predictions.gp)
+```
+
+
+--- .class
+## Hyperparameters: empirical Bayes
+$$\begin{eqnarray*}
+S_c &\sim& \mathcal{N}(\mu_S, \sigma_S) \\
+\log \psi_g &\sim& \mathcal{N}(\mu_\psi, \sigma_\psi) \\
+\log \omega_g &\sim& \mathcal{N}(\mu_\omega, \sigma_\omega) \\
+\end{eqnarray*} $$
+estimated by empirical Bayes procedure.
+
+- Length-scale $l$ and pseudotime variance $\sigma_\tau$ are fixed by modeller.
+- Gene means $\phi_g$ set from data
+- Cell size hyperparameters $\mu_S$ and $\sigma_S$ set using standard cell size estimation
+
+
+--- .class &twocol
+## Hyperparameters for $\psi_g$ and $\omega_g$
+
+*** =left
+### Variance decomposition
+```{r varianceDecomp, echo=FALSE, fig.width=4, fig.height=2, out.width="450px", dpi=72*2}
+print(gp.capture)
+
+print(gp.pseudotime)
+```
+
+*** =right
+We estimate the temporal variance and noise variance for each gene
+$$
+\hat{\omega}_g = \mathbb{E}[\mathbb{V}[x_g|t]] \\
+\hat{\psi}_g = \frac{\mathbb{V}[\mathbb{E}[x_g|t]]}
+    {\mathbb{E}[\textrm{diag}(\hat\Sigma)] - \mathbb{E}[\hat\Sigma]}
+$$
+and use these to set the hyperparameters for the model
+$$
+\mu_\omega = \mathbb{E}[\log \hat\omega_g] \\
+\sigma_\omega = \mathbb{V}[\log \hat\omega_g] \\
+\mu_\psi = \mathbb{E}[\log \hat\psi_g] \\
+\sigma_\psi = \mathbb{V}[\log \hat\psi_g] \\
+$$
+
+
+--- .class
+## Relationship with probabilistic PCA and GPLVM
+$$ \begin{aligned}
+\mathbf{y_n}    &&:& \textrm{Data} \\
+\mathbf{x_n}    &\sim \mathcal{N}(0, \mathbf{I})
+                &:& \textrm{Latent space coordinates} \\
+\mathbf{w_i}    &\sim \mathcal{N}(0, \mathbf{I})
+                &:& \textrm{Transformation} \\
+\mathbf{\eta_n} &\sim \mathcal{N}(0, \beta \mathbf{I})
+                &:& \textrm{Gaussian i.i.d. noise} \\
+\mathbf{y_n} &= \mathbf{W x_n} + \mathbf{\eta_n} &&
+\end{aligned} $$
+Marginalise over $\mathbf{x_n}$ and maximise over $\mathbf{W}$ gives probabilistic
+interpretation of PCA.
+
+Maximise over $\mathbf{x_n}$ and marginalise over $\mathbf{W}$ gives GPLVM
+with linear covariance function.
+
+Our model is a one dimensional non-linear GPLVM with a structured prior:
+$$\mathbf{x_n} \sim \mathcal{N}(0, \mathbf{I})$$
+is replaced with
+$$\tau_c \sim \mathcal{N}(k_c, \sigma_\tau)$$
+
+
+--- .class
+## Inference
+- The model is coded in the Stan modelling language.
+- Stan provides a Hamiltonian MCMC algorithm: the No-U-Turn sampler.
+- Multimodal posterior is difficult to explore.
+- Use some naive chain initialisation tricks:
+  * Generate many random pseudotime initialisations from prior
+  * Select those with highest likelihood to initialise chains
+- Use $\hat{R}$ statistic to assess convergence
+
+--- .class
 ## Stan code
 
---- .class #id
+    # Sample gene-specific factors
+    psi ~ lognormal(mu_psi, sigma_psi);
+    omega ~ lognormal(mu_omega, sigma_omega);
+    # Sample pseudotime
+    tau ~ normal(time, sigma_tau);
+    # Expression values for each gene
+    for (g in 1:G) {
+        expr[g] ~ multi_normal(
+                    rep_vector(phi[g], C),
+                    psi[g] * cov_symmetric(tau, periodic, period, l) + omega[g] * identity);
+    }
+
+--- .class
 ## Low-rank approximation
 
---- .class #id
+--- .class
 ## Inference
 - Stan
   * Gradient based samplers: No-U-Turn Sampler (NUTS), Hamiltonian Monte Carlo (HMC)
   * Automatic Differentiation Variational Inference (ADVI)
 - Hard to explore combinatorial posterior
 
---- .class #id
+--- .class
 ## Held out smoothness
 
---- .class #id
+--- .class
 ## Arabidopsis response to infection
+- Response of *Arabidopsis thaliana* to infection by the fungal pathogen *Botrytis cinerea*.
+  Windram *et al.* (Plant Cell 2012)
+- 48 hour time course, sampled every 2 hours
+- To test method we obfuscate the capture times, grouping into 4 groups of 6
+- Low noise
+- Ran ADVI variational inference on 100 genes and the 24 samples
+
+--- .class
+## Arabidopsis response to infection
+<img src="../Figures/Windram-tau-posterior.png" alt="Windram tau posterior" height="500" width="1000">
+
+--- .class
+## Arabidopsis response to infection
+<img src="../Figures/Windram-profiles.png" alt="Windram profiles" height="500" width="1000">
+
+--- .class
+## Arabidopsis response to infection
+<img src="../Figures/Windram-roughnesses.png" alt="Windram roughnesses" height="500" width="500">
 
 --- &twocol
 ## Cell cycle in PC3 cells
 
-*** =left
-- Data from McDavid *et al.* (PLoS Comp Bio 2014)
-- nCounter single cell profiling
-- Prostate cancer cell line
-- 361 cells
+- nCounter single cell profiling data from McDavid *et al.* (PLoS Comp Bio 2014)
+- 361 cells from prostate cancer cell line
 - Used 56/333 differentially expressed genes
 - McDavid *et al.* categorized each cell as GO/G1, S or G2/M phase
-
-
-*** =right
-- Used periodic covariance function
-- Used model that infers cell sizes
+- Periodic covariance function
 - Ran ADVI variational inference
-- Compared peak estimates to CycleBase database
-- Peak time estimate RMSEs 50% better than naive method
 
---- .class #id
+--- .class
 ## Cell cycle in PC3 cells
 <img src="../Figures/McDavid-profiles.png" alt="Embeddr algorithm" height="500" width="1000">
 
---- .class #id
+--- .class
 ## Paracrine signalling
+- Shalek *et al.* (Nature 2014) generated cross-sectional time courses of
+the response of primary mouse bone-marrow-derived dendritic
+cells to lipopolysaccharide stimulation
 
---- .class #id
-## Conclusions
+--- .class
+## Paracrine signalling
+<img src="../Figures/Shalek-roughnesses.png" alt="Shalek roughnesses" height="500" width="800">
+
+--- .class
+## Summary
