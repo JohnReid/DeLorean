@@ -275,7 +275,7 @@ lin.space <- function(start, stop, num.points) {
 - Noisy
 - Not longitudinal: samples are destroyed when assayed
 - Typically handful of capture times
-- Biological variation in the cells rate of progress
+- Biological variation in the cells' rates of progress
 
 --- .class
 ## Pseudotimes
@@ -637,6 +637,8 @@ $$
 - To test method we obfuscate the capture times, grouping into 4 groups of 6
 - Ran ADVI variational inference on 100 genes and the 24 samples
 
+<img src="../Figures/infection.png" alt="Windram infection" height="250" width="500">
+
 --- .class
 ## Arabidopsis response to infection
 <img src="../Figures/Windram-tau-posterior.png" alt="Windram tau posterior" height="450" width="900">
@@ -703,6 +705,10 @@ $$
 - Principled probabilistic model
 - Gaussian processes model noisy expression data well
 - Explicitly estimates pseudotimes rather than orderings
-- Plausible results on three data from three different technologies
-- Results significantly smoother than null model
+- Plausible results on data from three different technologies
+- Profiles significantly smoother than null model
 - Open source R package available at CRAN: DeLorean
+- Working on branching processes
+- Collaborators:
+  * Lorenz Wernisch, MRC BSU
+  * Julia Tischler, Gurdon Institute
