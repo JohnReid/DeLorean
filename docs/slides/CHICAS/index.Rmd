@@ -22,7 +22,7 @@ em {
 - Existing methods
 - Gaussian process latent variable model
 - Results
-  * Arabidoposis response to infection
+  * Arabidopsis response to infection
   * Cell cycle in cancer cells
   * Paracrine signalling in mouse dendritic cells
 
@@ -272,7 +272,7 @@ lin.space <- function(start, stop, num.points) {
 <img src="../Figures/scRNA.png" alt="Single cell transcriptomics" height="300" width="800">
 
 - Variation within a cell population can be assayed
-- Noisy
+- Biological and technical noise
 - Not longitudinal: samples are destroyed when assayed
 - Typically handful of capture times
 - Biological variation in the cells' rates of progress
@@ -316,18 +316,6 @@ Trapnell *et al.* (Nature Biotech. 2014)
 <img src="../Figures/waterfall.png" alt="Waterfall algorithm" height="450" width="350">
 
 Shin *et al.* (Cell Stem Cell 2015)
-
---- .class
-## Embeddr
-<img src="../Figures/embeddr.png" alt="Embeddr algorithm" height="450" width="700">
-
-Campbell *et al.* (bioRxiv 2015)
-
---- .class
-## GPseudotime
-<img src="../Figures/gpseudotime.png" alt="GPseudotime algorithm" height="450" width="800">
-
-Campbell and Yau (bioRxiv 2015)
 
 --- .class
 ## Oscope
@@ -703,12 +691,24 @@ $$
 ## Summary
 - Longitudinal assays are unlikely in the medium term
 - Principled probabilistic model
-- Gaussian processes model noisy expression data well
-- Explicitly estimates pseudotimes rather than orderings
+  * Gaussian processes model noisy expression data well
+  * Explicitly estimates pseudotimes rather than orderings
 - Plausible results on data from three different technologies
-- Profiles significantly smoother than null model
+  * Profiles significantly smoother than null model
 - Open source R package available at CRAN: DeLorean
 - Working on branching processes
 - Collaborators:
   * Lorenz Wernisch, MRC BSU
   * Julia Tischler, Gurdon Institute
+
+--- .class
+## Embeddr
+<img src="../Figures/embeddr.png" alt="Embeddr algorithm" height="450" width="700">
+
+Campbell *et al.* (bioRxiv 2015)
+
+--- .class
+## GPseudotime
+<img src="../Figures/gpseudotime.png" alt="GPseudotime algorithm" height="450" width="800">
+
+Campbell and Yau (bioRxiv 2015)
