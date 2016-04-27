@@ -47,21 +47,21 @@ knitr::opts_template$set(half.slide.fig = list(
     message=FALSE,
     fig.width=4,
     fig.height=4.25,
-    out.width="500px",
+    out.width="450",
     dpi=72*2))
 knitr::opts_template$set(half.height.fig = list(
     echo=FALSE,
     message=FALSE,
     fig.width=8,
     fig.height=2,
-    out.width="1000px",
+    out.width="900",
     dpi=72*2))
 knitr::opts_template$set(full.slide.fig = list(
     echo=FALSE,
     message=FALSE,
     fig.width=8,
     fig.height=4.25,
-    out.width="1000px",
+    out.width="900",
     dpi=72*2))
 knitr::opts_template$set(prior.fig = list(
     echo=FALSE,
@@ -313,19 +313,19 @@ Trapnell *et al.* (Nature Biotech. 2014)
 
 --- .class
 ## Waterfall
-<img src="../Figures/waterfall.png" alt="Waterfall algorithm" height="500" width="350">
+<img src="../Figures/waterfall.png" alt="Waterfall algorithm" height="450" width="350">
 
 Shin *et al.* (Cell Stem Cell 2015)
 
 --- .class
 ## Embeddr
-<img src="../Figures/embeddr.png" alt="Embeddr algorithm" height="500" width="700">
+<img src="../Figures/embeddr.png" alt="Embeddr algorithm" height="450" width="700">
 
 Campbell *et al.* (bioRxiv 2015)
 
 --- .class
 ## GPseudotime
-<img src="../Figures/gpseudotime.png" alt="GPseudotime algorithm" height="500" width="800">
+<img src="../Figures/gpseudotime.png" alt="GPseudotime algorithm" height="450" width="800">
 
 Campbell and Yau (bioRxiv 2015)
 
@@ -337,7 +337,7 @@ Leng *et al.* (Nature Methods 2015)
 
 --- .class
 ## Wanderlust
-<img src="../Figures/wanderlust.png" alt="Wanderlust algorithm" height="500" width="500">
+<img src="../Figures/wanderlust.png" alt="Wanderlust algorithm" height="450" width="450">
 
 Bendall *et al.* (Cell 2014)
 
@@ -626,15 +626,15 @@ $$\tau_c \sim \mathcal{N}(k_c, \sigma_\tau)$$
 
 --- .class
 ## Arabidopsis response to infection
-<img src="../Figures/Windram-tau-posterior.png" alt="Windram tau posterior" height="500" width="1000">
+<img src="../Figures/Windram-tau-posterior.png" alt="Windram tau posterior" height="450" width="900">
 
 --- .class
 ## Arabidopsis response to infection
-<img src="../Figures/Windram-profiles.png" alt="Windram profiles" height="500" width="1000">
+<img src="../Figures/Windram-profiles.png" alt="Windram profiles" height="450" width="900">
 
 --- .class
 ## Arabidopsis response to infection
-<img src="../Figures/Windram-roughnesses.png" alt="Windram roughnesses" height="500" width="500">
+<img src="../Figures/Windram-roughnesses.png" alt="Windram roughnesses" height="450" width="900">
 
 --- &twocol
 ## Cell cycle in PC3 cells
@@ -648,7 +648,7 @@ $$\tau_c \sim \mathcal{N}(k_c, \sigma_\tau)$$
 
 --- .class
 ## Cell cycle in PC3 cells
-<img src="../Figures/McDavid-profiles.png" alt="Embeddr algorithm" height="500" width="1000">
+<img src="../Figures/McDavid-profiles.png" alt="Embeddr algorithm" height="450" width="900">
 
 --- .class
 ## Paracrine signalling
@@ -658,7 +658,15 @@ cells to lipopolysaccharide stimulation
 
 --- .class
 ## Paracrine signalling
-<img src="../Figures/Shalek-roughnesses.png" alt="Shalek roughnesses" height="500" width="800">
+<img src="../Figures/Shalek-roughnesses.png" alt="Shalek roughnesses" height="450" width="900">
+
+--- .class
+## Paracrine signalling
+<img src="../Figures/Shalek-profiles.png" alt="Shalek profiles" height="450" width="900">
+
+--- .class
+## Paracrine signalling
+<img src="../Figures/Shalek-core.png" alt="Shalek core" height="450" width="900">
 
 --- .class
 ## Summary
