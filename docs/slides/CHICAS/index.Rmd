@@ -1,7 +1,7 @@
 ---
 title       : Pseudotime estimation
 subtitle    : Modelling uncertainty in the temporal dimension
-author      : John Reid
+author      : John Reid, MRC Biostatistics Unit
 job         :
 framework   : io2012        # {io2012, html5slides, shower, dzslides, ...}
 highlighter : highlight.js  # {highlight.js, prettify, highlight}
@@ -23,8 +23,8 @@ em {
 - Gaussian process latent variable model
 - Results
   * Arabidoposis response to infection
-  * Cell cycle
-  * Paracrine signalling
+  * Cell cycle in cancer cells
+  * Paracrine signalling in mouse dendritic cells
 
 ```{r compile, eval=FALSE, echo=FALSE}
 devtools::load_all("/home/john/Dev/DeLorean")
@@ -275,7 +275,7 @@ lin.space <- function(start, stop, num.points) {
 - Noisy
 - Not longitudinal: samples are destroyed when assayed
 - Typically handful of capture times
-- Biological variation in the cells progression
+- Biological variation in the cells rate of progress
 
 --- .class
 ## Pseudotimes
@@ -580,10 +580,12 @@ $$\tau_c \sim \mathcal{N}(k_c, \sigma_\tau)$$
 --- .class
 ## Inference
 - The model is coded in the Stan modelling language.
-- Stan provides a Hamiltonian MCMC algorithm: the No-U-Turn sampler.
-- Multimodal posterior is difficult to explore.
+  * Gradient based samplers: No-U-Turn Sampler (NUTS), Hamiltonian Monte Carlo (HMC)
+  * Automatic Differentiation Variational Inference (ADVI)
+- Posterior is difficult to explore.
 - Use some naive chain initialisation tricks:
   * Generate many random pseudotime initialisations from prior
+  * Use some seriation methods
   * Select those with highest likelihood to initialise chains
 - Use $\hat{R}$ statistic to assess convergence
 
@@ -604,24 +606,35 @@ $$\tau_c \sim \mathcal{N}(k_c, \sigma_\tau)$$
 
 --- .class
 ## Low-rank approximation
+```{r predictions3, opts.label="half.height.fig", echo=FALSE}
+print(predictions.gp)
+```
 
---- .class
-## Inference
-- Stan
-  * Gradient based samplers: No-U-Turn Sampler (NUTS), Hamiltonian Monte Carlo (HMC)
-  * Automatic Differentiation Variational Inference (ADVI)
-- Hard to explore combinatorial posterior
+- Complexity of exact likelihood is $\mathcal{O}(GC^3)$
+- For large $C$ we use a low rank approximation by Snelson and Ghahramani (2006)
+$$
+Q_\tau = \Sigma_{\tau,u}\Sigma_{u,u}^{-1}\Sigma_{u,\tau} \\
+\tilde{\Sigma}_\tau = Q_\tau - \textrm{diag}[Q_\tau - \Sigma_\tau]
+$$
+- Complexity of approximation is $\mathcal{O}(GCM^2)$ where $M=|u|$
 
 --- .class
 ## Held out smoothness
+- Hold out genes for validation
+- Use simple smoothness statistic
+$$
+  R_g(z) =
+    \frac{1}{\sigma_g}
+    \sqrt{\frac{1}{C-1}\sum_{c=1}^{C-1} (x'_{g,z_c}-x'_{g,z_{c+1}})^2}
+$$
+- Null model: randomly sample order respecting capture time
 
 --- .class
 ## Arabidopsis response to infection
 - Response of *Arabidopsis thaliana* to infection by the fungal pathogen *Botrytis cinerea*.
   Windram *et al.* (Plant Cell 2012)
-- 48 hour time course, sampled every 2 hours
+- Low noise 48 hour time course, sampled every 2 hours
 - To test method we obfuscate the capture times, grouping into 4 groups of 6
-- Low noise
 - Ran ADVI variational inference on 100 genes and the 24 samples
 
 --- .class
@@ -636,9 +649,17 @@ $$\tau_c \sim \mathcal{N}(k_c, \sigma_\tau)$$
 ## Arabidopsis response to infection
 <img src="../Figures/Windram-roughnesses.png" alt="Windram roughnesses" height="450" width="900">
 
+--- .class
+## Arabidopsis response to infection: Monocle
+<img src="../Figures/Windram-Monocle-compare.png" alt="Windram Monocle results" height="450" width="700">
+
+--- .class
+## Arabidopsis response to infection
+<img src="../Figures/Windram-posterior-cor.png" alt="Windram posterior correlations" height="450" width="900">
+
 --- &twocol
 ## Cell cycle in PC3 cells
-
+*** =left
 - nCounter single cell profiling data from McDavid *et al.* (PLoS Comp Bio 2014)
 - 361 cells from prostate cancer cell line
 - Used 56/333 differentially expressed genes
@@ -646,15 +667,23 @@ $$\tau_c \sim \mathcal{N}(k_c, \sigma_\tau)$$
 - Periodic covariance function
 - Ran ADVI variational inference
 
+*** =right
+<img src="../Figures/hoechst.png" alt="Hoechst" height="500" width="450">
+
 --- .class
 ## Cell cycle in PC3 cells
 <img src="../Figures/McDavid-profiles.png" alt="Embeddr algorithm" height="450" width="900">
 
---- .class
+--- .class &twocol
 ## Paracrine signalling
-- Shalek *et al.* (Nature 2014) generated cross-sectional time courses of
-the response of primary mouse bone-marrow-derived dendritic
-cells to lipopolysaccharide stimulation
+*** =left
+- Shalek *et al.* (Nature 2014) stimulated primary mouse bone-marrow-derived dendritic
+  cells with lipopolysaccharide
+- Microfluidic protocol with single cell RNA-seq
+- Fit low rank model using ADVI (307 cells, 74 genes)
+
+*** =right
+<img src="../Figures/microfluidics.png" alt="Microfluidics" height="499" width="332">
 
 --- .class
 ## Paracrine signalling
@@ -670,3 +699,10 @@ cells to lipopolysaccharide stimulation
 
 --- .class
 ## Summary
+- Longitudinal assays are unlikely in the medium term
+- Principled probabilistic model
+- Gaussian processes model noisy expression data well
+- Explicitly estimates pseudotimes rather than orderings
+- Plausible results on three data from three different technologies
+- Results significantly smoother than null model
+- Open source R package available at CRAN: DeLorean
