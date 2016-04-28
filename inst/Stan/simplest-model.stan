@@ -159,7 +159,6 @@ model {
     # Expression values for each gene
     for (g in 1:G) {
         expr[g] ~ multi_normal(
-                    #segment(phi, g, 1),
                     rep_vector(phi[g], C),
                     psi[g] * cov_symmetric(tau,
                                            periodic,
