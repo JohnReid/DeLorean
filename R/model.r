@@ -1113,7 +1113,9 @@ fit.model.vb <- function(
           ...)
         pars <- get.posterior.mean(rstan::extract(fit))
         upars <- rstan::unconstrain_pars(fit, pars)
-        lp <- rstan::log_prob(fit, upars)}))
+        lp <- rstan::log_prob(fit, upars, adjust_transform=TRUE)
+        lp.unadj <- rstan::log_prob(fit, upars, adjust_transform=FALSE)
+      }))
     #
     # Only keep results that worked
     sflist <- Filter(function(x) ! is.null(x$lp), sflist)

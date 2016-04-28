@@ -21,7 +21,7 @@ rmarkdown::render('complexity.Rmd')
 # Load data
 
 Load expression data and meta data.
-```{r saveInput, eval=fit.model}
+```{r loadData}
 library(dplyr)
 library(ggplot2)
 library(DeLorean)
@@ -89,12 +89,6 @@ genes.for.stan <- (
     %>% arrange(- Psi / Omega)
     %>% head(max.genes))
 dl <- filter.genes(dl, genes=genes.for.stan$gene)
-model.name <- getOption("Shalek.model", 'lowrank')
-dl <- estimate.hyper(
-    dl,
-    sigma.tau=getOption("Shalek.sigma.tau", 1),
-    length.scale=getOption("Shalek.length.scale", 5),
-    model.name=model.name)
 print(object.size(dl))
 print(sapply(dl, object.size))
 ```
@@ -103,17 +97,22 @@ print(sapply(dl, object.size))
 # Time model fitting
 
 ```{r timeFit}
-seed <- getOption("Shalek.seed", 1)
+seed <- getOption("complexity.seed", 1)
 set.seed(seed)
-number.of.cells <- c(10, 18, 30, 55, 100, 180, 300)
-number.of.cells <- c(10, 18, 30)
-number.of.genes <- c(10, 20, 30, 40, 50, 60, 70)
-number.of.genes <- c(10, 20, 30)
-model.names <- c("simplest-model", "lowrank")
-num.inits <- getOption("Shalek.num.inits", default.num.cores())
-inf.method <- getOption("Shalek.method", "vb")
+number.of.cells <- getOption("complexity.num.cells", c(10, 18, 30, 55, 100, 180, 300))
+number.of.genes <- getOption("complexity.num.genes", c(10, 20, 30, 40, 50, 60, 70))
+set.seed(seed)
+default.num.genes <- 30
+model.names <- getOption('complexity.model.names', c("simplest-model", "lowrank"))
+num.inits <- getOption("complexity.num.inits", default.num.cores())
+inf.method <- getOption("complexity.method", "vb")
 time.fit <- function(dl) {
-    dl.2 <- prepare.for.stan(dl)
+    dl.2 <- estimate.hyper(
+        dl,
+        sigma.tau=getOption("Shalek.sigma.tau", 1),
+        length.scale=getOption("Shalek.length.scale", 5),
+        model.name=model.name)
+    dl.2 <- prepare.for.stan(dl.2)
     dl.2 <- compile.model(dl.2)
     dl.2 <- find.good.ordering(dl.2, seriation.find.orderings)
     dl.2 <- pseudotimes.from.orderings(dl.2, num.to.keep=num.inits)
@@ -139,16 +138,17 @@ for (model.name in model.names) {
         gene.timings,
         as.data.frame(t(sapply(
             number.of.genes,
-            function(num.genes) time.fit(filter.cells(filter.genes(dl, number=num.genes), number=30))
+            function(num.genes) time.fit(filter.cells(filter.genes(dl, number=num.genes), number=default.num.genes))
         ))) %>%
         mutate(
             num.genes=number.of.genes,
-            num.cells=30,
+            num.cells=default.num.genes,
             data="Shalek",
             model.name=model.name,
             inf.method=inf.method,
             seed=seed))
 }
+saveRDS(list(cell=cell.timings, gene=gene.timings), 'Data/timings.rds')
 ```
 
 
