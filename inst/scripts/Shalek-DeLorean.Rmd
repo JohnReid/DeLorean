@@ -380,6 +380,10 @@ plots$core <- (
 print(plots$core)
 ggsave('Shalek-core.svg', plots$core + plos.theme,
        width=plos.width, height=plos.height, units="in")
+ggsave('Shalek-core.png', plots$core + plos.theme,
+       width=6, height=3, units="in", dpi=300)
+ggsave('Shalek-core.svg', plots$core + plos.theme,
+       width=plos.width, height=plos.height, units="in")
 ggsave('Shalek-core.tiff', plots$core + plos.theme,
        width=plos.width, height=plos.height, units="in", dpi=300)
 # Cannot use EPS as has transparency
