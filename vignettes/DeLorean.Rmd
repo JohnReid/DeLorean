@@ -117,12 +117,10 @@ The most temporally variable genes (by p-value) are at the head of the result:
 ```{r}
 head(dl$aov)
 ```
-
 The least temporally variable genes (by p-value) are at the tail of the result:
 ```{r}
 tail(dl$aov)
 ```
-
 and for instance you could run the model on the 20 most variable
 genes by executing
 ```{r, exec=FALSE}
