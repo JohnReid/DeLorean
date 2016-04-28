@@ -161,6 +161,7 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
 #'       means.
 #'     \item 'lowrank': Low rank approximation to the 'simplest-model'.
 #'   }
+#' @param adjust.cell.sizes Adjust the cell sizes for better estimates of the hyperparameters
 #'
 #' @export
 #'
@@ -168,7 +169,8 @@ estimate.hyper <- function(
     dl,
     sigma.tau = .5,
     length.scale = NULL,
-    model.name = 'simplest-model'
+    model.name = 'simplest-model',
+    adjust.cell.sizes = TRUE
 ) {
   dl <- within(dl, {
     #
@@ -182,7 +184,7 @@ estimate.hyper <- function(
         "lowrank-sizes" = FALSE,
         "lowrank" = FALSE,
         stop('Unknown model name'))
-    opts$adjust.cell.sizes <- switch(
+    opts$model.estimates.cell.sizes <- switch(
         opts$model.name,
         "simple-model" = TRUE,
         "simplest-model" = FALSE,
@@ -202,7 +204,7 @@ estimate.hyper <- function(
     }
     # message("Length scale: ", opts$length.scale)
   })
-  dl <- analyse.variance(dl, dl$opts$adjust.cell.sizes)
+  dl <- analyse.variance(dl, adjust.cell.sizes=adjust.cell.sizes)
   # Expected variance of samples from zero-mean Gaussian with covariance K.obs
   V.obs <- with(dl,
     expected.sample.var(
@@ -1405,9 +1407,9 @@ fit.held.out <- function(
     sample.iter=dl$best.sample)
 {
     with(dl, {
-        if (opts$adjust.cell.sizes) {
+        if (opts$model.estimates.cell.sizes) {
             cell.posterior <- samples.l$S %>% filter(sample.iter == iter)
-            expr.held.out <- t(t(expr.held.out) + cell.posterior$S)
+            expr.held.out <- t(t(expr.held.out) - cell.posterior$S)
         }
         #' Calculate covariance over pseudotimes and capture times
         calc.K <- functional::Curry(cov.calc.gene,
