@@ -377,11 +377,19 @@ print(plots$core)
 ggsave('Shalek-core.svg', plots$core + plos.theme,
        width=plos.width, height=plos.height, units="in")
 ggsave('Shalek-core.png', plots$core + plos.theme,
-       width=6, height=3, units="in", dpi=300)
+       width=6, height=3, units="in", dpi=600)
 ggsave('Shalek-core.svg', plots$core + plos.theme,
        width=plos.width, height=plos.height, units="in")
 ggsave('Shalek-core.tiff', plots$core + plos.theme,
        width=plos.width, height=plos.height, units="in", dpi=300)
+#
+# Profile plots
+plots$profiles <- plot(dl, type='profiles', genes=dl$genes.high.psi[1:4])
+# Resize points and set transparency
+plots$profiles$layers[[3]]$aes_params$size <- 0.5
+plots$profiles$layers[[3]]$aes_params$alpha <- 0.5
+ggsave('Shalek-profiles.png', plots$profiles + plos.theme,
+       width=6, height=3, units="in", dpi=600)
 # Cannot use EPS as has transparency
 # ggsave('Shalek-core.eps', plots$core + plos.theme,
 #        width=plos.width, height=plos.height, units="in")
@@ -455,7 +463,8 @@ ggsave('Shalek-roughnesses.tiff', plots$roughnesses + plos.theme,
        width=plos.width, height=plos.height, units="in", dpi=300)
 ggsave('Shalek-roughnesses.pdf', plots$roughnesses + plos.theme,
        width=plos.width, height=plos.height, units="in")
-ggsave('Shalek-roughnesses.png', plots$roughnesses + plos.theme)
+ggsave('Shalek-roughnesses.png', plots$roughnesses + plos.theme,
+       width=6, height=3, units="in", dpi=600)
 ```
 
 
