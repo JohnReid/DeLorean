@@ -207,7 +207,7 @@ dl <- estimate.hyper(
     sigma.tau=getOption("Shalek.sigma.tau", 1),
     length.scale=getOption("Shalek.length.scale", 5),
     model.name=model.name)
-if (! model.estimates.cell.sizes) {
+if (! dl$opts$model.estimates.cell.sizes) {
     dl <- adjust.by.cell.sizes(dl)
     ggplot(dl$cell.sizes, aes(x=capture, y=size)) + geom_boxplot()
 }
