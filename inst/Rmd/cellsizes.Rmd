@@ -1,7 +1,12 @@
 ### Cell sizes
-
+The distribution of cell sizes by capture time.
+```{r cellSizeByCapture}
+ggplot(samples.l$S %>% left_join(cell.map), aes(x=S, color=capture, fill=capture)) +
+    geom_histogram(position='dodge') +
+    geom_rug()
+```
 The posterior mean and standard deviation of the cell sizes coloured by capture group.
-```{r cellSizes}
+```{r cellSizeMeanSD}
 S.l <- samples.l$S %>% group_by(c) %>% summarise(S.mean=mean(S), S.sd=sd(S))
 ggplot(S.l %>% left_join(cell.map), aes(x=S.mean, y=S.sd, color=capture)) + geom_point()
 ```
