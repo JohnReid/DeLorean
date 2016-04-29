@@ -50,11 +50,6 @@ some variation will be due to noise in the pseudotemporal dimension.
 $$
   \hat{\omega}_g = \textrm{Mean}_t\{\mathbb{V}_{g,t}\}
 $$
-The estimated standard deviations $\sqrt{\hat{\omega}_g}$ have this distribution:
-```{r geneWithinVar}
-(ggplot(gene.var, aes(x=sqrt(omega.hat))) + geom_density() + geom_rug())
-```
-
 Giving us this fit for our empirical Bayes prior on the $\log \hat{\omega}_g$
 ```{r omegaPrior}
 (ggplot(gene.var, aes(x=log(omega.hat))) + geom_density() + geom_rug()
@@ -63,7 +58,6 @@ Giving us this fit for our empirical Bayes prior on the $\log \hat{\omega}_g$
                                           sd=hyper$sigma_omega),
                     colour="blue", alpha=.7, linetype="dashed")
 )
-
 ```
 
 
@@ -85,11 +79,6 @@ noise in our data
 $$
   \hat{\psi}_g = \frac{\textrm{Var}_t\{\mathbb{M}_{g,t}\}}{V_{\hat{\Sigma}}}
 $$
-The estimated standard deviations $\sqrt{\hat{\psi}_g}$ have this distribution:
-```{r geneBetweenVar}
-(ggplot(gene.var, aes(x=sqrt(psi.hat))) + geom_density() + geom_rug())
-```
-
 Giving us this fit for our empirical Bayes prior on the temporal variation
 $\log \hat{\psi}_g$
 ```{r psiPrior}

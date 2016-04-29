@@ -89,7 +89,7 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
       dplyr::summarise(phi.hat=mean(x.hat))
     stopifnot(! is.na(gene.expr))
     #
-    # Examine the variation at each gene/capture time combination
+    # Examine the expression at each gene/capture time combination
     gene.time.expr <-
       expr.adj %>%
       left_join(cell.meta) %>%

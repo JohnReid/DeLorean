@@ -104,8 +104,8 @@ pseudotime.plot <- function(dl, sample.iter=dl$best.sample) {
 #'
 tau.offsets.plot <- function(dl, rug.alpha=.3) {
     with(dl,
-         ggplot(samples.l$tau, aes(x=tau.offset, color=capture))
-         + geom_density()
+         ggplot(samples.l$tau, aes(x=tau.offset, color=capture, fill=capture))
+         + geom_histogram(position='dodge')
          + geom_rug(alpha=rug.alpha)
          + stat_function(fun=functional::Curry(dnorm, sd=hyper$sigma_tau),
                          linetype='dashed',
