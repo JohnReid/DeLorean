@@ -93,8 +93,23 @@ dl <- de.lorean(
     mcdavid.cell.meta)
 ```
 
+
+# Estimate hyperparameters
+
+Examine data for empirical Bayes estimation of hyperparameters.
+```{r empiricalBayes}
+model.name <- getOption("McDavid.model", 'simple-model')
+dl <- estimate.hyper(dl, sigma.tau=.5, length.scale=5, model.name=model.name)
+if (! dl$opts$model.estimates.cell.sizes) {
+    dl <- adjust.by.cell.sizes(dl)
+    ggplot(dl$cell.sizes %>% left_join(dl$cell.meta), aes(x=capture, y=S.hat)) + geom_boxplot()
+}
+```
 ```{r child=report.file("data")}
 ```
+```{r child=report.file("hyper-parameters")}
+```
+
 
 
 
@@ -135,8 +150,6 @@ if (max.cells != 0) {
     dl <- filter.cells(dl, number=max.cells)
 }
 ```
-
-
 Choose genes with low $p$-values from the McDavid et al.
 differential expression test.
 ```{r filterGenes}
@@ -147,21 +160,6 @@ if (max.genes != 0) {
     dl <- filter.genes(dl, number=max.genes)
 }
 ```
-
-
-# Estimate hyperparameters
-
-Examine data for empirical Bayes estimation of hyperparameters.
-```{r empiricalBayes}
-dl <- adjust.by.cell.sizes(dl)
-ggplot(dl$cell.sizes, aes(x=capture, y=size)) + geom_boxplot()
-model.name <- getOption("McDavid.model", 'simple-model')
-dl <- estimate.hyper(dl, sigma.tau=.5, length.scale=5, model.name=model.name)
-```
-```{r child=report.file("hyper-parameters")}
-```
-
-
 Save expression data and meta data.
 ```{r}
 saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
@@ -175,7 +173,6 @@ saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
 inf.method <- getOption("McDavid.method", "vb")
 num.inits <- getOption("McDavid.num.inits", default.num.cores())
 ```
-
 Define and compile the model, find the best initialisation, and fit the model.
 The model name is "`r model.name`", the inference method is "`r inf.method`"
 with `r num.inits` initialisations, the seed is `r seed` and the data have `r
@@ -192,7 +189,6 @@ if ("vb" == inf.method) {
     pseudotimes.pair.plot(dl)
 }
 ```
-
 ```{r examConv, eval=("sample" == inf.method)}
 dl <- examine.convergence(dl)
 ```
@@ -481,10 +477,9 @@ ggsave('McDavid-profiles.png', plot=plots$profiles,
        units="in", dpi=100)
 ggsave('McDavid-profiles.pdf', plot=plots$profiles,
        width=2*text.width, height=2*text.width/golden.ratio)
+save.output <- getOption('McDavid.save.output', TRUE)
 ```
-
-
-```{r saveDL, echo=FALSE}
+```{r saveDL, echo=FALSE, eval=save.output}
 # Save DeLorean object without fit component
 saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Data/McDavid.rds")
 saveRDS(plots, "Data/McDavid-plots.rds")

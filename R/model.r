@@ -58,7 +58,6 @@ melt.expr <- function(dl, expr=dl$expr) (
 
 # Cast an expression matrix.
 #
-# @param dl The de.lorean object
 # @param expr.l Expression values in long format
 #
 cast.expr <- function(expr.l) expr.l %>% acast(gene ~ cell, value.var="x")
@@ -73,77 +72,53 @@ cast.expr <- function(expr.l) expr.l %>% acast(gene ~ cell, value.var="x")
 #' @export
 #'
 analyse.variance <- function(dl, adjust.cell.sizes) {
-    within(dl, {
-        #
-        # First melt expression data into long format
-        #
-        expr.l <- melt(expr, varnames=c("gene", "cell"), value.name="x")
-        expr.l$gene <- factor(expr.l$gene, levels=levels(gene.meta$gene))
-        expr.l$cell <- factor(expr.l$cell, levels=levels(cell.meta$cell))
-        #
-        # Estimate a pseudo reference mean for each gene
-        #
-        gene.expr <- (expr.l
-            %>% group_by(gene)
-            %>% dplyr::summarise(x.mean=mean(x))
-        )
-        stopifnot(! is.na(gene.expr))
-        # Estimate the cell size by the median of the expression
-        # adjust by the gene's mean
-        cell.expr <- (expr.l
-            %>% left_join(gene.expr)
-            %>% group_by(cell)
-            %>% dplyr::summarise(S.hat=median(x - x.mean))
-        )
-        stopifnot(! is.na(cell.expr))
-        expr.l <- expr.l %>% left_join(cell.expr)
-        if (adjust.cell.sizes) {
-            # Adjust the expression by the cell size estimates
-            expr.l <- expr.l %>% mutate(x.hat=x - S.hat)
-        } else {
-            # Use the raw expression values
-            expr.l <- expr.l %>% mutate(x.hat=x)
-        }
-        stopifnot(! is.na(expr.l))
-        # Resummarise the adjusted expression data
-        gene.expr <- (expr.l
-            %>% group_by(gene)
-            %>% dplyr::summarise(x.mean=mean(x),
-                          x.sd=sd(x),
-                          phi.hat=mean(x.hat),
-                          x.hat.sd=sd(x.hat))
-            %>% filter(! is.na(x.sd), ! is.na(x.hat.sd))
-        )
-        stopifnot(! is.na(gene.expr))
-        stopifnot(nrow(gene.expr) > 0)  # Must have some rows left
-        # Examine the variation within and between times for each gene
-        gene.time.expr <- (
-            expr.l
-            %>% left_join(cell.meta)
-            %>% group_by(gene, capture)
-            %>% dplyr::summarise(x.mean=mean(x.hat),
-                          x.var=mean((x.hat-mean(x.hat))**2),
-                          num.capture=n(),
-                          Mgc=mean(x),
-                          Vgc=var(x))
-            %>% filter(! is.na(x.var), ! is.na(Vgc))
-        )
-        stopifnot(! is.na(gene.time.expr))
-        stopifnot(nrow(gene.time.expr) > 0)  # Must have some rows left
-        # Decomposition of variance within and between time.
-        gene.var <- (
-            gene.time.expr
-            %>% group_by(gene)
-            %>% dplyr::summarise(Omega=weighted.mean(x.var, num.capture, na.rm=TRUE),
-                          Psi=weighted.mean((x.mean-mean(x.mean))**2,
-                                            num.capture, na.rm=TRUE))
-            %>% filter(! is.na(Psi), Omega > 0 | Psi > 0)
-        )
-        stopifnot(! is.na(gene.var))
-        stopifnot(nrow(gene.var) > 0)  # Must have some rows left
-        # No longer needed
-        rm(expr.l)
-    })
+  #
+  # First melt expression data into long format
+  expr.adj <-
+    melt.expr(dl) %>%
+    left_join(dl$cell.sizes) %>%
+    # Adjust the expression by the cell size estimates if asked to
+    mutate(x.hat=x-adjust.cell.sizes*S.hat)
+  stopifnot(! is.na(expr.adj))
+  within(dl, {
+    #
+    # Resummarise the adjusted expression data by gene
+    gene.expr <-
+      expr.adj %>%
+      group_by(gene) %>%
+      dplyr::summarise(phi.hat=mean(x.hat))
+    stopifnot(! is.na(gene.expr))
+    #
+    # Examine the variation at each gene/capture time combination
+    gene.time.expr <-
+      expr.adj %>%
+      left_join(cell.meta) %>%
+      group_by(gene, capture) %>%
+      dplyr::summarise(
+        num.capture=n(),
+        Mgk=mean(x.hat),
+        Vgk=var(x.hat)) %>%
+      filter(! is.na(Vgk))
+    stopifnot(! is.na(gene.time.expr))
+    stopifnot(nrow(gene.time.expr) > 0)  # Must have some rows left
+    #
+    # Expected variance of samples from zero-mean Gaussian with covariance K.obs
+    V.obs <- with(dl,
+      expected.sample.var(
+        cov.matern.32(
+          cov.calc.dists(unique(dl$cell.meta$obstime)),
+          dl$opts$length.scale)))
+    #
+    # Variance within and between times
+    gene.var <-
+      gene.time.expr %>%
+      group_by(gene) %>%
+      dplyr::summarise(omega.hat=mean(Vgk), psi.hat=var(Mgk)/V.obs) %>%
+      filter(! is.na(psi.hat),
+             ! is.na(omega.hat),
+             omega.hat > 0,
+             psi.hat > 0)
+  })
 }
 
 
@@ -155,13 +130,14 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
 #'   Defaults to the range of the observed capture times.
 #' @param model.name The model's name:
 #'   \itemize{
-#'     \item 'simplest-model': The simplest model (does not estimate the gene
-#'       means).
-#'     \item 'simple-model': Like 'simplest-model' but estimates the gene
-#'       means.
+#'     \item 'simplest-model': The simplest model (does not estimate the
+#'       cell sizes).
+#'     \item 'simple-model': Like 'simplest-model' but estimates the cell
+#'       sizes.
 #'     \item 'lowrank': Low rank approximation to the 'simplest-model'.
+#'     \item 'lowrank-sizes': Low rank approximation to the 'simple-model'.
 #'   }
-#' @param adjust.cell.sizes Adjust the cell sizes for better estimates of the hyperparameters
+#' @param adjust.cell.sizes Adjust by the cell sizes for better estimates of the hyperparameters
 #'
 #' @export
 #'
@@ -172,18 +148,15 @@ estimate.hyper <- function(
     model.name = 'simplest-model',
     adjust.cell.sizes = TRUE
 ) {
+  #
+  # Estimate the cell sizes
+  # We will need these to estimate the hyper-parameters for the cell size prior if
+  # the model estimates or cell sizes, or to adjust the data by if it doesn't
+  dl <- estimate.cell.sizes(dl)
   dl <- within(dl, {
     #
     # Remember options that depend on the model
-    #
     opts$model.name <- model.name
-    opts$estimate.phi <- switch(
-        opts$model.name,
-        "simple-model" = TRUE,
-        "simplest-model" = FALSE,
-        "lowrank-sizes" = FALSE,
-        "lowrank" = FALSE,
-        stop('Unknown model name'))
     opts$model.estimates.cell.sizes <- switch(
         opts$model.name,
         "simple-model" = TRUE,
@@ -193,38 +166,20 @@ estimate.hyper <- function(
         stop('Unknown model name'))
     #
     # Set up temporal hyper-parameters
-    #
     opts$sigma.tau <- sigma.tau
     time.range <- range(cell.meta$obstime)
     time.width <- time.range[2] - time.range[1]
     if (is.null(length.scale)) {
-        opts$length.scale <- time.width
+        opts$length.scale <- time.width / 2
     } else {
         opts$length.scale <- length.scale
     }
-    # message("Length scale: ", opts$length.scale)
   })
   dl <- analyse.variance(dl, adjust.cell.sizes=adjust.cell.sizes)
-  # Expected variance of samples from zero-mean Gaussian with covariance K.obs
-  V.obs <- with(dl,
-    expected.sample.var(
-      cov.matern.32(
-        cov.calc.dists(unique(dl$cell.meta$obstime)),
-        dl$opts$length.scale)))
   within(dl, {
-    gene.var <- gene.var %>% left_join(
-      gene.time.expr
-      %>% group_by(gene)
-      %>% dplyr::summarise(omega.hat=mean(Vgc),
-                           psi.hat=var(Mgc)/V.obs)
-      %>% filter(! is.na(psi.hat),
-                 ! is.na(omega.hat),
-                 omega.hat > 0,
-                 psi.hat > 0)
-    )
     hyper <- list(
-      mu_S=mean(cell.expr$S.hat),
-      sigma_S=sd(cell.expr$S.hat),
+      mu_S=mean(cell.sizes$S.hat),
+      sigma_S=sd(cell.sizes$S.hat),
       mu_phi=mean(gene.expr$phi.hat),
       sigma_phi=sd(gene.expr$phi.hat),
       mu_psi=mean(log(gene.var$psi.hat), na.rm=TRUE),
@@ -234,6 +189,7 @@ estimate.hyper <- function(
       sigma_tau=opts$sigma.tau,
       l=opts$length.scale
     )
+    # Check we don't have any NAs
     stopifnot(all(! sapply(hyper, is.na)))
   })
 }
@@ -362,94 +318,82 @@ calc.inducing.pseudotimes <- function(dl, num.inducing, period = 0) with(dl, {
 #' @export prepare.for.stan
 #'
 prepare.for.stan <- function(
-    dl,
-    num.test = 101,
-    num.inducing = 30,  # M
-    period = 0,
-    hold.out = 0
-) {
-    within(dl, {
-        opts$num.test <- num.test
-        opts$period <- period
-        opts$periodic <- opts$period > 0
-        stopifnot(hold.out < nrow(expr))
-        .G <- nrow(expr) - hold.out
-        .C <- ncol(expr)
-        #
-        # Permute genes to make held out genes random
-        expr <- expr[sample(.G+hold.out),]
-        #
-        # Calculate the map from gene indices to genes and their meta data
-        gene.map <- (
-            data.frame(g=1:(.G+hold.out),
-                       gene=factor(rownames(expr),
-                                   levels=levels(gene.meta$gene)))
-            %>% mutate(is.held.out=g>.G)
-            %>% left_join(gene.expr)
-            %>% left_join(gene.var)
-            %>% left_join(gene.meta))
-        stopifnot(! is.na(gene.map[
-            c("g", "gene", "x.mean", "x.sd",
-            "phi.hat", "x.hat.sd", "Omega", "Psi",
-            "psi.hat", "omega.hat")
-        ]))
-        #
-        # Rename phi.hat if we are not estimating phi
-        if (! opts$estimate.phi) {
-            gene.map <- gene.map %>% dplyr::rename(phi=phi.hat)
-        }
-        #
-        # Calculate the map from cell indices to genes and their meta data
-        cell.map <- (data.frame(c=1:.C,
-                                cell=factor(colnames(expr),
-                                            levels=levels(cell.meta$cell)))
-                    %>% left_join(cell.meta)
-                    %>% left_join(cell.expr))
-        stopifnot(! is.na(cell.map %>% dplyr::select(cell, capture, obstime)))
-        #
-        # Calculate the time points at which to make predictions
-        if (opts$periodic) {
-            test.input <- seq(0, opts$period, length.out=num.test)
-        } else {
-            test.input <- seq(
-                time.range[1] - 2 * opts$sigma.tau,
-                time.range[2] + 2 * opts$sigma.tau,
-                length.out=num.test)
-        }
-        #
-        # Gather all the data into one list
-        stan.data <- c(
-            # Hyper-parameters
-            hyper,
-            list(
-                # Dimensions
-                C=.C,
-                G=.G,
-                H=hold.out,
-                M=num.inducing,
-                # Data
-                time=cell.map$obstime,
-                expr=expr,
-                # Inducing pseudotimes
-                u=calc.inducing.pseudotimes(dl, num.inducing, period),
-                # Held out parameters
-                heldout_psi=filter(gene.map, g > .G)$psi.hat,
-                heldout_omega=filter(gene.map, g > .G)$omega.hat,
-                heldout_phi=filter(gene.map, g > .G)$phi.hat,
-                # Generated quantities
-                numtest=opts$num.test,
-                testinput=test.input,
-                # Periodic?
-                periodic=opts$periodic,
-                period=opts$period
-            )
-        )
-        # If we're not estimating phi, add it to the data
-        if (! opts$estimate.phi) {
-            stan.data$phi <- gene.map$x.mean
-        }
-    })
-}
+  dl,
+  num.test = 101,
+  num.inducing = 30,  # M
+  period = 0,
+  hold.out = 0)
+within(dl, {
+  opts$num.test <- num.test
+  opts$period <- period
+  opts$periodic <- opts$period > 0
+  stopifnot(hold.out < nrow(expr))
+  .G <- nrow(expr) - hold.out
+  .C <- ncol(expr)
+  #
+  # Permute genes to make held out genes random
+  expr <- expr[sample(.G+hold.out),]
+  #
+  # Calculate the map from gene indices to genes and their meta data
+  gene.map <- (
+      data.frame(g=1:(.G+hold.out),
+                  gene=factor(rownames(expr),
+                              levels=levels(gene.meta$gene)))
+      %>% mutate(is.held.out=g>.G)
+      %>% left_join(gene.expr)
+      %>% left_join(gene.var)
+      %>% left_join(gene.meta))
+  stopifnot(! is.na(gene.map[
+    c("g", "gene", "phi.hat", "psi.hat", "omega.hat")
+  ]))
+  #
+  # Calculate the map from cell indices to genes and their meta data
+  cell.map <-
+    data.frame(
+      c=1:.C,
+      cell=factor(colnames(expr), levels=levels(cell.meta$cell))) %>%
+    left_join(cell.meta) %>%
+    left_join(cell.sizes)
+  stopifnot(! is.na(cell.map %>% dplyr::select(cell, capture, obstime)))
+  #
+  # Calculate the time points at which to make predictions
+  if (opts$periodic) {
+      test.input <- seq(0, opts$period, length.out=num.test)
+  } else {
+      test.input <- seq(
+          time.range[1] - 2 * opts$sigma.tau,
+          time.range[2] + 2 * opts$sigma.tau,
+          length.out=num.test)
+  }
+  #
+  # Gather all the data into one list
+  stan.data <- c(
+      # Hyper-parameters
+      hyper,
+      list(
+          # Dimensions
+          C=.C,
+          G=.G,
+          H=hold.out,
+          M=num.inducing,
+          # Data
+          time=cell.map$obstime,
+          expr=expr,
+          phi=gene.map$phi.hat,
+          # Inducing pseudotimes
+          u=calc.inducing.pseudotimes(dl, num.inducing, period),
+          # Held out parameters
+          heldout_psi=filter(gene.map, g > .G)$psi.hat,
+          heldout_omega=filter(gene.map, g > .G)$omega.hat,
+          # Generated quantities
+          numtest=opts$num.test,
+          testinput=test.input,
+          # Periodic?
+          periodic=opts$periodic,
+          period=opts$period
+      )
+  )
+})
 
 #' Compile the model and cache the DSO to avoid unnecessary recompilation.
 #'
@@ -509,10 +453,6 @@ make.chain.init.fn <- function(dl) {
         psi=rlnorm(G, meanlog=mu_psi, sdlog=sigma_psi),
         omega=rlnorm(G, meanlog=mu_omega, sdlog=sigma_omega)
       )
-      # If estimating phi, include it.
-      if (dl$opts$estimate.phi) {
-        init$phi <- rnorm(G, mean=mu_phi, sd=sigma_phi)
-      }
       init
     })
   }
@@ -880,15 +820,10 @@ init.chain.sample.tau <- function(dl) {
             beta=rep(0, G),
             S=dl$cell.map$S.hat,
             tau=rnorm(C, time, sd=sigma_tau),
-            phi=dl$gene.map$phi.hat[1:G],
             psi=dl$gene.map$psi.hat[1:G],
             omega=dl$gene.map$omega.hat[1:G]
         )
         init$tauoffsets <- init$tau - time
-        # If not estimating phi, don't include it.
-        if (! dl$opts$estimate.phi) {
-            init$phi <- NULL
-        }
         init
     })
 }
@@ -909,32 +844,34 @@ find.best.tau <- function(
   num.tau.candidates = 6000,
   num.tau.to.keep = num.cores,
   num.cores = default.num.cores())
-{
-  within(dl, {
-    # Define a function that calculates log probability for
-    # random seeded tau
-    try.tau.init <- function(i) {
-      set.seed(i)
-      pars <- init.chain.sample.tau(dl)
-      lp <- rstan::log_prob(fit, rstan::unconstrain_pars(fit, pars))
-      list(lp=lp, tau=pars$tau)
-    }
-    # Choose tau several times and calculate log probability
-    if (num.cores > 1) {
-      tau.inits <- parallel::mclapply(1:num.tau.candidates,
-                                      mc.cores=num.cores,
-                                      try.tau.init)
-    } else {
-      tau.inits <- lapply(1:num.tau.candidates, try.tau.init)
-    }
-    # qplot(sapply(tau.inits, function(init) init$lp))
-    # Which tau gave highest log probability?
-    tau.inits.order <- order(sapply(tau.inits, function(init) -init$lp))
-    # Just keep so many best tau inits
-    tau.inits <- tau.inits[tau.inits.order[1:num.tau.to.keep]]
-    rm(tau.inits.order, try.tau.init)
-  })
-}
+within(dl, {
+  #
+  # Define a function that calculates log probability for
+  # random seeded tau
+  try.tau.init <- function(i) {
+    set.seed(i)
+    pars <- init.chain.sample.tau(dl)
+    lp <- rstan::log_prob(fit, rstan::unconstrain_pars(fit, pars),
+                          adjust_transform=FALSE)
+    list(lp=lp, tau=pars$tau)
+  }
+  #
+  # Choose tau several times and calculate log probability
+  if (num.cores > 1) {
+    tau.inits <- parallel::mclapply(1:num.tau.candidates,
+                                    mc.cores=num.cores,
+                                    try.tau.init)
+  } else {
+    tau.inits <- lapply(1:num.tau.candidates, try.tau.init)
+  }
+  #
+  # Which tau gave highest log probability?
+  tau.inits.order <- order(sapply(tau.inits, function(init) -init$lp))
+  #
+  # Just keep so many best tau inits
+  tau.inits <- tau.inits[tau.inits.order[1:num.tau.to.keep]]
+  rm(tau.inits.order, try.tau.init)
+})
 
 
 #' Perform all the steps necessary to fit the model.
@@ -1126,11 +1063,12 @@ fit.model.vb <- function(
       warning('Only ', n.worked, '/', num.inits, ' VB fits succeeded.')
     }
     #
-    # Get the log likelihoods as a vector
+    # Get the log likelihoods as vectors
     dl$vb.lls <- sapply(sflist, function(sf) sf$lp)
+    dl$vb.lls.unadj <- sapply(sflist, function(sf) sf$lp.unadj)
     #
     # Calculate which run had best lp for posterior mean parameters
-    best.idx <- which.max(dl$vb.lls)
+    best.idx <- which.max(dl$vb.lls.unadj)
     #
     # Save the estimated tau for analysis
     dl$vb.tau <- sapply(sflist, function(sf) sf$pars$tau)
@@ -1161,9 +1099,6 @@ fit.model.vb <- function(
 examine.convergence <- function(dl) {
     within(dl, {
         pars <- c("tau", "psi", "S", "omega")
-        if (opts$estimate.phi) {
-            pars <- c(pars, "phi")
-        }
         summ <- rstan::monitor(fit,
                         print=FALSE,
                         pars=pars)
@@ -1189,15 +1124,13 @@ model.parameter.dimensions <- function(dl) {
         lp__=c(),
         S=c("c"),
         tau=c("c"),
-        phi=c("g"),
         psi=c("g"),
         omega=c("g"),
         predictedmean=c("g", "t"),
         predictedvar=c("g", "t"),
         logmarglike=c("g")
     )
-    if (! dl$opts$estimate.phi) {
-        sample.dims$phi <- NULL
+    if (! dl$opts$model.estimates.cell.sizes) {
         sample.dims$S <- NULL
     }
     sample.dims
@@ -1390,9 +1323,6 @@ make.predictions <- function(dl) {
                             %>% left_join(predictedvar)
                             # %>% left_join(S)
                             %>% mutate(tau=test.input[t]))
-        if (opts$estimate.phi) {
-            predictions <- predictions %>% left_join(samples.l$phi)
-        }
     })
 }
 

@@ -259,13 +259,9 @@ profiles.plot <- function(dl,
 #'
 #' @param .data The data
 #'
-mutate.profile.data <- function(.data) {
-    (
-        .data
-        %>% mutate(x=tau, mean=predictedmean+phi, var=predictedvar)
-        %>% dplyr::select(-tau, -predictedmean, -phi, -predictedvar)
-    )
-}
+mutate.profile.data <- function(.data) .data %>%
+    mutate(x=tau, mean=predictedmean+phi.hat, var=predictedvar) %>%
+    dplyr::select(-tau, -predictedmean, -phi.hat, -predictedvar)
 
 
 # Adjust the predicted mean with the predictions from the model.

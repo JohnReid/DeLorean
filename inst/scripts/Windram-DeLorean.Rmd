@@ -101,8 +101,7 @@ windram.cell.meta$capture <- (
            levels=unique(as.character(windram.cell.meta$obstime))))
 ```
 
-Just consider the *Botrytis* cells and select some at random if we have
-too many.
+Just consider the *Botrytis* cells
 ```{r eval=fit.model}
 dl <- de.lorean(
     windram.expr,
@@ -112,35 +111,31 @@ botrytis.cells <- dl$cell.meta %>% filter(condition == "Botrytis")
 dl <- filter.cells(dl, cells=botrytis.cells$cell)
 ```
 
-```{r sampleCells, eval=fit.model}
-# 24 is all the cells
-max.cells <- min(getOption("Windram.max.cells", 24))
-dl <- filter.cells(dl, number=max.cells)
-```
-```{r child=report.file("data")}
-```
-
-
-## Adjust by cell sizes
-
-```{r testCellSize}
-dl <- adjust.by.cell.sizes(dl)
-ggplot(dl$cell.sizes, aes(x=capture, y=size)) + geom_boxplot()
-```
-
 
 # Estimate hyperparameters
 
 Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes, eval=fit.model}
 model.name <- getOption('Windram.model', 'simplest-model')
-dl <- estimate.hyper(dl, sigma.tau=group.size/2, model.name=model.name)
-fits.omega <- test.fit(dl$gene.var$Omega)
+dl <- estimate.hyper(dl, sigma.tau=group.size/4, model.name=model.name)
+fits.omega <- test.fit(dl$gene.var$omega.hat)
 print(fits.omega$gp)
-fits.psi <- test.fit(dl$gene.var$Psi)
+fits.psi <- test.fit(dl$gene.var$psi.hat)
 print(fits.psi$gp)
 ```
+```{r child=report.file("data")}
+```
 ```{r child=report.file("hyper-parameters")}
+```
+
+
+# Choose cells
+
+Select some cells at random if we have too many.
+```{r sampleCells, eval=fit.model}
+# 24 is all the cells
+max.cells <- min(getOption("Windram.max.cells", 24))
+dl <- filter.cells(dl, number=max.cells)
 ```
 
 
@@ -330,7 +325,7 @@ Fit some held out genes.
 held.out.genes <- with(dl, gene.var
                            %>% left_join(gene.meta)
                            %>% filter(! gene %in% gene.map$gene)
-                           %>% arrange(-Psi/Omega)
+                           %>% arrange(-psi.hat/omega.hat)
                            %>% head(getOption('Windram.held.out', 100)))
 held.out.expr <- windram.expr[as.character(held.out.genes$gene),
                               as.character(dl$cell.map$cell)]
@@ -348,17 +343,13 @@ ggsave('Windram-roughnesses.pdf', plots$roughnesses + plos.theme,
        width=text.width * 2, height=text.width)
 ggsave('Windram-roughnesses.png', plots$roughnesses + plos.theme,
        width=6, height=3, dpi=600, units="in")
+print(plots$roughnesses)
+save.output <- getOption('Windram..save.output', TRUE)
 ```
-
-
-```{r saveDL, echo=FALSE}
+```{r saveDL, echo=FALSE, eval=save.output}
 # Save DeLorean object without fit component
 saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Data/Windram.rds")
-# dl <- readRDS("Data/Windram.rds")
-```
-
-Save plots.
-```{r savePlots}
+# Save plots
 saveRDS(plots, "Data/Windram-plots.rds")
 ```
 

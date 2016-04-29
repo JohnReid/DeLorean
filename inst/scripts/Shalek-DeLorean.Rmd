@@ -92,8 +92,6 @@ dl <- de.lorean(
 dl$cell.meta <- mutate(dl$cell.meta,
                        precocious=cell %in% c('LPS_1h_S51', 'LPS_1h_S52'))
 ```
-
-
 Filter out the cells we want for the time course.
 ```{r filterTimeCourse, eval=fit.model}
 time.course.cells <- (
@@ -107,14 +105,33 @@ time.course.cells <- (
                "" == replicate))
 dl <- filter.cells(dl, cells=time.course.cells$cell)
 ```
-
-
 Re-level the cells by their capture time. This improves the ordering in later
 plots.
 ```{r relevelCells}
 dl$cell.meta$cell <- factor(
     dl$cell.meta$cell,
     levels=(shalek.A.cell.meta %>% arrange(capture))$cell)
+```
+
+
+# Estimate hyperparameters
+
+Examine data for empirical Bayes estimation of hyperparameters.
+```{r empiricalBayes, eval=fit.model}
+model.name <- getOption("Shalek.model", 'lowrank')
+dl <- estimate.hyper(
+    dl,
+    sigma.tau=getOption("Shalek.sigma.tau", 1),
+    length.scale=getOption("Shalek.length.scale", 5),
+    model.name=model.name)
+if (! dl$opts$model.estimates.cell.sizes) {
+    dl <- adjust.by.cell.sizes(dl)
+    ggplot(dl$cell.sizes %>% left_join(dl$cell.meta), aes(x=capture, y=S.hat)) + geom_boxplot()
+}
+```
+```{r child=report.file("data")}
+```
+```{r child=report.file("hyper-parameters")}
 ```
 
 
@@ -125,10 +142,6 @@ Only use induced genes that have been assigned to a cluster.
 induced.genes <- dl$gene.meta %>% filter(! is.na(cluster))
 dl <- filter.genes(dl, genes=induced.genes$gene)
 ```
-```{r child=report.file("data")}
-```
-
-
 Choose genes: take those with highest variance between time points
 relative to the noise level.
 ```{r filterGenes, eval=fit.model}
@@ -170,7 +183,7 @@ genes.for.stan <- (
     %>% left_join(dl$gene.meta)
     %>% mutate(key=gene %in% shalek.key.genes)
     %>% filter(cluster %in% clusters)
-    %>% arrange(- Psi / Omega)
+    %>% arrange(- psi.hat / omega.hat)
     %>% head(max.genes))
 dl <- filter.genes(dl, genes=genes.for.stan$gene)
 # How many come from each cluster?
@@ -193,29 +206,6 @@ if (max.cells != 0) {
     dl <- filter.cells(dl, cells=sampled.cells)
 }
 ```
-
-
-
-
-# Estimate hyperparameters
-
-Examine data for empirical Bayes estimation of hyperparameters.
-```{r empiricalBayes, eval=fit.model}
-model.name <- getOption("Shalek.model", 'lowrank')
-dl <- estimate.hyper(
-    dl,
-    sigma.tau=getOption("Shalek.sigma.tau", 1),
-    length.scale=getOption("Shalek.length.scale", 5),
-    model.name=model.name)
-if (! dl$opts$model.estimates.cell.sizes) {
-    dl <- adjust.by.cell.sizes(dl)
-    ggplot(dl$cell.sizes, aes(x=capture, y=size)) + geom_boxplot()
-}
-```
-```{r child=report.file("hyper-parameters")}
-```
-
-
 Save expression data and meta data.
 ```{r saveInput, eval=fit.model}
 saveRDS(list(expr=dl$expr,
@@ -232,12 +222,10 @@ saveRDS(list(expr=dl$expr,
 num.inits <- getOption("Shalek.num.inits", default.num.cores())
 inf.method <- getOption("Shalek.method", "vb")
 ```
-
 Define and compile the model, find the best initialisation, and fit the model.
 The model name is "`r model.name`", the inference method is "`r inf.method`"
 with `r num.inits` initialisations, the seed is `r seed` and the data have
 `r dim(dl)[1]` genes and `r dim(dl)[2]` cells.
-
 ```{r fitModel, eval=fit.model}
 dl <- prepare.for.stan(dl)
 dl <- compile.model(dl)
@@ -251,7 +239,6 @@ if ("vb" == inf.method) {
     pseudotimes.pair.plot(dl)
 }
 ```
-
 Analyse different ordering methods
 ```{r orderingMethods}
 mn.list <- sapply(dl$order.inits, function(i) i$method.name)
@@ -265,7 +252,6 @@ ggplot2::ggplot(mn.df, aes(x=dims, y=ll)) + geom_boxplot()
 ggplot2::ggplot(mn.df, aes(x=scaled, y=ll)) + geom_boxplot()
 
 ```
-
 ```{r examConv, eval=("sample" == inf.method)}
 dl <- examine.convergence(dl)
 ```
@@ -291,15 +277,6 @@ Calculate expression profiles.
 dl <- make.predictions(dl)
 ```
 ```{r child=report.file("profiles")}
-```
-
-
-
-Save DeLorean object.
-```{r echo=FALSE}
-# Remove large fit component
-saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Data/Shalek.rds")
-# dl <- readRDS("Data/Shalek.rds")
 ```
 
 
@@ -440,7 +417,7 @@ held.out.genes <- with(dl, gene.variances
                            %>% filter(! gene %in% gene.map$gene)
                            %>% filter(cluster %in% clusters)
                            # %>% filter(cluster != "Id")
-                           %>% arrange(-Psi/Omega)
+                           %>% arrange(-psi.hat/omega.hat)
                            %>% head(getOption('Shalek.held.out', 100))
 )
 # Get an expression matrix of held out genes in the cells of interest
@@ -466,41 +443,6 @@ ggsave('Shalek-roughnesses.pdf', plots$roughnesses + plos.theme,
 ggsave('Shalek-roughnesses.png', plots$roughnesses + plos.theme,
        width=6, height=3, units="in", dpi=600)
 ```
-
-
-```{r checkSampleVar, echo=FALSE, eval=FALSE}
-# Check calculations are correct for expected sample variance from a
-# Gaussian
-library(matrixcalc)
-library(MASS)
-S <- toeplitz((10:1)/10)
-set.seed(11)
-R <- rWishart(1, 20, S)
-Sigma <- R[,,1]
-is.positive.definite(Sigma)
-x <- mvrnorm(n=1e6, mu=rep(0, 10), Sigma=Sigma)
-dim(x)
-x.centre <- t(scale(t(x), scale=F, center=T))
-vars <- rowSums(x.centre**2)/10
-fit.gamma <- fitdistr(vars, 'gamma')
-fit.lognormal <- fitdistr(vars, 'lognormal')
-(
-    ggplot(data.frame(V=vars), aes(x=V))
-    + geom_density()
-    + stat_function(fun=Curry(dgamma,
-                              shape=fit.gamma$estimate['shape'],
-                              rate=fit.gamma$estimate['rate']),
-                    linetype='dashed')
-    + stat_function(fun=Curry(dlnorm,
-                              meanlog=fit.lognormal$estimate['meanlog'],
-                              sdlog=fit.lognormal$estimate['sdlog']),
-                    linetype='dotted')
-)
-mean(log(vars))
-sd(log(vars))
-mean(diag(Sigma)) - mean(as.vector(Sigma))
-```
-
 ```{r tauPosteriorOffset.2, echo=FALSE}
 plots$tau.offset <- (
     ggplot(dl$samples.l$tau,
@@ -513,30 +455,6 @@ plots$tau.offset <- (
 )
 ggsave('Shalek-tau-offset.png', plots$tau.offset + plos.theme)
 ```
-
-
-```{r totalVar, echo=FALSE, eval=FALSE}
-expr.l <- melt.expr(dl) %>% left_join(dl$cell.meta)
-expr.gene.time <- (
-    expr.l
-    %>% group_by(gene, capture)
-    %>% dplyr::summarise(num=n(), m=mean(x), v=mean((x-m)**2)))
-# Must use weighted means
-expr.gene <- (
-    expr.gene.time
-    %>% group_by(gene)
-    %>% dplyr::summarise(m.m=weighted.mean(m, num),
-                  Psi=weighted.mean((m-m.m)**2, num),
-                  Omega=weighted.mean(v, num)))
-(
-    expr.l
-    %>% group_by(gene)
-    %>% dplyr::summarise(v.total=mean((x-mean(x))**2))
-    %>% left_join(expr.gene)
-    %>% mutate(v.total-Psi-Omega))
-```
-
-
 Test plotting held out genes.
 ```{r heldOutPlot}
 held.out.genes <- held.out.select.genes(dl, shalek.A.expr, 25)
@@ -544,18 +462,19 @@ held.out <- held.out.melt(dl, shalek.A.expr, held.out.genes)
 system.time(posterior <- held.out.posterior(dl, held.out))
 gp <- plot.held.out.posterior(dl, posterior)
 print(gp)
+save.output <- getOption('Shalek.save.output', TRUE)
 ```
-
-Save plots.
-```{r savePlots}
+```{r saveOutput, echo=FALSE, eval=save.output}
+# Remove large fit component
+saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Data/Shalek.rds")
+# dl <- readRDS("Data/Shalek.rds")
 saveRDS(plots, "Data/Shalek-plots.rds")
 ```
 
+# Session information
 ```{r date}
 date()
 ```
-
-
 R version and packages used:
 ```{r Rversion}
 sessionInfo()

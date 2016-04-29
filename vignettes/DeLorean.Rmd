@@ -74,7 +74,8 @@ Load the data.
 library(DeLorean)
 library(dplyr)
 data(GuoDeLorean)
-options(DL.num.cores=min(default.num.cores(), 2))  # Limit number of cores to 2 for CRAN
+# Limit number of cores to 2 for CRAN
+options(DL.num.cores=min(default.num.cores(), 2))
 ```
 
 Create a de.lorean object from the full data set.
@@ -85,8 +86,15 @@ dl <- de.lorean(guo.expr, guo.gene.meta, guo.cell.meta)
 Estimate hyperparameters for the model from the whole data set. Here we set
 the width of the normal prior on the pseudotimes to be `0.5`.
 ```{r}
-dl <- estimate.hyper(dl, sigma.tau=0.5)
+dl <- estimate.hyper(
+    dl,
+    sigma.tau=0.5,
+    length.scale=1.5,
+    model.name='simple-model')
 ```
+DeLorean also offers slight variations of the model, we could use
+`model.name=lowrank` or `model.name=simple-model`. See the documentation
+for `estimate.hyper` for more details.
 
 ### Choose cells
 
