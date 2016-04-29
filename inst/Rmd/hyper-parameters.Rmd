@@ -97,7 +97,7 @@ The correlation between the temporal variation and noise estimates is
 Plotting the estimated noise levels against temporal variation gives:
 ```{r geneWithinVsBetweenVar}
 (
-    ggplot(gene.var, aes(x=sqrt(psi.hat), y=sqrt(omega.hat)))
+    ggplot(gene.var, aes(x=log10(psi.hat), y=log10(omega.hat)))
     + geom_point()
     + geom_abline(intercept=0, slope=1, linetype="dashed", alpha=.7)
 )

@@ -46,7 +46,7 @@ The posterior for the between time variation $\log \psi_g$:
 Temporal variation by gene:
 ```{r temporalVariation}
 (ggplot(noise.levels,
-        aes(x=gene, y=sqrt(psi), fill=gene %in% genes.high.psi),
+        aes(x=gene, y=log10(psi), fill=gene %in% genes.high.psi),
         environment=environment())
     + geom_boxplot()
     + coord_flip())
@@ -70,7 +70,7 @@ The posterior for the within time variation $\log \omega_g$:
 Within time variation by gene:
 ```{r measurementNoise}
 (ggplot(noise.levels,
-        aes(x=gene, y=sqrt(omega), fill=gene %in% genes.high.psi),
+        aes(x=gene, y=log10(omega), fill=gene %in% genes.high.psi),
         environment=environment())
     + geom_boxplot()
     + coord_flip())
