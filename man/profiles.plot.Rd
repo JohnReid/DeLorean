@@ -5,7 +5,8 @@
 \title{Plot best sample predicted expression.}
 \usage{
 profiles.plot(dl, genes = dl$genes.high.psi, profile.color = "black",
-  add.data = T, sample.iter = dl$best.sample, ...)
+  add.data = T, sample.iter = dl$best.sample, ignore.cell.sizes = FALSE,
+  ...)
 }
 \arguments{
 \item{dl}{de.lorean object}
@@ -17,6 +18,8 @@ profiles.plot(dl, genes = dl$genes.high.psi, profile.color = "black",
 \item{add.data}{Add actual expression data to plot}
 
 \item{sample.iter}{Which sample to plot}
+
+\item{ignore.cell.sizes}{Ignore cell sizes if the model has estimated them}
 
 \item{...}{Extra arguments}
 }

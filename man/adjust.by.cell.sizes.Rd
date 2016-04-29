@@ -2,7 +2,7 @@
 % Please edit documentation in R/cell-size.r
 \name{adjust.by.cell.sizes}
 \alias{adjust.by.cell.sizes}
-\title{Estimate the cell sizes and adjust the expression by cell size.}
+\title{Adjust the expression by the estimated cell sizes.}
 \usage{
 adjust.by.cell.sizes(dl)
 }
@@ -10,6 +10,6 @@ adjust.by.cell.sizes(dl)
 \item{dl}{de.lorean object.}
 }
 \description{
-Estimate the cell sizes and adjust the expression by cell size.
+Adjust the expression by the estimated cell sizes.
 }
 
