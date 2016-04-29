@@ -218,6 +218,7 @@ profiles.plot <- function(dl,
             predictions
             %>% filter(sample.iter == iter)
             %>% left_join(dl$gene.map)
+            %>% left_join(dl$gene.expr)
             %>% filter(gene %in% genes)
         )
         # stopifnot(! any(is.na(profile.data %>% select(-cbRank, -cbPeaktime))))
