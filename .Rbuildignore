@@ -4,6 +4,7 @@
 ^DeLorean_.*\.tar.gz
 ^docs/posters
 ^docs/sparse
+^docs/slides
 ^vignettes/DeLorean_cache
 ^vignettes/DeLorean_files
 ^inst/Stan/.*\.rda
