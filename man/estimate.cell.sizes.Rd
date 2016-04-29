@@ -5,7 +5,8 @@
 \title{Estimate the cell sizes. We only consider genes that are expressed in
 a certain proportion of cells.}
 \usage{
-estimate.cell.sizes(dl, cell.prop = 0.5, expr.threshold = 0)
+estimate.cell.sizes(dl, cell.prop = 0.5, expr.threshold = 0,
+  by.capture = TRUE)
 }
 \arguments{
 \item{dl}{de.lorean object.}
@@ -13,7 +14,10 @@ estimate.cell.sizes(dl, cell.prop = 0.5, expr.threshold = 0)
 \item{cell.prop}{The proportion of cells a gene must be expressed in to be
 considered for cell size estimation}
 
-\item{expr.threshold}{The threshold at which we consider a gene to be expressed}
+\item{expr.threshold}{The threshold above which we consider a gene to be expressed}
+
+\item{by.capture}{Estimate the cell sizes by considering cells at each capture time
+separately}
 }
 \description{
 Estimate the cell sizes. We only consider genes that are expressed in

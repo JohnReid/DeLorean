@@ -94,6 +94,16 @@ dl <- de.lorean(
 ```
 
 
+# Test cell size methods
+```{r testCellSizes}
+dl <- estimate.cell.sizes(dl)
+ggplot(dl$cell.sizes %>% left_join(dl$cell.meta), aes(x=S.hat, fill=capture)) + geom_histogram(position='dodge')
+
+dl <- estimate.cell.sizes(dl, by.capture=FALSE)
+ggplot(dl$cell.sizes %>% left_join(dl$cell.meta), aes(x=S.hat, fill=capture)) + geom_histogram(position='dodge')
+```
+
+
 # Estimate hyperparameters
 
 Examine data for empirical Bayes estimation of hyperparameters.

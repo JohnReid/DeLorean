@@ -3,34 +3,12 @@
 #'
 #' @param expr.l Melted expression values.
 #'
-anders.huber.cell.sizes <- function(expr.l) {
-    (
-        expr.l
-        %>% group_by(gene)
-        %>% dplyr::summarise(mu=mean(x))
-        %>% left_join(expr.l)
-        %>% group_by(cell)
-        %>% dplyr::summarise(S.hat=median(x-mu))
-    )
-}
-
-
-#' Estimate the cell sizes per capture. Only uses genes that are expressed
-#' in more than half the cells.
-#'
-#' @param expr.l Melted expression values.
-#'
-#' @export
-#'
-estimate.capture.cell.sizes <- function(expr.l) (
-    expr.l
-    %>% group_by(gene)
-    %>% dplyr::summarise(prop.expr=mean(x>0))
-    %>% filter(prop.expr > .5)
-    %>% left_join(expr.l)
-    %>% group_by(capture)
-    %>% do(anders.huber.cell.sizes(.))
-)
+anders.huber.cell.sizes <- function(expr.l) expr.l %>%
+  group_by(gene) %>%
+  dplyr::summarise(mu=mean(x)) %>%
+  left_join(expr.l) %>%
+  group_by(cell) %>%
+  dplyr::summarise(S.hat=median(x-mu))
 
 
 #' Estimate the cell sizes. We only consider genes that are expressed in
@@ -39,18 +17,29 @@ estimate.capture.cell.sizes <- function(expr.l) (
 #' @param dl de.lorean object.
 #' @param cell.prop The proportion of cells a gene must be expressed in to be
 #'   considered for cell size estimation
-#' @param expr.threshold The threshold at which we consider a gene to be expressed
+#' @param expr.threshold The threshold above which we consider a gene to be expressed
+#' @param by.capture Estimate the cell sizes by considering cells at each capture time
+#'   separately
 #'
 #' @export
 #'
-estimate.cell.sizes <- function(dl, cell.prop=.5, expr.threshold=0) within(dl, {
-    expr.l <- melt.expr(dl)
-    cell.sizes <- anders.huber.cell.sizes(
-      expr.l %>%
-      group_by(gene) %>%
-      dplyr::summarise(prop.expr=mean(x>expr.threshold)) %>%
-      filter(prop.expr > cell.prop) %>%
-      left_join(expr.l))
+estimate.cell.sizes <- function(dl, cell.prop=.5, expr.threshold=0, by.capture=TRUE) within(dl, {
+  expr.l <- melt.expr(dl)
+  expressed.genes <-
+    expr.l %>%
+    group_by(gene) %>%
+    dplyr::summarise(prop.expr=mean(x>expr.threshold)) %>%
+    filter(prop.expr > cell.prop)
+  if (by.capture) {
+    cell.sizes <-
+      expressed.genes %>%
+      left_join(expr.l) %>%
+      left_join(cell.meta) %>%
+      group_by(capture) %>%
+      do(anders.huber.cell.sizes(.))
+  } else {
+    cell.sizes <- anders.huber.cell.sizes(expressed.genes %>% left_join(expr.l))
+  }
 })
 
 
