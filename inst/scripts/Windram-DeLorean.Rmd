@@ -116,7 +116,7 @@ dl <- filter.cells(dl, cells=botrytis.cells$cell)
 
 Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes, eval=fit.model}
-model.name <- getOption('Windram.model', 'simplest-model')
+model.name <- getOption('Windram.model', 'exact')
 dl <- estimate.hyper(dl, sigma.tau=group.size/4, model.name=model.name)
 fits.omega <- test.fit(dl$gene.var$omega.hat)
 print(fits.omega$gp)

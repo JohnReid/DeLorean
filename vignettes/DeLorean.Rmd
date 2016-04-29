@@ -90,10 +90,10 @@ dl <- estimate.hyper(
     dl,
     sigma.tau=0.5,
     length.scale=1.5,
-    model.name='simple-model')
+    model.name='exact-sizes')
 ```
 DeLorean also offers slight variations of the model, we could use
-`model.name=lowrank` or `model.name=simple-model`. See the documentation
+`model.name='lowrank'` or `model.name='exact'`. See the documentation
 for `estimate.hyper` for more details.
 
 ### Choose cells

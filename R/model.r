@@ -130,12 +130,12 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
 #'   Defaults to the range of the observed capture times.
 #' @param model.name The model's name:
 #'   \itemize{
-#'     \item 'simplest-model': The simplest model (does not estimate the
-#'       cell sizes).
-#'     \item 'simple-model': Like 'simplest-model' but estimates the cell
-#'       sizes.
-#'     \item 'lowrank': Low rank approximation to the 'simplest-model'.
-#'     \item 'lowrank-sizes': Low rank approximation to the 'simple-model'.
+#'     \item 'exact': The model without a low rank approximation
+#'       that does not estimate the cell sizes.
+#'     \item 'exact-sizes': The model without a low rank approximation
+#'       that does estimate the cell sizes.
+#'     \item 'lowrank': Low rank approximation to the 'exact' model.
+#'     \item 'lowrank-sizes': Low rank approximation to the 'exact-sizes' model.
 #'   }
 #' @param adjust.cell.sizes Adjust by the cell sizes for better estimates of the hyperparameters
 #'
@@ -145,7 +145,7 @@ estimate.hyper <- function(
     dl,
     sigma.tau = .5,
     length.scale = NULL,
-    model.name = 'simplest-model',
+    model.name = 'exact',
     adjust.cell.sizes = TRUE
 ) {
   #
@@ -159,8 +159,8 @@ estimate.hyper <- function(
     opts$model.name <- model.name
     opts$model.estimates.cell.sizes <- switch(
         opts$model.name,
-        "simple-model" = TRUE,
-        "simplest-model" = FALSE,
+        "exact-sizes" = TRUE,
+        "exact" = FALSE,
         "lowrank-sizes" = TRUE,
         "lowrank" = FALSE,
         stop('Unknown model name'))

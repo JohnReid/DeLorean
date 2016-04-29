@@ -103,7 +103,7 @@ number.of.cells <- getOption("complexity.num.cells", c(10, 18, 30, 55, 100, 180,
 number.of.genes <- getOption("complexity.num.genes", c(10, 20, 30, 40, 50, 60, 70))
 set.seed(seed)
 default.num.genes <- 30
-model.names <- getOption('complexity.model.names', c("simplest-model", "lowrank"))
+model.names <- getOption('complexity.model.names', c("exact", "lowrank"))
 num.inits <- getOption("complexity.num.inits", default.num.cores())
 inf.method <- getOption("complexity.method", "vb")
 time.fit <- function(dl) {

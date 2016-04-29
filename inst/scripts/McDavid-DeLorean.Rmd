@@ -108,7 +108,7 @@ ggplot(dl$cell.sizes %>% left_join(dl$cell.meta), aes(x=S.hat, fill=capture)) + 
 
 Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes}
-model.name <- getOption("McDavid.model", 'simple-model')
+model.name <- getOption("McDavid.model", 'exact')
 dl <- estimate.hyper(dl, sigma.tau=.5, length.scale=5, model.name=model.name)
 if (! dl$opts$model.estimates.cell.sizes) {
     dl <- adjust.by.cell.sizes(dl)
