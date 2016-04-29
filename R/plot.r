@@ -102,17 +102,14 @@ pseudotime.plot <- function(dl, sample.iter=dl$best.sample) {
 #'
 #' @export
 #'
-tau.offsets.plot <- function(dl, rug.alpha=.3) {
-    with(dl,
-         ggplot(samples.l$tau, aes(x=tau.offset, color=capture, fill=capture))
-         + geom_histogram(position='dodge')
-         + geom_rug(alpha=rug.alpha)
-         + stat_function(fun=functional::Curry(dnorm, sd=hyper$sigma_tau),
-                         linetype='dashed',
-                         alpha=.7,
-                         color='blue')
-    )
-}
+tau.offsets.plot <- function(dl, rug.alpha=.3) with(dl, {
+  prior.scale <- nrow(samples.l$tau) / length(levels(samples.l$tau$capture))
+  ggplot(samples.l$tau, aes(x=tau.offset, color=capture, fill=capture)) +
+    geom_histogram(position='dodge') +
+    geom_rug(alpha=rug.alpha) +
+    stat_function(fun=function(x) prior.scale * dnorm(x, sd=hyper$sigma_tau),
+                  linetype='dashed')
+})
 
 
 #' Plot the Rhat convergence statistics. \code{\link{examine.convergence}}
