@@ -18,8 +18,8 @@ anders.huber.cell.sizes <- function(expr.l) expr.l %>%
 #' @param cell.prop The proportion of cells a gene must be expressed in to be
 #'   considered for cell size estimation
 #' @param expr.threshold The threshold above which we consider a gene to be expressed
-#' @param by.capture Estimate the cell sizes by considering cells at each capture time
-#'   separately
+#' @param by.capture Estimate the cell sizes by considering the cells at each
+#'   capture time separately
 #'
 #' @export
 #'
@@ -50,9 +50,7 @@ estimate.cell.sizes <- function(dl, cell.prop=.5, expr.threshold=0, by.capture=T
 #' @export
 #'
 adjust.by.cell.sizes <- function(dl) within(dl, {
-    expr.before.adj <- expr
-    expr <- cast.expr(
-        expr.l
-        %>% left_join(cell.sizes)
-        %>% mutate(x=x-S.hat))
+  expr.before.adj <- expr
+  expr.l <- expr.l %>% left_join(cell.sizes) %>% mutate(x=x-S.hat)
+  expr <- cast.expr(expr.l)
 })

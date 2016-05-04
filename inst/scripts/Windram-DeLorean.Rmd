@@ -118,6 +118,9 @@ Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes, eval=fit.model}
 model.name <- getOption('Windram.model', 'exact')
 dl <- estimate.hyper(dl, sigma.tau=group.size/4, model.name=model.name, adjust.cell.sizes=FALSE)
+if (! dl$opts$model.estimates.cell.sizes) {
+    dl <- adjust.by.cell.sizes(dl)
+}
 fits.omega <- test.fit(dl$gene.var$omega.hat)
 print(fits.omega$gp)
 fits.psi <- test.fit(dl$gene.var$psi.hat)
@@ -395,7 +398,7 @@ pars <- with(extracted, list(
     psi=psi[dl$best.sample,],
     omega=omega[dl$best.sample,]))
 if (dl$opts$model.estimates.cell.sizes) {
-    pars$S.hat <- extracted$S.hat[dl$best.sample,]
+    pars$S <- extracted$S[dl$best.sample,]
 }
 best.tau <- tau.for.sample(dl)
 desired.tau <- sort(best.tau)
