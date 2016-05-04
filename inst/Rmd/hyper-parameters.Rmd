@@ -103,11 +103,6 @@ Plotting the estimated noise levels against temporal variation gives:
 )
 ```
 
-```{r hyperDetach, include=FALSE}
-# Detach the previously attached DeLorean data frame
-detach(dl)
-```
-
 
 ## Cell sizes relation to gene variation
 
@@ -119,4 +114,13 @@ mean.gene.variation <- sqrt(mean(gene.vars))
 ggplot(cell.sizes, aes(x=S.hat)) +
     geom_histogram() +
     geom_vline(xintercept=mean.gene.variation)
+```
+
+
+
+
+
+```{r hyperDetach, include=FALSE}
+# Detach the previously attached DeLorean data frame
+detach(dl)
 ```
