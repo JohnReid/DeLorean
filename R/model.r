@@ -1421,3 +1421,12 @@ test.fit <- function(vars) {
 # @param dl de.lorean object
 #
 sample.iters <- function(dl) dl$samples.l$lp__$iter
+
+
+#' Make a fit valid by running one iteration of the sampler.
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+make.fit.valid <- function(dl) rstan::stan(fit=dl$fit, data=dl$stan.data, iter=1, chains=1)
