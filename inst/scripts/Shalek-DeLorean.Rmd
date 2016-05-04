@@ -471,6 +471,30 @@ saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Data/Shalek.rds")
 saveRDS(plots, "Data/Shalek-plots.rds")
 ```
 
+# Use dimensionality reduction to look for outliers
+
+```{r PCA}
+pca <- prcomp(t(dl$expr), center=TRUE, scale.=FALSE)
+# print(pca)
+# summary(pca)
+png('Shalek-PCA-var.png')
+plot(pca, type = "l")
+dev.off()
+pca.l <- reshape2::melt(pca$x, varnames=c("cell", "PC"), value.name="x")
+# sample_n(pca.l, 10)
+tau.best <- dl$samples.l$tau %>% filter(iter==dl$best.sample)
+pca.df <-pca.l %>% reshape2::dcast(cell ~ PC) %>% left_join(tau.best)
+pca.plot <- ggplot(pca.df,
+       aes(x=PC1, y=PC2, label=cell, color=tau, shape=capture)) +
+    #geom_text() +
+    geom_point() +
+    scale_size_continuous(breaks=c(1,2)) +
+    scale_colour_gradient(low="red", high="blue")
+print(pca.plot)
+ggsave('Shalek-PCA.png', pca.plot)
+```
+
+
 # Session information
 ```{r date}
 date()
