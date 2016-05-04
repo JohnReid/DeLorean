@@ -117,7 +117,7 @@ dl <- filter.cells(dl, cells=botrytis.cells$cell)
 Examine data for empirical Bayes estimation of hyperparameters.
 ```{r empiricalBayes, eval=fit.model}
 model.name <- getOption('Windram.model', 'exact')
-dl <- estimate.hyper(dl, sigma.tau=group.size/4, model.name=model.name)
+dl <- estimate.hyper(dl, sigma.tau=group.size/4, model.name=model.name, adjust.cell.sizes=FALSE)
 fits.omega <- test.fit(dl$gene.var$omega.hat)
 print(fits.omega$gp)
 fits.psi <- test.fit(dl$gene.var$psi.hat)
@@ -170,8 +170,9 @@ dl <- find.good.ordering(dl, seriation.find.orderings)
 plot(dl, type='orderings')
 dl <- pseudotimes.from.orderings(dl, num.to.keep=num.inits)
 system.time(dl <- fit.model(dl, method=inf.method, num.inits=num.inits))
+plots <- list()
 if ("vb" == inf.method) {
-    pseudotimes.pair.plot(dl)
+    plots$pair.plot <- pseudotimes.pair.plot(dl)
 }
 ```
 
@@ -209,7 +210,6 @@ dl <- make.predictions(dl)
 
 Did `DeLorean` learn the obfuscated pseudotime?
 ```{r pseudotime}
-plots <- list()
 plots$pseudo <- with(dl, {
     (ggplot(samples.l$tau %>% filter(iter == best.sample),
                     aes(x=tau, y=obstime.orig, color=capture),
@@ -363,6 +363,47 @@ library(dplyr)
 library(ggplot2)
 dl <- readRDS("Data/Windram.rds")
 plots <- readRDS("Data/Windram-plots.rds")
+```
+
+# Examine data and estimated tau using PCA
+```{r PCA}
+pca <- prcomp(t(dl$expr), center=TRUE, scale.=FALSE)
+pca <- prcomp(t(dl$expr + dl$cell.sizes$S.hat), center=TRUE, scale.=FALSE)
+# print(pca)
+# summary(pca)
+png('Windram-PCA-var.png')
+plot(pca, type = "l")
+dev.off()
+pca.l <- reshape2::melt(pca$x, varnames=c("cell", "PC"), value.name="x")
+# sample_n(pca.l, 10)
+tau.best <- dl$samples.l$tau %>% filter(iter==dl$best.sample)
+pca.df <-pca.l %>% reshape2::dcast(cell ~ PC) %>% mutate(cell=factor(cell, levels=cell.levels(dl))) %>% left_join(tau.best)
+pca.plot <- ggplot(pca.df,
+       aes(x=PC1, y=PC2, label=cell, color=tau, shape=capture)) +
+    #geom_text() +
+    geom_point() +
+    scale_size_continuous(breaks=c(1,2)) +
+    scale_colour_gradient(low="red", high="blue")
+print(pca.plot)
+ggsave('Windram-PCA.png', pca.plot)
+#
+# Check which tau has best log prob
+extracted <- rstan::extract(dl$fit)
+lapply(extracted, dim)
+pars <- with(extracted, list(
+    tau=tau[dl$best.sample,],
+    psi=psi[dl$best.sample,],
+    omega=omega[dl$best.sample,]))
+if (dl$opts$model.estimates.cell.sizes) {
+    pars$S.hat <- extracted$S.hat[dl$best.sample,]
+}
+best.tau <- tau.for.sample(dl)
+desired.tau <- sort(best.tau)
+fit <- make.fit.valid(dl)
+pars$tau <- best.tau
+print(rstan::log_prob(fit, rstan::unconstrain_pars(fit, pars), adjust_transform=FALSE))
+pars$tau <- desired.tau
+print(rstan::log_prob(fit, rstan::unconstrain_pars(fit, pars), adjust_transform=FALSE))
 ```
 
 R version and packages used:
