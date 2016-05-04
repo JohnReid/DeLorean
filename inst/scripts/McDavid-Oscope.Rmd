@@ -12,6 +12,7 @@ output:
 #
 # Execute this block to render the script.
 #
+devtools::load_all('../..')
 devtools::load_all('../../../DeLoreanData')
 rmarkdown::render('McDavid-Oscope.Rmd')
 ```
@@ -54,7 +55,6 @@ source(system.file("scripts/shared.R", package="DeLorean"))
 font.family <- "Verdana"
 font.theme <- theme_update(text=element_text(family=font.family))
 theme_set(font.theme)
-
 ```
 
 
