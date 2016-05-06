@@ -165,6 +165,22 @@ Plot the genes.
 ggplot(expr.l, aes(x=time, y=log(x))) + geom_line() + facet_wrap(~ gene)
 ```
 
+# Save the results
+```{r saveResults}
+saveRDS(list(
+    expr=expr,
+    Sizes=Sizes,
+    DataNorm=DataNorm,
+    DataInput=DataInput,
+    SineRes=SineRes,
+    KMRes=KMRes,
+    KMResUse=KMResUse,
+    ENIRes=ENIRes,
+    DataOrder=DataOrder,
+    expr.l=expr.l),
+    file='')
+```
+
 ## Session information
 ```{r date}
 date()
