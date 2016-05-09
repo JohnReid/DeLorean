@@ -151,35 +151,90 @@ ENIRes <- OscopeENI(KMRes=KMResUse, Data=DataInput, NCThre=1000, parallel=TRUE)
 Reorder the data.
 ```{r reorder}
 DataOrder <- DataNorm[,ENIRes[["cluster1"]]]
+cell.times <- data.frame(cell=factor(colnames(DataOrder), levels=cell.levels),
+                         time=1:ncol(DataOrder))
 expr.l <-
     melt(DataOrder, varnames=c('gene', 'cell'), value.name='x') %>%
     mutate(
         gene=factor(gene, levels=gene.levels),
         cell=factor(cell, levels=cell.levels)) %>%
-    left_join(data.frame(cell=factor(colnames(DataOrder), levels=cell.levels),
-                         time=1:ncol(DataOrder)))
+    left_join(cell.times)
 sample_n(expr.l, 10)
 ```
-Plot the genes.
-```{r plotGenes}
-ggplot(expr.l, aes(x=time, y=log(x))) + geom_line() + facet_wrap(~ gene)
+
+# Align ordering
+We don't know which point of the cell cycle the Oscope inferred ordering starts at.
+We estimate this by assessing all possibile offsets and choosing the one with the
+smallest RMSE to the McDavid capture time labels.
+```{r estimateOrdering}
+source(system.file("scripts/McDavid-fns.R", package="DeLorean"))
+apply.offset <- function(offset) {
+    cell.times %>%
+        left_join(mcdavid.cell.meta) %>%
+        mutate(
+            cbtime=periodise(100*(time+offset)/ncol(DataOrder), period=100),
+            obs.dist=peak.distance(tau.to.cbtime(obstime), cbtime))
+}
+assess.offset <- function(offset) calc.rms(apply.offset(offset)$obs.dist)
+obs.dist.rmses <- sapply(1:ncol(DataOrder), assess.offset)
+qplot(obs.dist.rmses)
+best.offset <- which.min(obs.dist.rmses)
+cell.times <- apply.offset(best.offset)
+sample_n(cell.times, 10)
 ```
 
-# Save the results
-```{r saveResults}
-saveRDS(
-    list(
-        expr=expr,
-        Sizes=Sizes,
-        DataNorm=DataNorm,
-        DataInput=DataInput,
-        SineRes=SineRes,
-        KMRes=KMRes,
-        KMResUse=KMResUse,
-        ENIRes=ENIRes,
-        DataOrder=DataOrder,
-        expr.l=expr.l),
-    file='Data/McDavid-Oscope.rds')
+# Calculate peak offsets
+Now we have aligned the ordering, we can calculate the RMSE between the peaks
+in the ordering and the CycleBase defined gene peak times.
+```{r estimateOrdering}
+gene.peaks <-
+    get.gene.peaks(expr.l %>% left_join(mcdavid.cell.meta)) %>%
+    left_join(cell.times) %>%
+    left_join(mcdavid.gene.meta) %>%
+    filter(! is.na(cbPeaktime)) %>%
+    mutate(capture.dist=peak.distance(cbPeaktime, cbtime))
+sample_n(gene.peaks, 10)
+capture.RMSE <- calc.rms(gene.peaks$capture.dist)
+capture.RMSE
+```
+
+# Gene profiles
+Plot the genes against CycleBase time
+```{r plotGenes}
+plot.profiles <-
+    ggplot(expr.l %>% left_join(cell.times), aes(x=cbtime, y=log(x), color=capture)) +
+    geom_point() +
+    facet_wrap(~ gene)
+print(plot.profiles)
+golden.ratio <- 1.618  # Pleasing ratio
+fig.width <- 4.7  # LaTeX width in inches
+fig.height <- fig.width / golden.ratio
+ggsave('McDavid-Oscope-profiles.png', plot=plot.profiles,
+       width=fig.width*3.5, height=fig.height*3,
+       units="in", dpi=100)
+```
+
+```{r saveResults, echo=FALSE}
+# Save the results.
+save(
+    expr,
+    Sizes,
+    DataNorm,
+    DataInput,
+    SineRes,
+    KMRes,
+    KMResUse,
+    ENIRes,
+    DataOrder,
+    expr.l,
+    gene.peaks,
+    cell.times,
+    capture.RMSE,
+    file='Data/McDavid-Oscope.RData')
+```
+```{r readResults, echo=FALSE, eval=FALSE}
+# Load the results.
+load(file='Data/McDavid-Oscope.RData')
 ```
 
 ## Session information
