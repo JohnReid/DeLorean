@@ -291,7 +291,6 @@ ggsave('Windram-tau-posterior.png', plots$tau.posterior + plos.theme,
 ggsave('Windram-tau-posterior.eps', plots$tau.posterior + plos.theme,
        width=single.col.width, height=single.col.width/golden.ratio,
        units="mm", device=cairo_ps)
-
 # Save best tau
 plots$tau.best <- plot(dl, type="pseudotime")
 ggsave('Windram-tau-best.pdf', plots$tau.best + plos.theme,
