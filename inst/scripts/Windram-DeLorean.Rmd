@@ -144,10 +144,20 @@ dl <- filter.cells(dl, number=max.cells)
 
 # Choose genes
 
-Choose a few (at most 100) genes.
+Choose a few (at most 100) genes to fit the model.
 ```{r filterGenes, eval=fit.model}
 max.genes <- min(getOption("Windram.max.genes", 100))
 dl <- filter.genes(dl, number=max.genes)
+```
+Choose some held out genes to validate the model with.
+```{r heldOutGenes}
+held.out.genes <- with(dl, gene.var
+                           %>% left_join(gene.meta)
+                           %>% filter(! gene %in% rownames(dl$expr))
+                           %>% arrange(-psi.hat/omega.hat)
+                           %>% head(getOption('Windram.held.out', 100)))
+held.out.expr <- windram.expr[as.character(held.out.genes$gene),
+                              colnames(dl$expr)]
 ```
 
 
@@ -166,7 +176,10 @@ with `r num.inits` initialisations, the seed is `r seed` and the data have
 ```{r fitModel, eval=fit.model}
 dl <- prepare.for.stan(dl, num.inducing=30)
 # Save for input to Monocle
-saveRDS(list(expr = dl$expr, cell.meta = dl$cell.map, gene.meta=dl$gene.map),
+saveRDS(list(expr=dl$expr,
+             held.out.expr=held.out.expr,
+             cell.meta=dl$cell.map,
+             gene.meta=dl$gene.map),
         file='Data/Windram-input.rds')
 dl <- compile.model(dl)
 dl <- find.good.ordering(dl, seriation.find.orderings)
@@ -237,6 +250,9 @@ ggsave('Windram-pseudotime-vs-obfuscated.pdf', plots$pseudo + plos.theme,
 ggsave('Windram-pseudotime-vs-obfuscated.png', plots$pseudo + plos.theme,
        width=slide.fig.width, height=slide.fig.width / html5$ratio,
        dpi=300, units="in")
+ggsave('Windram-pseudotime-vs-obfuscated.eps', plots$pseudo + plos.theme,
+       width=single.col.width, height=single.col.width/golden.ratio,
+       units="mm", device=cairo_ps)
 if ('sample' == inf.method) {
     # Save convergence as well
     ggsave('Windram-Rhat.png', plot(dl, type="Rhat"),
@@ -272,6 +288,9 @@ ggsave('Windram-tau-posterior.pdf', plots$tau.posterior + plos.theme,
        width=text.width, height=text.width, units="in")
 ggsave('Windram-tau-posterior.png', plots$tau.posterior + plos.theme,
        width=6, height=3, dpi=600, units="in")
+ggsave('Windram-tau-posterior.eps', plots$tau.posterior + plos.theme,
+       width=single.col.width, height=single.col.width/golden.ratio,
+       units="mm", device=cairo_ps)
 # Save best tau
 plots$tau.best <- plot(dl, type="pseudotime")
 ggsave('Windram-tau-best.pdf', plots$tau.best + plos.theme,
@@ -280,8 +299,6 @@ ggsave('Windram-tau-best.png', plots$tau.best + plos.theme,
        width=slide.fig.width, height=slide.fig.width / html5$ratio,
        dpi=300, units="in")
 ```
-
-
 Look at the expected correlation between the obfuscated capture time with the
 pseudotime in the full posterior.
 ```{r}
@@ -299,8 +316,8 @@ posterior.cor.best
 monocle.cor <- 0.9269565
 plots$post.cor <- (ggplot(posterior.cor, aes(x=pseudotime.capture.cor))
     + geom_histogram()
-    + geom_vline(xintercept=monocle.cor, linetype='dashed', color='red')
-    + geom_vline(xintercept=posterior.cor.best, linetype='dashed', color='blue')
+    + geom_vline(xintercept=monocle.cor, linetype='dotted')
+    + geom_vline(xintercept=posterior.cor.best, linetype='dashed')
     + scale_x_continuous(name="correlation"))
 print(plots$post.cor)
 ggsave('Windram-posterior-cor.tiff', plots$post.cor + plos.theme,
@@ -311,9 +328,10 @@ ggsave('Windram-posterior-cor.pdf', plot=plots$post.cor + plos.theme,
        width=text.width, height=text.width)
 ggsave('Windram-posterior-cor.png', plots$post.cor + plos.theme,
        width=6, height=3, dpi=600, units="in")
+ggsave('Windram-posterior-cor.eps', plots$post.cor + plos.theme,
+       width=single.col.width, height=single.col.width/golden.ratio,
+       units="mm", device=cairo_ps)
 ```
-
-
 The correlation between the obfuscated capture time with the pseudotime of
 the best sample.
 ```{r}
@@ -321,27 +339,14 @@ with(dl$samples.l$tau %>% filter(iter == dl$best.sample),
      cor(tau, obstime.orig, method="spearman"))
 ```
 
-# Evaluate held out genes
-
-Fit some held out genes.
-```{r heldOutGenes}
-held.out.genes <- with(dl, gene.var
-                           %>% left_join(gene.meta)
-                           %>% filter(! gene %in% gene.map$gene)
-                           %>% arrange(-psi.hat/omega.hat)
-                           %>% head(getOption('Windram.held.out', 100)))
-held.out.expr <- windram.expr[as.character(held.out.genes$gene),
-                              as.character(dl$cell.map$cell)]
-```
-
-
 ## Roughness permutation test
-
 Permutation test for roughness.
 ```{r roughnesses}
 dl <- roughness.test(dl, held.out.expr)
 print(dl$roughness.test)
-plots$roughnesses <- plot(dl, type="roughnesses")
+monocle.roughness <- 0.85
+plots$roughnesses <- plot(dl, type="roughnesses") +
+    geom_vline(xintercept=monocle.roughness, linetype='dashed', color='red')
 ggsave('Windram-roughnesses.pdf', plots$roughnesses + plos.theme,
        width=text.width * 2, height=text.width)
 ggsave('Windram-roughnesses.png', plots$roughnesses + plos.theme,
@@ -355,8 +360,6 @@ saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Data/Windram.rds")
 # Save plots
 saveRDS(plots, "Data/Windram-plots.rds")
 ```
-
-
 ```{r loadDL, echo=FALSE, eval=FALSE}
 # Not executed
 # Load DeLorean object without fit component

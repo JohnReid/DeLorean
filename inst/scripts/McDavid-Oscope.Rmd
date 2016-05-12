@@ -70,6 +70,7 @@ McDavid et al.'s data is available in the `DeLorean` R package. Not all 333
 genes are represented as several are rarely expressed.
 ```{r loadLib}
 library(Oscope)
+# vignette('Oscope_vignette')
 library(DeLoreanData)
 library(dplyr)
 library(reshape2)
@@ -82,91 +83,57 @@ cell.levels <- levels(mcdavid.cell.meta$cell)
 ```
 
 ## Choose genes and cells
-
 Choose a few cells from the PC3 cell line and those genes with -log pvalue greater than 10.
 ```{r chooseCells}
 cells.PC3 <- mcdavid.cell.meta %>% filter("PC3" == cellline)
+genes.sig <- filter(mcdavid.gene.meta, pvalue > 10)
 # Shift positively expressed genes closer to unexpressed genes to improve fit.
-expr <- pmax(mcdavid.expr - .69, 0)[,as.character(cells.PC3$cell)]
+# Just as in DeLorean analysis
+expr <- pmax(mcdavid.expr - .69, 0)[as.character(genes.sig$gene),as.character(cells.PC3$cell)]
 ```
 
-## Normalise by median values.
+## Normalisation
+Oscope uses expression values on the original scale, not log transformed and expects
+mean gene levels to be above 100.
 ```{r normalise}
-oExpr <- exp(expr)
+oExpr <- 1000*exp(expr) # Scale to put on similar scale to Oscope expected
 Sizes = MedianNorm(oExpr)
-# Sizes = QuantileNorm(oExpr, .75)
 DataNorm <- GetNormalizedMat(oExpr, Sizes)
-
-MV <- data.frame(mean=rowMeans(oExpr), var=apply(oExpr, 1, var))
-ggplot(MV, aes(x=mean, y=var)) + geom_point()
-# MV <- CalcMV(Data=oExpr, Sizes=Sizes, MeanCutHigh=NULL, Plot=TRUE)
-
-expr.l <-
-    expr %>%
-    melt(varnames=c('gene', 'cell'), value.name='x') %>%
-    mutate(gene=factor(gene, levels=gene.levels),
-           cell=factor(cell, levels=cell.levels))
-sizes <-
-    expr.l %>%
-    group_by(gene) %>%
-    dplyr::summarise(prop.expr=mean(x>0)) %>%
-    filter(prop.expr > .5) %>%
-    left_join(expr.l) %>%
-    group_by(gene) %>%
-    dplyr::summarise(mu=mean(x)) %>%
-    left_join(expr.l) %>%
-    group_by(cell) %>%
-    dplyr::summarise(size=median(x-mu))
-Sizes <- sizes$size
-names(Sizes) <- sizes$cell
-expr.l <-
-    expr.l %>%
-    left_join(sizes) %>%
-    mutate(x.adj=x-size)
 ```
 
-## Examine mean and variance of genes
+# Mean-variance
+We perform the mean-variance analysis but we are going to use all the genes in any case,
+so we don't use the results.
 ```{r meanVar}
-gene.mean.var <-
-    expr.l %>%
-    group_by(gene) %>%
-    dplyr::summarise(mu=mean(x.adj), var=var(x.adj)) %>%
-    left_join(mcdavid.gene.meta)
-ggplot(gene.mean.var, aes(x=mu, y=var, color=pvalue<10)) + geom_point()
+MV <- CalcMV(Data=oExpr, Sizes=Sizes)
+print(length(MV$GeneToUse))
 ```
 
-
-## Choose genes
-```{r chooseGenes}
-genes.sig <- mcdavid.gene.meta %>% filter(pvalue > 10)
-expr.l <- filter(expr.l, gene %in% genes.sig$gene)
-expr <- acast(expr.l, gene ~ cell, value.var='x.adj')
-dim(expr)
-```
-
-## Normalise for paired-sine
+# Paired sine model
+Rescale the genes expression for the test.
 ```{r normPairedSine}
 DataInput <- NormForSine(DataNorm)
-# DataInput <- NormForSine(DataNorm, qt1=0, qt2=1)
 ```
-
-## Paired sine
+Perform the paired sine test.
 ```{r pairedSine}
 SineRes <- OscopeSine(DataInput, parallel=TRUE)
 str(SineRes)
 ```
 
-## K-medoids algorithm
+# K-medoids algorithm
+Use all gene pairs (`quan=0`) as all the genes have small p-values in McDavid's
+test of periodicity.
 ```{r kMedoids}
-KMRes <- OscopeKM(SineRes, quan=.5)
+KMRes <- OscopeKM(SineRes, quan=0)
 print(KMRes)
 ```
 Check the p-values of genes identified.
 ```{r checkGenes}
-filter(mcdavid.gene.meta, gene %in% unlist(KMRes))
+filter(mcdavid.gene.meta, gene %in% unlist(KMRes)) %>% arrange(pvalue)
 ```
 
-## Flag clusters
+# Flag clusters
+Flag the clusters that are not significant.
 ```{r flagClusters}
 ToRM <- FlagCluster(SineRes, KMRes, DataInput)
 print(ToRM$FlagID_bysine)
@@ -176,47 +143,99 @@ KMResUse <- KMRes[-ToRM$FlagID]
 print(KMResUse)
 ```
 
-## Extended nearest insertion
+# Extended nearest insertion
 Calculate orderings for each cluster.
 ```{r insertion}
-ENIRes <- OscopeENI(KMRes = KMRes, Data = DataInput, NCThre = 100, parallel=TRUE)
-print(ENIRes)
+ENIRes <- OscopeENI(KMRes=KMResUse, Data=DataInput, NCThre=1000, parallel=TRUE)
+```
+Reorder the data.
+```{r reorder}
+DataOrder <- DataNorm[,ENIRes[["cluster1"]]]
+cell.times <- data.frame(cell=factor(colnames(DataOrder), levels=cell.levels),
+                         time=1:ncol(DataOrder))
+expr.l <-
+    melt(DataOrder, varnames=c('gene', 'cell'), value.name='x') %>%
+    mutate(
+        gene=factor(gene, levels=gene.levels),
+        cell=factor(cell, levels=cell.levels)) %>%
+    left_join(cell.times)
+sample_n(expr.l, 10)
 ```
 
-Compare orderings for the two clusters.
-```{r compareOrderings}
-ordering.invert <- function(ordering) {
-    result <- rep(0, length(ordering))
-    for (n in 1:length(result)) {
-        result[ordering[n]] <- n
-    }
-    result
+# Align ordering
+We don't know which point of the cell cycle the Oscope inferred ordering starts at.
+We estimate this by assessing all possibile offsets and choosing the one with the
+smallest RMSE to the McDavid capture time labels.
+```{r estimateOrdering}
+source(system.file("scripts/McDavid-fns.R", package="DeLorean"))
+apply.offset <- function(offset) {
+    cell.times %>%
+        left_join(mcdavid.cell.meta) %>%
+        mutate(
+            cbtime=periodise(100*(time+offset)/ncol(DataOrder), period=100),
+            obs.dist=peak.distance(tau.to.cbtime(obstime), cbtime))
 }
-orderings <- data.frame(order1=ENIRes[['cluster1']], order2=ENIRes[['cluster2']])
-invert1 <- ordering.invert(orderings$order1)
-invert2 <- ordering.invert(orderings$order2)
-ggplot(mutate(orderings, yend=invert2[order1]),
-       aes(y=1:nrow(orderings), yend=yend)) +
-    geom_segment(x=0, xend=1)
-cell.order <- data.frame(cell=factor(colnames(expr), levels=cell.levels),
-                         pos1=(1:nrow(orderings))[invert1],
-                         pos2=(1:nrow(orderings))[invert2])
+assess.offset <- function(offset) calc.rms(apply.offset(offset)$obs.dist)
+obs.dist.rmses <- sapply(1:ncol(DataOrder), assess.offset)
+qplot(obs.dist.rmses)
+best.offset <- which.min(obs.dist.rmses)
+cell.times <- apply.offset(best.offset)
+sample_n(cell.times, 10)
 ```
 
-Plot genes.
+# Calculate peak offsets
+Now we have aligned the ordering, we can calculate the RMSE between the peaks
+in the ordering and the CycleBase defined gene peak times.
+```{r estimateOrdering}
+gene.peaks <-
+    get.gene.peaks(expr.l %>% left_join(mcdavid.cell.meta)) %>%
+    left_join(cell.times) %>%
+    left_join(mcdavid.gene.meta) %>%
+    filter(! is.na(cbPeaktime)) %>%
+    mutate(capture.dist=peak.distance(cbPeaktime, cbtime))
+sample_n(gene.peaks, 10)
+capture.RMSE <- calc.rms(gene.peaks$capture.dist)
+capture.RMSE
+```
+
+# Gene profiles
+Plot the genes against CycleBase time
 ```{r plotGenes}
-ggplot(expr.l %>% left_join(cell.order) %>% filter(gene %in% KMRes[['cluster1']]),
-       aes(x=pos1, y=x.adj, color=gene)) +
-    geom_point()
-
-cluster1 <- expr[KMRes[['cluster1']], ENIRes[['cluster1']]]
-cluster2 <- expr[KMRes[['cluster2']], ENIRes[['cluster2']]]
-qplot(x=1:ncol(expr), y=cluster1[1,])
-qplot(x=1:ncol(expr), y=cluster1[2,])
-qplot(x=1:ncol(expr), y=cluster2[1,])
-qplot(x=1:ncol(expr), y=cluster2[2,])
+plot.profiles <-
+    ggplot(expr.l %>% left_join(cell.times), aes(x=cbtime, y=log(x), color=capture)) +
+    geom_point() +
+    facet_wrap(~ gene)
+print(plot.profiles)
+golden.ratio <- 1.618  # Pleasing ratio
+fig.width <- 4.7  # LaTeX width in inches
+fig.height <- fig.width / golden.ratio
+ggsave('McDavid-Oscope-profiles.png', plot=plot.profiles,
+       width=fig.width*3.5, height=fig.height*3,
+       units="in", dpi=100)
 ```
 
+```{r saveResults, echo=FALSE}
+# Save the results.
+save(
+    expr,
+    Sizes,
+    DataNorm,
+    DataInput,
+    SineRes,
+    KMRes,
+    KMResUse,
+    ENIRes,
+    DataOrder,
+    expr.l,
+    gene.peaks,
+    cell.times,
+    capture.RMSE,
+    file='Data/McDavid-Oscope.RData')
+```
+```{r readResults, echo=FALSE, eval=FALSE}
+# Load the results.
+load(file='Data/McDavid-Oscope.RData')
+```
 
 ## Session information
 ```{r date}

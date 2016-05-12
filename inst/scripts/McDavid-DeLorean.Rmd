@@ -232,68 +232,18 @@ dl <- make.predictions(dl)
 
 # Examine peak times
 
-```{r peakTimeFns}
-# Set up some functions to map between pseudotimes and peak times
-#
-# cbPeaktimes of 0 (equiv. 100) correspond to the transition
-# between M and G1.
-# (http://cyclebase2.jensenlab.org/methods.jsp#peaktime-uncertainty)
-# Hence cbPeaktime = 0 corresponds to a pseudotime of .5
-#
-# A function to make times periodic
-periodise <- function(tau, period=3) {
-    wave = floor(tau/period)
-    tau - wave * period
-}
-# tau.test <- seq(-.5, 3.5, by=.5)
-# tau.test
-# periodise(tau.test)
-# A function to map from pseudotimes (tau) to cbPeaktimes
-tau.to.cbtime <- function(tau) 100*periodise((tau - .5)/3, 1)
-# and vice versa
-cbtime.to.tau <- function(cbtime) periodise(cbtime/100*3+.5, 3)
-# Test mapping functions
-tau.test <- seq(-.5, 3.5, by=.5)
-sum(abs(periodise(tau.test) - cbtime.to.tau(tau.to.cbtime(tau.test))))
-cbtime.test <- seq(-5, 105, by=5)
-sum(abs(periodise(cbtime.test, 100) - tau.to.cbtime(cbtime.to.tau(cbtime.test))))
-#
-# Distance between two points on interval [0, 100] where 0 is connected to 100
-peak.distance <- function(peak.1, peak.2) {
-    stopifnot(all(peak.1 >= 0.))
-    stopifnot(all(peak.1 <= 100.))
-    stopifnot(all(peak.2 >= 0.))
-    stopifnot(all(peak.2 <= 100.))
-    dist <- abs(peak.1 - peak.2)
-    ifelse(dist > 50, 100 - dist, dist)
-}
-# Test peak distances
-# peak.distance(c(.1, .2, .1, .9, .5, .5), c(.2, .1, .9, .1, .5, .4))
-#
-# RMSE functions
-#
-# Calculate the root mean square of d
-calc.rms <- function(d) sqrt(sum(d**2)/length(d))
-```
-
-
 Calculate distance between peak time and capture time.
 Capture times are as defined in
 [CycleBase](http://www.cyclebase.org/About "CycleBase").
 This is the naive method we compare our predicted peaks against.
 ```{r peakTimeDistances}
-naive.peaks <- (
-    melt.expr(dl)
-    %>% left_join(dl$cell.map %>% select(cell, capture, obstime))
-    %>% group_by(gene)
-    %>% dplyr::summarise(peak.idx=which.max(x),  # Find index of maximal expression
-                  cell=cell[peak.idx],
-                  capture=capture[peak.idx],
-                  peak.tau=obstime[peak.idx])
-    %>% left_join(dl$gene.map %>% select(gene, cbPeaktime))
-    %>% filter(! is.na(cbPeaktime))
-    %>% mutate(capture.dist=peak.distance(cbPeaktime,
-                                          tau.to.cbtime(peak.tau))))
+source(system.file("scripts/McDavid-fns.R", package="DeLorean"))
+naive.peaks <-
+    get.gene.peaks(melt.expr(dl) %>%
+                   left_join(dl$cell.map %>%select(cell, capture, obstime)) %>%
+    left_join(dl$gene.map %>% select(gene, cbPeaktime)) %>%
+    filter(! is.na(cbPeaktime)) %>%
+    mutate(capture.dist=peak.distance(cbPeaktime, tau.to.cbtime(peak.tau))))
 naive.peaks
 # Calculate RMSE for naive method
 capture.RMSE <- calc.rms(naive.peaks$capture.dist)
