@@ -250,6 +250,9 @@ ggsave('Windram-pseudotime-vs-obfuscated.pdf', plots$pseudo + plos.theme,
 ggsave('Windram-pseudotime-vs-obfuscated.png', plots$pseudo + plos.theme,
        width=slide.fig.width, height=slide.fig.width / html5$ratio,
        dpi=300, units="in")
+ggsave('Windram-pseudotime-vs-obfuscated.eps', plots$pseudo + plos.theme,
+       width=single.col.width, height=single.col.width/golden.ratio,
+       units="mm", device=cairo_ps)
 if ('sample' == inf.method) {
     # Save convergence as well
     ggsave('Windram-Rhat.png', plot(dl, type="Rhat"),
@@ -285,6 +288,9 @@ ggsave('Windram-tau-posterior.pdf', plots$tau.posterior + plos.theme,
        width=text.width, height=text.width, units="in")
 ggsave('Windram-tau-posterior.png', plots$tau.posterior + plos.theme,
        width=6, height=3, dpi=600, units="in")
+ggsave('Windram-tau-posterior.eps', plots$tau.posterior + plos.theme,
+       width=single.col.width, height=single.col.width/golden.ratio,
+       units="mm", device=cairo_ps)
 # Save best tau
 plots$tau.best <- plot(dl, type="pseudotime")
 ggsave('Windram-tau-best.pdf', plots$tau.best + plos.theme,
@@ -310,8 +316,8 @@ posterior.cor.best
 monocle.cor <- 0.9269565
 plots$post.cor <- (ggplot(posterior.cor, aes(x=pseudotime.capture.cor))
     + geom_histogram()
-    + geom_vline(xintercept=monocle.cor, linetype='dashed', color='red')
-    + geom_vline(xintercept=posterior.cor.best, linetype='dashed', color='blue')
+    + geom_vline(xintercept=monocle.cor, linetype='dotted')
+    + geom_vline(xintercept=posterior.cor.best, linetype='dashed')
     + scale_x_continuous(name="correlation"))
 print(plots$post.cor)
 ggsave('Windram-posterior-cor.tiff', plots$post.cor + plos.theme,
@@ -322,6 +328,9 @@ ggsave('Windram-posterior-cor.pdf', plot=plots$post.cor + plos.theme,
        width=text.width, height=text.width)
 ggsave('Windram-posterior-cor.png', plots$post.cor + plos.theme,
        width=6, height=3, dpi=600, units="in")
+ggsave('Windram-posterior-cor.eps', plots$post.cor + plos.theme,
+       width=single.col.width, height=single.col.width/golden.ratio,
+       units="mm", device=cairo_ps)
 ```
 The correlation between the obfuscated capture time with the pseudotime of
 the best sample.

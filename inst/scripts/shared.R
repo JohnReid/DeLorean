@@ -37,6 +37,8 @@ bioinf.single.w <- 3.38  # Width of single bioinformatics column in inches
 bioinf.double.w <- 7.00  # Width of double bioinformatics column in inches
 bioinf.single.h <- bioinf.single.w / golden.ratio
 bioinf.double.h <- bioinf.double.w / golden.ratio
+single.col.width <- 86  # Bioinformatics width in mm
+double.col.width <- 178 # Bioinformatics width in mm
 
 #
 # Theme for Bioinformatics
