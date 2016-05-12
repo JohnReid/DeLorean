@@ -64,6 +64,7 @@ theme_set(font.theme)
 
 ```
 
+`r date()`
 
 `r citet(bib[["mcdavid_modeling_2014"]])` assayed actively cycling single
 cells in order to examine the confounding effect of the cell cycle on
@@ -458,7 +459,7 @@ genes.for.profiles <- with(dl,
     %>% filter(best.sample == iter)
     %>% left_join(samples.l$omega)
     %>% arrange(-psi/omega)
-    %>% head(12)
+    %>% head(6)
     %>% left_join(gene.map)
 )
 plots$profiles <- (
@@ -485,8 +486,15 @@ ggsave('McDavid-profiles.tiff', plots$profiles + plos.theme
 ggsave('McDavid-profiles.png', plot=plots$profiles,
        width=fig.width*3.5, height=fig.height*3,
        units="in", dpi=100)
-ggsave('McDavid-profiles.pdf', plot=plots$profiles,
-       width=2*text.width, height=2*text.width/golden.ratio)
+ggsave('McDavid-profiles.pdf',
+       plot=plots$profiles +
+           plos.theme +
+           theme(axis.text.x = element_text(angle = 90, hjust = 1)),
+       width=single.col.width, height=single.col.width/golden.ratio,
+       units='mm')
+ggsave('McDavid-profiles.eps', plot=plots$profiles + plos.theme,
+       width=single.col.width, height=single.col.width/golden.ratio,
+       units='mm', device='cairo_ps')
 save.output <- getOption('McDavid.save.output', TRUE)
 ```
 ```{r saveDL, echo=FALSE, eval=save.output}
