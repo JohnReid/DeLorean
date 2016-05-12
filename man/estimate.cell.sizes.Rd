@@ -16,8 +16,8 @@ considered for cell size estimation}
 
 \item{expr.threshold}{The threshold above which we consider a gene to be expressed}
 
-\item{by.capture}{Estimate the cell sizes by considering cells at each capture time
-separately}
+\item{by.capture}{Estimate the cell sizes by considering the cells at each
+capture time separately}
 }
 \description{
 Estimate the cell sizes. We only consider genes that are expressed in
