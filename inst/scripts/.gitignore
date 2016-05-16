@@ -6,6 +6,7 @@ Data
 *.tiff
 Shalek-expr.rds
 Windram-*.eps
+McDavid-*.eps
 Guo-ICA.pdf
 Guo-rand-proj.html
 Windram-Monocle-compare.pdf
