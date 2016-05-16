@@ -444,7 +444,7 @@ ggsave('McDavid-profiles.pdf',
        units='mm')
 ggsave('McDavid-profiles.eps', plot=plots$profiles + plos.theme,
        width=single.col.width, height=single.col.width/golden.ratio,
-       units='mm', device='cairo_ps')
+       units='mm')
 save.output <- getOption('McDavid.save.output', TRUE)
 ```
 ```{r saveDL, echo=FALSE, eval=save.output}
