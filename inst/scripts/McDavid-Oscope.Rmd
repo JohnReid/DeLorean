@@ -166,7 +166,7 @@ sample_n(expr.l, 10)
 We don't know which point of the cell cycle the Oscope inferred ordering starts at.
 We estimate this by assessing all possibile offsets and choosing the one with the
 smallest RMSE to the McDavid capture time labels.
-```{r estimateOrdering}
+```{r alignOrdering}
 source(system.file("scripts/McDavid-fns.R", package="DeLorean"))
 apply.offset <- function(offset) {
     cell.times %>%
