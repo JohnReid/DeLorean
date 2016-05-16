@@ -63,6 +63,7 @@ cells in order to examine the confounding effect of the cell cycle on
 single cell expression analyses. They measured the expression of 333 genes
 in 930 cells across three cell cycle phases and three cell lines.
 
+`r date()`
 
 ## Data
 
