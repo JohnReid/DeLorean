@@ -33,6 +33,7 @@ Suggests:
     extrafont,
     testthat,
     svglite,
+    cairoDevice,
     fields,
     VGAM
 License: MIT + file LICENSE
