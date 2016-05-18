@@ -18,9 +18,18 @@ To render the vignettes you will need a working version (> 1.12.3) of `pandoc` o
 
 
 
-Installation
-------------
+Installation from CRAN
+----------------------
 
+Just run the following in an `R` session:
+
+    install.packages('DeLorean')
+
+
+Installation from source
+------------------------
+
+If you prefer to have the very latest version you can install `DeLorean` from source.
 If you do not already have [`devtools`](https://github.com/hadley/devtools)
 installed, then install it by running:
 
