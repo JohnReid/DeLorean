@@ -436,15 +436,15 @@ ggsave('McDavid-profiles.tiff', plots$profiles + plos.theme
 ggsave('McDavid-profiles.png', plot=plots$profiles,
        width=fig.width*3.5, height=fig.height*3,
        units="in", dpi=100)
-ggsave('McDavid-profiles.pdf',
-       plot=plots$profiles +
-           plos.theme +
-           theme(axis.text.x = element_text(angle = 90, hjust = 1)),
-       width=single.col.width, height=single.col.width/golden.ratio,
-       units='mm')
+plot.save.args <- bioinf.sizes
+do.call(ggsave,
+    c(list('McDavid-profiles.pdf',
+           plot=plots$profiles + bioinf.config +
+             theme(axis.text.x = element_text(angle = 90, hjust = 1))),
+      plot.save.args))
 ggsave('McDavid-profiles.eps', plot=plots$profiles + plos.theme,
        width=single.col.width, height=single.col.width/golden.ratio,
-       units='mm')
+       units='mm', device='cairo_ps')
 save.output <- getOption('McDavid.save.output', TRUE)
 ```
 ```{r saveDL, echo=FALSE, eval=save.output}

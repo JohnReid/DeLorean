@@ -43,12 +43,27 @@ double.col.width <- 178 # Bioinformatics width in mm
 #
 # Theme for Bioinformatics
 #
-base.family <- "Helvetica"
-bioinf.theme <- ggplot2::theme_grey(base_size=8, base_family=base.family)
-bioinf.config <- list(
-    width = bioinf.single.w,
-    height = bioinf.single.h,
-    theme = bioinf.theme)
+bioinf.size <- 8
+bioinf.family <- "Helvetica"
+#
+# We use ggthemes::theme_few() if it is installed.
+if ('ggthemes' %in% rownames(installed.packages())) {
+  bioinf.config <-
+    list(ggthemes::theme_few(base_size=bioinf.size, base_family=bioinf.family),
+         ggthemes::scale_colour_few(),
+         ggthemes::scale_fill_few())
+} else {
+  bioinf.config <- ggplot2::theme_grey(base_size=bioinf.size, base_family=bioinf.family)
+}
+bioinf.sizes <-
+  list(width=bioinf.single.w,
+       height=bioinf.single.h,
+       units="in")
+suppl.sizes <-
+  list(width=345/72,
+       height=345/72/golden.ratio,
+       dpi=350,
+       units="in")
 
 #
 # Theme for PLoS

@@ -204,15 +204,14 @@ Plot the genes against CycleBase time
 ```{r plotGenes}
 plot.profiles <-
     ggplot(expr.l %>% left_join(cell.times), aes(x=cbtime, y=log(x), color=capture)) +
-    geom_point() +
+    geom_point(alpha=.3) +
     facet_wrap(~ gene)
 print(plot.profiles)
 golden.ratio <- 1.618  # Pleasing ratio
 fig.width <- 4.7  # LaTeX width in inches
 fig.height <- fig.width / golden.ratio
-ggsave('McDavid-Oscope-profiles.png', plot=plot.profiles,
-       width=fig.width*3.5, height=fig.height*3,
-       units="in", dpi=100)
+ggsave('McDavid-Oscope-profiles.pdf', plot=plot.profiles + bioinf.config,
+       width=fig.width*2, height=fig.width*2, units="in")
 ```
 
 ```{r saveResults, echo=FALSE}

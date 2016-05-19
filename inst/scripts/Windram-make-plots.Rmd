@@ -62,23 +62,23 @@ plots.windram$roughnesses <- plot(dl.windram, type="roughnesses")
 
 
 ```{r savePlots}
-config <- bioinf.config
+config <- bioinf.sizes
 theme <- bioinf.theme
 ggsave('Figures/Bioinf/Windram-pseudotime-vs-obfuscated.eps',
        plots.windram$pseudo + theme, units="in",
-       width=config$width, height=config$height)
+       width=sizes$width, height=sizes$height)
 ggsave('Figures/Bioinf/Windram-tau-posterior.eps',
-       plots.windram$tau.posterior + theme, units="in",
-       width=config$width, height=config$height)
+       plots.windram$tau.posterior + theme, units=sizes$units,
+       width=sizes$width, height=sizes$height)
 ggsave('Figures/Bioinf/Windram-posterior-cor.eps',
-       plots.windram$post.cor + theme, units="in",
-       width=config$width, height=config$height)
+       plots.windram$post.cor + theme, units=sizes$units,
+       width=sizes$width, height=sizes$height)
 ggsave('Figures/Bioinf/Windram-profiles.pdf',
-       plots.windram$profiles + theme, units="in",
+       plots.windram$profiles + theme, units=sizes$units,
        width=bioinf.double.w, height=bioinf.double.h)
 ggsave('Figures/Bioinf/Windram-roughnesses.eps',
-       plots.windram$roughnesses + theme, units="in",
-       width=config$width, height=config$height)
+       plots.windram$roughnesses + theme, units=sizes$units,
+       width=sizes$width, height=sizes$height)
 
 ```
 

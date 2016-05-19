@@ -326,6 +326,10 @@ plots$core.antiviral <- (
 )
 print(plots$core.antiviral)
 ggsave('Shalek-core-antiviral.pdf', plots$core.antiviral + plos.theme,
+
+
+
+
        width=2*fig.width, height=2*fig.height)
 # Plot the core antiviral, the maturity, the peaked inflammation and
 # the sustained inflammation module scores against pseudotime.
@@ -348,17 +352,13 @@ plots$core <- (
                       cluster == "Id"),
            aes(x=tau, y=module.score, colour=capture, shape=type))
     + stat_smooth(aes(group="", color=NULL))
-    + geom_point()
+    + geom_point(alpha=.5)
 )
 print(plots$core)
-ggsave('Shalek-core.svg', plots$core + plos.theme,
-       width=plos.width, height=plos.height, units="in")
-ggsave('Shalek-core.png', plots$core + plos.theme,
-       width=6, height=3, units="in", dpi=600)
-ggsave('Shalek-core.svg', plots$core + plos.theme,
-       width=plos.width, height=plos.height, units="in")
-ggsave('Shalek-core.tiff', plots$core + plos.theme,
-       width=plos.width, height=plos.height, units="in", dpi=300)
+do.call(ggsave,
+        c(list('Shalek-core.pdf', plots$core + bioinf.config),
+          bioinf.sizes))
+
 #
 # Profile plots
 plots$profiles <- plot(dl, type='profiles', genes=dl$genes.high.psi[1:4])
@@ -367,11 +367,6 @@ plots$profiles$layers[[3]]$aes_params$size <- 0.5
 plots$profiles$layers[[3]]$aes_params$alpha <- 0.5
 ggsave('Shalek-profiles.png', plots$profiles + plos.theme,
        width=6, height=3, units="in", dpi=600)
-# Cannot use EPS as has transparency
-# ggsave('Shalek-core.eps', plots$core + plos.theme,
-#        width=plos.width, height=plos.height, units="in")
-ggsave('Shalek-core.pdf', plots$core + plos.theme,
-       width=plos.width, height=plos.height)
 # Examine what pseudotimes the model estimated for the precocious genes
 (
     dl$samples.l$tau
@@ -434,14 +429,9 @@ dl <- roughness.test(dl, held.out.expr)
 print(dl$roughness.test)
 plots$roughnesses <- plot(dl, type="roughnesses")
 print(plots$roughnesses)
-ggsave('Shalek-roughnesses.svg', plots$roughnesses + plos.theme,
-       width=plos.width, height=plos.height, units="in")
-ggsave('Shalek-roughnesses.tiff', plots$roughnesses + plos.theme,
-       width=plos.width, height=plos.height, units="in", dpi=300)
-ggsave('Shalek-roughnesses.pdf', plots$roughnesses + plos.theme,
-       width=plos.width, height=plos.height, units="in")
-ggsave('Shalek-roughnesses.png', plots$roughnesses + plos.theme,
-       width=6, height=3, units="in", dpi=600)
+do.call(ggsave,
+        c(list('Shalek-roughnesses.pdf', plots$roughnesses + bioinf.config),
+          suppl.sizes))
 ```
 ```{r tauPosteriorOffset.2, echo=FALSE}
 plots$tau.offset <- (
