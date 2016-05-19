@@ -12,7 +12,7 @@ Depends:
     Rcpp (>= 0.12.0)
 Imports:
     rstan (>= 2.9.0),
-    dplyr (>= 0.4.1.9000),
+    dplyr (>= 0.4.3),
     reshape2 (>= 1.4),
     stringr (>= 0.6.2),
     ggplot2 (>= 1.0.0),

@@ -11,8 +11,6 @@ There was one NOTE:
 * checking CRAN incoming feasibility ... NOTE
 Maintainer: 'John Reid <john.reid@mrc-bsu.cam.ac.uk>'
 
-New submission
-
 License components with restrictions and base license permitting such:
   MIT + file LICENSE
 File 'LICENSE':
