@@ -250,16 +250,11 @@ if ('sample' == inf.method) {
         dpi=300, units="in")
 }
 # Save profiles as well
-plots$profiles <- plot(dl, type="profiles", genes=dl$genes.high.psi[1:16])
+plots$profiles <- plot(dl, type="profiles", genes=dl$genes.high.psi)
 plots$profiles$layers[[3]]$aes_params$size <- 0.8
-ggsave('Windram-profiles.svg', plots$profiles + plos.theme,
-       width=plos.width, height=plos.height, units="in")
-ggsave('Windram-profiles.tiff', plots$profiles + plos.theme,
-       width=plos.width, height=plos.height, units="in", dpi=300)
-ggsave('Windram-profiles.pdf', plots$profiles + plos.theme,
-       width=text.width * 2, height=text.width * 2, units="in")
-ggsave('Windram-profiles.png', plots$profiles + plos.theme,
-       width=6, height=3, dpi=600, units="in")
+do.call(ggsave,
+        c(list('Windram-profiles.pdf', plots$profiles + bioinf.config),
+          suppl.sizes))
 # Save tau posterior
 plots$tau.posterior <- (
     ggplot(dl$samples.l$tau, aes(x=capture.orig, y=tau, color=capture))
@@ -303,17 +298,9 @@ plots$post.cor <- (ggplot(posterior.cor, aes(x=pseudotime.capture.cor))
     + geom_vline(xintercept=posterior.cor.best, linetype='dashed')
     + scale_x_continuous(name="correlation"))
 print(plots$post.cor)
-ggsave('Windram-posterior-cor.tiff', plots$post.cor + plos.theme,
-       width=plos.width / 2, height=plos.height / 2, units="in", dpi=300)
-ggsave('Windram-posterior-cor.svg', plots$post.cor + plos.theme,
-       width=plos.width / 2, height=plos.height / 2, units="in")
-ggsave('Windram-posterior-cor.pdf', plot=plots$post.cor + plos.theme,
-       width=text.width, height=text.width)
-ggsave('Windram-posterior-cor.png', plots$post.cor + plos.theme,
-       width=6, height=3, dpi=600, units="in")
-ggsave('Windram-posterior-cor.eps', plots$post.cor + plos.theme,
-       width=single.col.width, height=single.col.width/golden.ratio,
-       units="mm", device=cairo_ps)
+do.call(ggsave,
+        c(list('Windram-posterior-cor.pdf', plot=plots$post.cor + bioinf.config),
+          bioinf.sizes))
 ```
 The correlation between the obfuscated capture time with the pseudotime of
 the best sample.
@@ -330,13 +317,9 @@ print(dl$roughness.test)
 monocle.roughness <- 0.85
 plots$roughnesses <- plot(dl, type="roughnesses") +
     geom_vline(xintercept=monocle.roughness, linetype='dotted')
-ggsave('Windram-roughnesses.pdf', plots$roughnesses + plos.theme,
-       width=text.width * 2, height=text.width)
-ggsave('Windram-roughnesses.png', plots$roughnesses + plos.theme,
-       width=6, height=3, dpi=600, units="in")
-ggsave('Windram-roughnesses.eps', plots$roughnesses + plos.theme,
-       width=2*single.col.width, height=2*single.col.width/golden.ratio,
-       units="mm", device=cairo_ps)
+do.call(ggsave,
+        c(list('Windram-roughnesses.pdf', plots$roughnesses + bioinf.config),
+          suppl.sizes))
 print(plots$roughnesses)
 save.output <- getOption('Windram.save.output', TRUE)
 ```
