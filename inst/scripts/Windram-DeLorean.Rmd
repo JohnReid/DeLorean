@@ -182,7 +182,6 @@ saveRDS(list(expr=dl$expr,
              gene.meta=dl$gene.map),
         file='Data/Windram-input.rds')
 dl <- compile.model(dl)
-stop('Just for testing')
 dl <- find.good.ordering(dl, seriation.find.orderings)
 plot(dl, type='orderings')
 dl <- pseudotimes.from.orderings(dl, num.to.keep=num.inits)
