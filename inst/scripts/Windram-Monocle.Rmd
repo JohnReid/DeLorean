@@ -137,8 +137,9 @@ gp.monocle.pseudo <- (
     + scale_x_continuous(name="pseudotime")
     + scale_y_continuous(name="capture time"))
 print(gp.monocle.pseudo)
-ggsave('Windram-Monocle-compare.eps', gp.monocle.pseudo + bioinf.theme,
-       width=bioinf.single.w, height=bioinf.single.h, units="in")
+do.call(ggsave,
+        c(list('Windram-Monocle-compare.pdf', gp.monocle.pseudo + bioinf.config),
+          bioinf.sizes))
 # What is the correlation?
 with(.data, cor(obstime.orig, Pseudotime, method="spearman"))
 ```
