@@ -28,7 +28,7 @@ functions {
     real
     matern52_cov(real r, real l) {
         real x;
-        x = sqrt(5) * fabs(r / l);
+        x = sqrt(5.) * fabs(r / l);
         return (1 + x + pow(x, 2) / 3) * exp(- x);
     }
     #
