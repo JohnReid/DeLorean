@@ -1066,7 +1066,7 @@ fit.model.vb <- function(
       }))
     #
     # Only keep results that worked
-    sflist <- Filter(function(x) ! is.null(x$lp), sflist)
+    sflist <- Filter(function(x) is.recursive(x) && ! is.null(x$lp), sflist)
     n.worked <- length(sflist)
     if (0 == n.worked) {
       stop('No VB fits worked.')
