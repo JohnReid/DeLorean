@@ -46,6 +46,7 @@ utils::globalVariables(names=c(
   'gene.var',
   'held.out.expr',
   'hyper',
+  'initialisation',
   'is.held.out',
   'iter',
   'median.tau',
