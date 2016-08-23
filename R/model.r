@@ -291,6 +291,9 @@ sample.genes.and.cells <- function(
 #' @param dl de.lorean object
 #' @param num.inducing Number of inducing points
 #' @param period Period of expression patterns
+#' @param num.sd.border The size of the border of the inducing inputs
+#'            around the capture times in units of number of standard
+#'            deviations
 #'
 #' @export
 #'
@@ -314,6 +317,9 @@ calc.inducing.pseudotimes <- function(dl, num.inducing, period = 0, num.sd.borde
 #' @param num.inducing Number of inducing points
 #' @param period Period of expression patterns
 #' @param hold.out Number genes to hold out for generalisation tests
+#' @param num.sd.border The size of the border of the inducing inputs
+#'            around the capture times in units of number of standard
+#'            deviations
 #'
 #' @export prepare.for.stan
 #'

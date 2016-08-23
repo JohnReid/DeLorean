@@ -12,6 +12,10 @@ calc.inducing.pseudotimes(dl, num.inducing, period = 0, num.sd.border = 7)
 \item{num.inducing}{Number of inducing points}
 
 \item{period}{Period of expression patterns}
+
+\item{num.sd.border}{The size of the border of the inducing inputs
+around the capture times in units of number of standard
+deviations}
 }
 \description{
 Calculate inducing pseudotimes for sparse approximation
