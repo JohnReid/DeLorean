@@ -19,7 +19,7 @@ functions {
     real
     matern32_cov(real r, real l) {
         real x;
-        x <- sqrt(3.) * fabs(r / l);
+        x = sqrt(3.) * fabs(r / l);
         return (1 + x) * exp(- x);
     }
     #
@@ -28,7 +28,7 @@ functions {
     real
     matern52_cov(real r, real l) {
         real x;
-        x <- sqrt(5) * fabs(r / l);
+        x = sqrt(5.) * fabs(r / l);
         return (1 + x + pow(x, 2) / 3) * exp(- x);
     }
     #
@@ -38,9 +38,9 @@ functions {
     cov_fn(real r, int periodic, real period, real l) {
         real rprime;
         if (periodic) {
-            rprime <- periodise(r, period);
+            rprime = periodise(r, period);
         } else {
-            rprime <- r;
+            rprime = r;
         }
         return matern32_cov(rprime, l);
         # return se_cov(rprime, l);
@@ -56,10 +56,10 @@ functions {
         matrix[cols(tau),cols(tau)] result;
         for (c1 in 1:cols(tau)) {
             for (c2 in 1:c1) {
-                result[c1,c2] <- cov_fn(tau[c2] - tau[c1], periodic,
+                result[c1,c2] = cov_fn(tau[c2] - tau[c1], periodic,
                                         period, l);
                 if(c1 != c2) {
-                    result[c2,c1] <- result[c1,c2];
+                    result[c2,c1] = result[c1,c2];
                 }
             }
         }
@@ -78,7 +78,7 @@ functions {
         matrix[cols(tau1),cols(tau2)] result;
         for (c1 in 1:cols(tau1)) {
             for (c2 in 1:cols(tau2)) {
-                result[c1,c2] <- cov_fn(tau2[c2] - tau1[c1], periodic, period, l);
+                result[c1,c2] = cov_fn(tau2[c2] - tau1[c1], periodic, period, l);
             }
         }
         return result;
@@ -142,7 +142,7 @@ transformed data {
     # Transformations of expression
     #
     # Unit diagonal covariance matrix
-    identity <- diag_matrix(rep_vector(1, C));
+    identity = diag_matrix(rep_vector(1, C));
 }
 parameters {
     row_vector[C] S;      # Cell-size factor for expression
@@ -153,23 +153,20 @@ parameters {
 model {
     #
     # Sample cell-specific factors
-    S ~ normal(mu_S, sigma_S);  # Cell size factors
+    target += normal_lpdf(S| mu_S, sigma_S);  # Cell size factors
     #
     # Sample gene-specific factors
-    psi ~ lognormal(mu_psi, sigma_psi);
-    omega ~ lognormal(mu_omega, sigma_omega);
+    target += lognormal_lpdf(psi|mu_psi, sigma_psi);
+    target += lognormal_lpdf(omega|mu_omega, sigma_omega);
     #
     # Sample pseudotime
-    tau ~ normal(time, sigma_tau);  # Pseudotime
+    target += normal_lpdf(tau|time, sigma_tau);  # Pseudotime
     #
     # Expression values for each gene
     for (g in 1:G) {
-        expr[g] ~ multi_normal(
+        target += multi_normal_lpdf(expr[g]|
                     S + phi[g],
-                    psi[g] * cov_symmetric(tau,
-                                           periodic,
-                                           period,
-                                           l)
+                    psi[g] * cov_symmetric(tau, periodic, period, l)
                         + omega[g] * identity);
     }
 }
@@ -190,44 +187,44 @@ generated quantities {
         if (g <= G) {
             #
             # Sampled parameters
-            psi_g <- psi[g];
-            omega_g <- omega[g];
+            psi_g = psi[g];
+            omega_g = omega[g];
         } else {
             #
             # Parameters for held out genes
-            psi_g <- heldout_psi[g-G];
-            omega_g <- heldout_omega[g-G];
+            psi_g = heldout_psi[g-G];
+            omega_g = heldout_omega[g-G];
         }
         #
         # Cholesky decompose the covariance of the inputs
-        L_g <- cholesky_decompose(
+        L_g = cholesky_decompose(
                    psi_g * cov_symmetric(tau,
                                          periodic,
                                          period,
                                          l)
                     + omega_g * identity);
-        a <- mdivide_right_tri_low(
+        a = mdivide_right_tri_low(
                 mdivide_left_tri_low(
                     L_g,
                     expr[g] - S' - phi[g])',
                 L_g);
         #
         # Calculate predicted mean on test inputs
-        kstartest <- psi_g * cov(tau,
+        kstartest = psi_g * cov(tau,
                                  testinput,
                                  periodic,
                                  period,
                                  l);
-        predictedmean[g] <- a * kstartest;
+        predictedmean[g] = a * kstartest;
         #
         # Calculate predicted variance on test inputs
-        vtest <- mdivide_left_tri_low(L_g, kstartest);
-        predictedvar[g] <- (psi_g
+        vtest = mdivide_left_tri_low(L_g, kstartest);
+        predictedvar[g] = (psi_g
                             + omega_g
                             - diagonal(vtest' * vtest));
         #
         # Calculate log marginal likelihood
-        logmarglike[g] <- (
+        logmarglike[g] = (
             - a * expr[g] / 2
             - sum(log(diagonal(L_g)))
             - C * log(2*pi()) / 2);

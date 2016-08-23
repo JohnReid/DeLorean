@@ -18,6 +18,8 @@
 #'       See \code{\link{marg.like.plot}}.
 #'     \item 'roughnesses': Roughnesses of the pseudotime posterior
 #'       See \code{\link{roughnesses.plot}}.
+#'     \item 'init.vs.pseudotimes': Plot the initialisations used against the pseudotimes estimated
+#'       See \code{\link{init.orderings.vs.pseudotimes.plot}}.
 #'   }
 #' @param ... Extra arguments to plot function
 #'
@@ -33,7 +35,8 @@ plot.de.lorean <- function(x, type="profiles", ...) {
         roughnesses=roughnesses.plot(x, ...),
         marg.like=marg.like.plot(x, ...),
         orderings=orderings.plot(x, ...),
-        tau.offsets=tau.offsets.plot(x, ...)
+        tau.offsets=tau.offsets.plot(x, ...),
+        init.vs.pseudotimes=init.orderings.vs.pseudotimes.plot(x, ...)
     )
     if (is.null(result)) {
         stop('Unknown plot type')
@@ -336,6 +339,49 @@ expr.data.plot <- function(dl, genes=NULL, num.genes=12) {
                           geom="line") +
              facet_wrap(~ gene)
     })
+}
+
+# Scale and shift x to match the range of the reference.
+#
+match.range <- function(x, reference) {
+  min.x <- min(x)
+  max.x <- max(x)
+  width.x <- max.x - min.x
+  min.r <- min(reference)
+  max.r <- max(reference)
+  width.r <- max.r - min.r
+  min.r + (x - min.x) / width.x * width.r
+}
+
+#' Plot the orderings for initialisation against the estimated pseudotime.
+#'
+#' @param dl The DeLorean object
+#'
+#' @export
+#'
+init.orderings.vs.pseudotimes.plot <- function(dl, sample.iter = dl$best.sample) {
+  pseudotimes <- tau.for.sample(dl, sample.iter = sample.iter)
+  ordering.pseudotime <- order(pseudotimes)
+  ith.best.ordering <- function(i) {
+    init.order <- dl$best.orderings[[i]]
+    data.frame(
+      idx = 1:length(ordering.pseudotime),
+      ordering.rank = i,
+      init.method = init.order$method.name,
+      LL = -init.order$ll,
+      initialisation = match(init.order$ser.order, ordering.pseudotime))
+  }
+  orderings <-
+      do.call(rbind, lapply(1:length(dl$best.orderings), ith.best.ordering)) %>%
+      mutate(initialisation = match.range(initialisation, pseudotimes)) %>%
+      left_join(data.frame(
+          idx = 1:length(ordering.pseudotime),
+          capture = dl$cell.map$capture[ordering.pseudotime],
+          pseudotime = pseudotimes,
+          pseudotime.order = ordering.pseudotime))
+  ggplot2::ggplot(orderings, aes(y=pseudotime, yend=initialisation, color=capture)) +
+      ggplot2::geom_segment(x = 0, xend = 1) +
+      facet_wrap(~ LL + init.method)
 }
 
 #' Plot two sets of pseudotimes against each other.

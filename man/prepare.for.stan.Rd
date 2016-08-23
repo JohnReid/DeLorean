@@ -5,7 +5,7 @@
 \title{Prepare for Stan}
 \usage{
 prepare.for.stan(dl, num.test = 101, num.inducing = 30, period = 0,
-  hold.out = 0)
+  hold.out = 0, num.sd.border = 7)
 }
 \arguments{
 \item{dl}{de.lorean object}
