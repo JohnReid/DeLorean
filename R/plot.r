@@ -356,6 +356,7 @@ match.range <- function(x, reference) {
 #' Plot the orderings for initialisation against the estimated pseudotime.
 #'
 #' @param dl The DeLorean object
+#' @param sample.iter Which sample to take pseudotimes from
 #'
 #' @export
 #'
