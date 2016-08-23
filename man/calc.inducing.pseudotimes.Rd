@@ -4,7 +4,7 @@
 \alias{calc.inducing.pseudotimes}
 \title{Calculate inducing pseudotimes for sparse approximation}
 \usage{
-calc.inducing.pseudotimes(dl, num.inducing, period = 0)
+calc.inducing.pseudotimes(dl, num.inducing, period = 0, num.sd.border = 7)
 }
 \arguments{
 \item{dl}{de.lorean object}

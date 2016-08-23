@@ -26,6 +26,8 @@
     See \code{\link{marg.like.plot}}.
   \item 'roughnesses': Roughnesses of the pseudotime posterior
     See \code{\link{roughnesses.plot}}.
+  \item 'init.vs.pseudotimes': Plot the initialisations used against the pseudotimes estimated
+    See \code{\link{init.orderings.vs.pseudotimes.plot}}.
 }}
 
 \item{...}{Extra arguments to plot function}
