@@ -45,7 +45,7 @@ using a Gaussian process over pseudotime. Gene-specific parameters in the
 covariance function represent intrinsic measurement noise $\omega_g$
 and variation of the profile over time $\psi_g$. Each sample's
 pseudotime $\tau_c$ is given a normal prior centred on its capture time.
-$$latex
+$$
 \begin{aligned}
     y_{g} &\sim \mathcal{GP}(\phi_g, \Sigma_g) \\
     \Sigma_g(\tau_1, \tau_2)
