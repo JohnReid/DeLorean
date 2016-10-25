@@ -1,15 +1,17 @@
 ---
-title: Investigate random projections for tree structures.
+title: Investigate random projections for tree structures
 author: John Reid
 output: html_document
 ---
 
 ```{r build, echo=FALSE, eval=FALSE}
-library(devtools)
-load_all('../..')
-library(rmarkdown)
-render('Guo-rand-proj.Rmd')
+devtools::load_all('../..')
+rmarkdown::render('Guo-rand-proj.Rmd')
+```
 
+Seed RNG:
+```{r seed}
+set.seed(1)
 ```
 
 
@@ -18,8 +20,8 @@ library(stringr)
 library(dplyr)
 library(reshape2)
 library(ggplot2)
+library(ggthemes)
 library(DeLorean)
-
 ```
 
 
@@ -49,10 +51,10 @@ options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
 font.family <- "Verdana"
 font.theme <- theme_update(text=element_text(family=font.family))
 theme_set(font.theme)
-
 ```
 
 
+# Load data
 
 Load test data.
 ```{r load.test.data}
@@ -61,9 +63,10 @@ guo.expr.centred <- t(scale(t(guo.expr), scale=FALSE, center=TRUE))
 guo.cell.meta <- (
     guo.cell.meta
     %>% mutate(cell.type=ifelse(is.na(cell.type), "NA", cell.type)))
-
 ```
 
+
+# Random projections
 
 Try some random projections.
 ```{r projectRandomly}
@@ -82,50 +85,59 @@ guo.rp$cell <- factor(rownames(guo.rp), levels=levels(guo.cell.meta$cell))
 dim(guo.rp)
 sapply(guo.rp, class)
 sample_n(guo.rp, 15)
-(ggplot(guo.rp %>% left_join(guo.cell.meta),
-        aes(x=RP.1, y=RP.2, color=capture, shape=cell.type))
-    + geom_point())
-
+ggplot(guo.rp %>% left_join(guo.cell.meta),
+       aes(x=RP.1, y=RP.2, color=capture, shape=cell.type)) +
+    geom_point() +
+    scale_colour_few() +
+    theme_few()
+ggsave("Guo-random-proj.pdf")
 ```
+
+
+# ICA
 
 How about ICA?
 ```{r ICA}
 library(fastICA)
-ic <- fastICA(t(guo.expr.centred), n.comp=2)
+n.comp <- 2
+ic <- fastICA(t(guo.expr.centred), n.comp = n.comp)
 dim(ic$K)
 dim(guo.expr.centred)
-guo.ic <- (
-    as.data.frame(t(guo.expr.centred) %*% ic$K)
-    %>% rename(IC.1=V1, IC.2=V2))
+guo.ic <-
+    as.data.frame(t(guo.expr.centred) %*% ic$K) %>%
+    rename(IC.1 = V1, IC.2 = V2)
+if (n.comp > 2) guo.ic <- rename(guo.ic, IC.3 = V3)
 guo.ic$cell <- factor(rownames(guo.ic), levels=levels(guo.cell.meta$cell))
 dim(guo.ic)
 class(guo.ic)
 names(guo.ic)
-gp <- (
+gp <-
     ggplot(guo.ic %>% left_join(guo.cell.meta),
-           aes(x=IC.1, y=IC.2, color=capture, shape=cell.type))
-    + geom_point())
+           aes(x=IC.1, y=IC.2, color=capture, shape=cell.type)) +
+    geom_point() +
+    scale_colour_few() +
+    theme_few()
 print(gp)
-pdf(file="Guo-ICA.pdf")
-print(gp)
-dev.off()
-
-library(scatterplot3d)
-.colors <- c("orange", "brown", "cyan", "green", "blue", "purple", "pink")
-with(guo.ic %>% left_join(guo.cell.meta), {
-   scatterplot3d(IC.3, IC.1, IC.2,
-                 color=.colors[capture], pch=19, # filled blue circles
-                 type="h",             # lines to the horizontal plane
-                 main="3-D Scatterplot Example 2",
-                 xlab="IC.1",
-                 ylab="IC.2",
-                 zlab="IC.3")
-})
-
+ggsave("Guo-ICA.pdf")
+if (n.comp > 2) {
+    library(scatterplot3d)
+    .colors <- c("orange", "brown", "cyan", "green", "blue", "purple", "pink")
+    with(guo.ic %>% left_join(guo.cell.meta), {
+        scatterplot3d(IC.3, IC.1, IC.2,
+                        color=.colors[capture], pch=19, # filled blue circles
+                        type="h",             # lines to the horizontal plane
+                        main="3-D Scatterplot Example 2",
+                        xlab="IC.1",
+                        ylab="IC.2",
+                        zlab="IC.3")
+    })
+}
 ```
 
 
-```{r gramSchmidt}
+# Gram-Schmidt
+
+```{r gramSchmidt, eval = FALSE}
 library(pracma)
 install.packages("pracma")
 u <- c(3, 1, 1)
@@ -142,16 +154,11 @@ with(gs, Q %*% R)
 v <- unit.vector(2)
 (gs$Q[,2:3] %*% v)
 t(gs$Q[,2:3] %*% v) %*% u
-
-```
-
-
-```{r date}
-date()
 ```
 
 
 R version and packages used:
 ```{r Rversion}
-sessionInfo()
+date()
+devtools::session_info()
 ```
