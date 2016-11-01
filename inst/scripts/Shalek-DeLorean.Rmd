@@ -178,13 +178,13 @@ clusters <- c("Id", "IIIb", "IIIc", "IIId")
 dl <- analyse.variance(dl, adjust.cell.sizes=TRUE)
 gene.variances <- dl$gene.var  # Save copy for later
 max.genes <- getOption("Shalek.max.genes", 74)
-genes.for.stan <- (
-    dl$gene.var
-    %>% left_join(dl$gene.meta)
-    %>% mutate(key=gene %in% shalek.key.genes)
-    %>% filter(cluster %in% clusters)
-    %>% arrange(- psi.hat / omega.hat)
-    %>% head(max.genes))
+genes.for.stan <-
+    dl$gene.var %>%
+    left_join(dl$gene.meta) %>%
+    mutate(key=gene %in% shalek.key.genes) %>%
+    filter(cluster %in% clusters) %>%
+    arrange(- psi.hat / omega.hat) %>%
+    head(max.genes)
 dl <- filter.genes(dl, genes=genes.for.stan$gene)
 # How many come from each cluster?
 qplot(genes.for.stan$cluster)

@@ -1,0 +1,317 @@
+---
+title: Fit branching model to Guo data
+author: John Reid
+output: pdf_document
+---
+
+```{r build, echo=FALSE, eval=FALSE}
+devtools::load_all('../..')
+rmarkdown::render('Guo-branching.Rmd')
+```
+
+Seed RNG:
+```{r seed}
+set.seed(1)
+```
+
+
+```{r loadLibs, echo=FALSE, message=FALSE}
+library(stringr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(ggthemes)
+library(DeLorean)
+```
+
+
+```{r config, echo=FALSE, message=FALSE}
+library(knitr)
+library(rmarkdown)
+#
+# knitr options
+#
+opts_chunk$set(
+    fig.path = 'figures/Guo-rand-',
+    stop_on_error = TRUE,
+    fig.width = 12.5,
+    fig.height = 8)
+#
+# Widths for saving figures
+#
+text.width <- 4.79  # LaTeX width in inches
+golden.ratio <- 1.618  # Pleasing ratio
+fig.width <- text.width
+fig.height <- text.width / golden.ratio
+#
+# Stylesheet
+#
+options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
+                                               package="DeLorean"))
+font.family <- "Verdana"
+font.theme <- theme_update(text=element_text(family=font.family))
+theme_set(font.theme)
+```
+
+
+# Load data
+```{r load.test.data}
+data(GuoDeLorean)
+guo.expr.centred <- t(scale(t(guo.expr), scale=FALSE, center=TRUE))
+guo.cell.meta <-
+    guo.cell.meta %>%
+    mutate(cell.type = factor(ifelse(is.na(cell.type), "NA", as.character(cell.type))))
+```
+
+
+# PCA
+
+Perform a PCA
+```{r PCA}
+pca <- prcomp(t(guo.expr.centred), center=TRUE, scale.=FALSE)
+names(pca)
+pca$center
+pca$scale
+summary(pca)
+# print(pca)
+# print(pca)
+# summary(pca)
+png('Guo-PCA-var.png')
+plot(pca, type = "l")
+dev.off()
+pca.l <- reshape2::melt(pca$x, varnames=c("cell", "PC"), value.name="x")
+sample_n(pca.l, 10)
+pca.df <-
+    pca.l %>%
+    reshape2::dcast(cell ~ PC, value.var = 'x') %>%
+    left_join(guo.cell.meta)
+```
+
+Calculate axis which best predicts capture time
+```{r calcCaptureAxis}
+lm.fit <- lm(obstime ~ PC1 + PC2, pca.df)
+lm.fit
+a <- lm.fit$coefficients[['PC1']]
+b <- lm.fit$coefficients[['PC2']]
+lambda <- sqrt(a**2 + b**2) / 2
+slope.x <- a / 2 * lambda
+slope.y <- b / 2 * lambda
+capturetime.slope <- slope.y / slope.x
+capturetime.angle <- atan2(slope.y, slope.x)
+with(pca.df, cor(obstime, PC1)) / with(pca.df, cor(obstime, PC2))
+gp.pca <-
+    ggplot(pca.df,
+           aes(x = PC1, y = PC2, label = cell, colour = capture, shape = cell.type)) +
+    #geom_text() +
+    geom_point(size = 4) +
+    geom_abline(slope = capturetime.slope) +
+    scale_colour_few() +
+    theme_few()
+print(gp.pca)
+ggsave('Guo-PCA.pdf', gp.pca)
+```
+
+Calculate distances to capture time direction
+```{r calcDistToCapture}
+to.radial <- function(x, y) {
+    r = sqrt(x**2 + y**2)
+    list(r = r, theta = atan2(y, x))
+}
+dist.to.capturetime.axis <- function(x, y) {
+    with(to.radial(x, y), {
+        radians.diff <- (capturetime.angle - theta) %% (2 * pi)
+        sin(radians.diff) * r
+    })
+}
+pca.df <-
+    pca.df %>%
+    mutate(dist = dist.to.capturetime.axis(PC1, PC2),
+           z.hat = (dist - mean(dist)) / sd(dist))
+gp.pca.z <- ggplot(pca.df,
+       aes(x = PC1, y = PC2, colour = z.hat)) +
+    geom_point(size = 4) +
+    geom_abline(slope = capturetime.slope) +
+    scale_colour_gradient2() +
+    theme_few()
+print(gp.pca.z)
+ggsave('Guo-PCA-z.pdf', gp.pca.z)
+qplot(pca.df$z.hat)
+```
+
+
+# Fit DeLorean model
+
+Create DeLorean object.
+```{r createDL}
+dl <- de.lorean(
+    guo.expr.centred,
+    guo.gene.meta,
+    guo.cell.meta)
+```
+
+Estimate hyper-parameters
+```{r empiricalBayes}
+model.name <- 'exact'
+dl <- estimate.hyper(dl, sigma.tau = .25, model.name = model.name, adjust.cell.sizes = FALSE)
+```
+
+Choose a few cells from each capture time
+```{r chooseCells}
+guo.cell.meta %>%
+    group_by(capture) %>%
+    summarise(number = n())
+n.sample <- 157
+sampled.cells <- guo.cell.meta %>%
+    group_by(capture) %>%
+    do(sample_n(., min(nrow(.), n.sample)))
+sampled.cells %>% summarise(number = n())
+dl <- filter.cells(dl, cells=sampled.cells$cell)
+```
+
+Prepare for fitting
+```{r prepare}
+dl <- prepare.for.stan(dl)
+sampled.cells
+dl$cell.map <-
+    dl$cell.map %>%
+    left_join(dplyr::select(pca.df, cell, z.hat))
+```
+
+Compile
+```{r compile}
+model.path <- system.file('inst/Stan/branching.stan', package = 'DeLorean')
+model <- rstan::stan_model(model.path)
+```
+
+Fit
+```{r fit}
+create.init <- function() with(dl$stan.data, list(
+    z = dl$cell.map$z.hat,
+    tau = rnorm(C, mean = time, sd = sigma_tau),
+    psi = rlnorm(G, meanlog = mu_psi, sdlog = sigma_psi),
+    omega = rlnorm(G, meanlog = mu_omega, sdlog = sigma_omega)))
+# create.init()
+system.time(
+    fit <- rstan::vb(
+        model,
+        data = dl$stan.data,
+        init = create.init))
+```
+
+```{r shinyStan, eval = FALSE, echo = FALSE}
+#
+# Examine with ShinyStan
+#
+my_sso <- shinystan::launch_shinystan(fit)
+```
+
+
+# Examine posterior
+
+Melt posterior into format suitable for processing
+```{r processPosterior}
+sample.dims <- list(
+    lp__ = c(),
+    tau = c("c"),
+    z = c("c"),
+    psi = c("g"),
+    omega = c("g"))
+samples <- rstan::extract(fit, pars = names(sample.dims), permuted=TRUE)
+melt.param <- function(samples, name, dims) {
+    varnames <- c('iter', dims)
+    melt(samples, varnames, value.name = name)
+}
+samples.m <- lapply(names(sample.dims), function(n) melt.param(samples[[n]], n, sample.dims[[n]]))
+names(samples.m) <- names(sample.dims)
+```
+
+Locate best sample
+```{r findBest}
+best.iter <- which.max(samples.m$lp__$lp__)
+best.m <- lapply(samples.m, function(s) filter(s, iter == best.iter))
+```
+
+Plot best sample estimates for tau and z
+```{r tauVsZ}
+tau.z <- with(best.m, left_join(tau, z) %>% left_join(dl$cell.map))
+ggplot(tau.z, aes(x = tau, y = z, color = capture, shape = cell.type)) +
+    geom_point(size = 4) +
+    scale_colour_few() +
+    theme_few()
+```
+
+
+Plot the posterior for the noise and temporal variance levels
+```{r postNoise}
+var.post.stats <-
+    with(samples.m, left_join(psi, omega)) %>%
+    group_by(g) %>%
+    summarise(
+        psi.mean   = mean(psi),
+        psi.sd     = sd(psi),
+        omega.mean = mean(omega),
+        omega.sd   = sd(omega)) %>%
+    left_join(dl$gene.map)
+sample_n(var.post.stats, 10)
+ggplot(var.post.stats,
+       aes(x = psi.mean, xmin = psi.mean - psi.sd, xmax = psi.mean + psi.sd,
+           y = omega.mean, ymin = omega.mean - omega.sd, ymax = omega.mean + omega.sd,
+           label = gene)) +
+    geom_point(alpha = .4) +
+    geom_errorbar(alpha = .4) +
+    geom_errorbarh(alpha = .4) +
+    geom_label(alpha = .8) +
+    theme_few()
+```
+
+## Predicted expression
+
+Calculate the predicted mean and variances on a grid across the latent space.
+```{r calcPost}
+tau.range <- range(best.m$tau$tau)
+tau.min <- floor(tau.range[1])
+tau.max <- ceiling(tau.range[2])
+tau.grid <- seq(from = tau.min, to = tau.max, length.out = 51)
+z.range <- range(best.m$z$z)
+z.min <- floor(z.range[1])
+z.max <- ceiling(z.range[2])
+z.grid <- seq(from = z.min, to = z.max, length.out = 51)
+grid <- expand.grid(tau = tau.grid, z = z.grid)
+sample_n(grid, 10)
+dim(grid)
+cell.post <- with(best.m, left_join(tau, z))
+combn(cell.post)
+combn(1:4, 2)
+stan.fns <- rstan::expose_stan_functions(fit)
+cov_fn(1.41, 0, 0, 0, 1)
+calc.K <- function(.df) {
+    N <- nrow(.df)
+    K <- matrix(NA, nrow = N, ncol = N)
+    for (i in 1:N) {
+        for (j in i:N) {
+            if (i == j) {
+                K[i,j] <- 1
+            } else {
+                rtau <- with(.df, tau[i] - tau[j])
+                rz   <- with(.df, z[i] - z[j])
+                K[i,j] <- K[j, i] <- cov_fn(rtau, rz, 0, 0, dl$stan.data$l)
+            }
+        }
+    }
+    K
+}
+K <- calc.K(cell.post)
+```
+
+
+Plot the predicted expression for selected genes across the latent space.
+```{r predictExpr}
+```
+
+# Session information
+
+R version and packages used:
+```{r Rversion}
+date()
+devtools::session_info()
+```

@@ -57,7 +57,7 @@ functions {
         for (c1 in 1:cols(tau)) {
             for (c2 in 1:c1) {
                 result[c1,c2] = cov_fn(tau[c2] - tau[c1], periodic,
-                                        period, l);
+                                       period, l);
                 if(c1 != c2) {
                     result[c2,c1] = result[c1,c2];
                 }
