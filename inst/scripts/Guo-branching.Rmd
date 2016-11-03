@@ -76,8 +76,10 @@ summary(pca)
 # print(pca)
 # summary(pca)
 # png('Guo-PCA-var.png')
-# plot(pca, type = "l")
+# plot(pca)
 # dev.off()
+plot(pca)
+biplot(pca)
 pca.l <- reshape2::melt(pca$x, varnames=c("cell", "PC"), value.name="x")
 sample_n(pca.l, 10)
 pca.df <-
@@ -109,7 +111,7 @@ gp.pca <-
     scale_colour_few() +
     # scale_colour_manual(values = cc) +
     theme_few()
-ggsave('Guo-PCA.pdf', gp.pca)
+ggsave('Guo-PCA.pdf', gp.pca, width = 12, height = 8, units = 'in')
 ```
 
 Plot the cells' locations on first two PCA components with the axis that best describes capture time progression.
@@ -139,7 +141,7 @@ gp.pca.z <- ggplot(pca.df,
     geom_abline(slope = capturetime.slope) +
     scale_colour_gradient2() +
     theme_few()
-ggsave('Guo-PCA-z.pdf', gp.pca.z)
+ggsave('Guo-PCA-z.pdf', gp.pca.z, width = 12, height = 8, units = 'in')
 ```
 
 Plot the distance from each cell's location in 2D PCA space to the axis describing pseudotime.
@@ -263,7 +265,7 @@ gp.tau.z <-
         alpha = .2) +
     scale_colour_few() +
     theme_few()
-ggsave('Guo-tau-z.pdf', gp.tau.z)
+ggsave('Guo-tau-z.pdf', gp.tau.z, width = 12, height = 8, units = 'in')
 ```
 
 Plot tau vs. z from the best sample.
@@ -294,7 +296,7 @@ gp.var <-
     geom_errorbarh(alpha = .4) +
     geom_label(alpha = .8) +
     theme_few()
-ggsave('Guo-var.pdf', gp.var)
+ggsave('Guo-var.pdf', gp.var, width = 12, height = 8, units = 'in')
 ```
 
 Plot the posterior for the noise and temporal variance levels
@@ -305,6 +307,8 @@ print(gp.var)
 
 ## Calculate distances between cells
 
+We want to know if there are any cells that are significantly further away
+from their closest neighbours in latent-space compared to gene-space.
 ```{r calcDists}
 dists.gene <- as.matrix(dist(t(dl$expr)))
 dists.gene <- dists.gene / mean(dists.gene)
@@ -401,7 +405,7 @@ gp.gex <-
     scale_colour_few() +
     facet_wrap(~ gene) +
     theme_few()
-ggsave('Guo-gene-expr.pdf', gp.gex)
+ggsave('Guo-gene-expr.pdf', gp.gex, width = 12, height = 8, units = 'in')
 ```
 
 Calculate the predicted expression for randomly selected genes across the latent space.
