@@ -15,7 +15,8 @@ set.seed(1)
 ```
 
 
-```{r loadLibs, echo=FALSE, message=FALSE}
+Load libraries
+```{r loadLibs, message=FALSE}
 library(stringr)
 library(dplyr)
 library(reshape2)
@@ -70,15 +71,13 @@ Perform a PCA
 ```{r PCA}
 pca <- prcomp(t(guo.expr.centred), center=TRUE, scale.=FALSE)
 names(pca)
-pca$center
-pca$scale
 summary(pca)
 # print(pca)
 # print(pca)
 # summary(pca)
-png('Guo-PCA-var.png')
-plot(pca, type = "l")
-dev.off()
+# png('Guo-PCA-var.png')
+# plot(pca, type = "l")
+# dev.off()
 pca.l <- reshape2::melt(pca$x, varnames=c("cell", "PC"), value.name="x")
 sample_n(pca.l, 10)
 pca.df <-
@@ -99,6 +98,8 @@ slope.y <- b / 2 * lambda
 capturetime.slope <- slope.y / slope.x
 capturetime.angle <- atan2(slope.y, slope.x)
 with(pca.df, cor(obstime, PC1)) / with(pca.df, cor(obstime, PC2))
+# Calculate colours ggplot2 would use for continuous colour gradient
+# cc <- scales::seq_gradient_pal("blue", "red", "Lab")(seq(0,1,length.out = length(levels(pca.df$capture))))
 gp.pca <-
     ggplot(pca.df,
            aes(x = PC1, y = PC2, label = cell, colour = capture, shape = cell.type)) +
@@ -106,9 +107,14 @@ gp.pca <-
     geom_point(size = 4) +
     geom_abline(slope = capturetime.slope) +
     scale_colour_few() +
+    # scale_colour_manual(values = cc) +
     theme_few()
-print(gp.pca)
 ggsave('Guo-PCA.pdf', gp.pca)
+```
+
+Plot the cells' locations on first two PCA components with the axis that best describes capture time progression.
+```{r plotPCA}
+print(gp.pca)
 ```
 
 Calculate distances to capture time direction
@@ -133,9 +139,18 @@ gp.pca.z <- ggplot(pca.df,
     geom_abline(slope = capturetime.slope) +
     scale_colour_gradient2() +
     theme_few()
-print(gp.pca.z)
 ggsave('Guo-PCA-z.pdf', gp.pca.z)
-qplot(pca.df$z.hat)
+```
+
+Plot the distance from each cell's location in 2D PCA space to the axis describing pseudotime.
+We will use this as our initial estimate of our latent dimension $z$ in our model.
+```{r plotPCAZ}
+print(gp.pca.z)
+```
+
+Plot a histogram of the $z$ estimates.
+```{r plotPCAZ}
+qplot(pca.df$z.hat) + theme_few()
 ```
 
 
@@ -160,18 +175,22 @@ Choose a few cells from each capture time
 guo.cell.meta %>%
     group_by(capture) %>%
     summarise(number = n())
-n.sample <- 157
-sampled.cells <- guo.cell.meta %>%
-    group_by(capture) %>%
-    do(sample_n(., min(nrow(.), n.sample)))
-sampled.cells %>% summarise(number = n())
-dl <- filter.cells(dl, cells=sampled.cells$cell)
+filter.cells <- FALSE
+if (filter.cells) {
+    # n.sample <- 157
+    n.sample <- 17
+    sampled.cells <- guo.cell.meta %>%
+        group_by(capture) %>%
+        do(sample_n(., min(nrow(.), n.sample)))
+    sampled.cells %>% summarise(number = n())
+    dl <- filter.cells(dl, cells=sampled.cells$cell)
+}
 ```
 
 Prepare for fitting
 ```{r prepare}
 dl <- prepare.for.stan(dl)
-sampled.cells
+dl$stan.data$lengthscales = c(dl$stan.data$l, 6)  # Length scale for pseudotime and z
 dl$cell.map <-
     dl$cell.map %>%
     left_join(dplyr::select(pca.df, cell, z.hat))
@@ -186,16 +205,16 @@ model <- rstan::stan_model(model.path)
 Fit
 ```{r fit}
 create.init <- function() with(dl$stan.data, list(
-    z = dl$cell.map$z.hat,
-    tau = rnorm(C, mean = time, sd = sigma_tau),
-    psi = rlnorm(G, meanlog = mu_psi, sdlog = sigma_psi),
-    omega = rlnorm(G, meanlog = mu_omega, sdlog = sigma_omega)))
-# create.init()
+        tauoffset = rnorm(C, sd = sigma_tau),
+        z = dl$cell.map$z.hat,
+        psi = rlnorm(G, meanlog = mu_psi, sdlog = sigma_psi),
+        omega = rlnorm(G, meanlog = mu_omega, sdlog = sigma_omega)))
+init <- create.init()
 system.time(
     fit <- rstan::vb(
         model,
         data = dl$stan.data,
-        init = create.init))
+        init = init))
 ```
 
 ```{r shinyStan, eval = FALSE, echo = FALSE}
@@ -231,17 +250,29 @@ best.iter <- which.max(samples.m$lp__$lp__)
 best.m <- lapply(samples.m, function(s) filter(s, iter == best.iter))
 ```
 
-Plot best sample estimates for tau and z
+Calculate best sample estimates for tau and z
 ```{r tauVsZ}
+init.df <- data.frame(c = 1:dl$stan.data$C, tau.init = init$tauoffset + dl$stan.data$time, z.init = init$z)
 tau.z <- with(best.m, left_join(tau, z) %>% left_join(dl$cell.map))
-ggplot(tau.z, aes(x = tau, y = z, color = capture, shape = cell.type)) +
+gp.tau.z <-
+    ggplot(tau.z, aes(x = tau, y = z, color = capture, shape = cell.type)) +
     geom_point(size = 4) +
+    geom_segment(
+        data = left_join(tau.z, init.df),
+        mapping = aes(x = tau.init, xend = tau, y = z.init, yend = z),
+        alpha = .2) +
     scale_colour_few() +
     theme_few()
+ggsave('Guo-tau-z.pdf', gp.tau.z)
 ```
 
+Plot tau vs. z from the best sample.
+The line segments show where they were initialised at the start of inference.
+```{r plotTauZ}
+print(gp.tau.z)
+```
 
-Plot the posterior for the noise and temporal variance levels
+Calculate the posterior for the noise and temporal variance levels
 ```{r postNoise}
 var.post.stats <-
     with(samples.m, left_join(psi, omega)) %>%
@@ -253,60 +284,131 @@ var.post.stats <-
         omega.sd   = sd(omega)) %>%
     left_join(dl$gene.map)
 sample_n(var.post.stats, 10)
-ggplot(var.post.stats,
-       aes(x = psi.mean, xmin = psi.mean - psi.sd, xmax = psi.mean + psi.sd,
-           y = omega.mean, ymin = omega.mean - omega.sd, ymax = omega.mean + omega.sd,
-           label = gene)) +
+gp.var <-
+    ggplot(var.post.stats,
+           aes(x = psi.mean, xmin = psi.mean - psi.sd, xmax = psi.mean + psi.sd,
+               y = omega.mean, ymin = omega.mean - omega.sd, ymax = omega.mean + omega.sd,
+               label = gene)) +
     geom_point(alpha = .4) +
     geom_errorbar(alpha = .4) +
     geom_errorbarh(alpha = .4) +
     geom_label(alpha = .8) +
     theme_few()
+ggsave('Guo-var.pdf', gp.var)
 ```
+
+Plot the posterior for the noise and temporal variance levels
+```{r plotVarPost}
+print(gp.var)
+```
+
+
+## Calculate distances between cells
+
+```{r calcDists}
+dists.gene <- as.matrix(dist(t(dl$expr)))
+dists.gene <- dists.gene / mean(dists.gene)
+latent <- as.matrix(select(tau.z, tau, z))
+dists.latent <- as.matrix(dist(latent))
+dists.latent <- dists.gene / mean(dists.latent)
+qplot(as.vector(dists.gene)) + theme_few()
+dists.weighted <- exp(-dists.gene**2 / .7**2) * dists.latent / dists.gene
+diag(dists.weighted) <- 0
+ggplot(mutate(tau.z, weighted.dist = rowSums(dists.weighted)),
+       aes(x = tau, y = z, color = weighted.dist, shape = cell.type)) +
+    geom_point(size = 4) +
+    # scale_colour_gradient2() +
+    theme_few()
+```
+
 
 ## Predicted expression
 
 Calculate the predicted mean and variances on a grid across the latent space.
 ```{r calcPost}
+#
+# Expose Stan functions
+stan.fns <- rstan::expose_stan_functions(fit)
+#
+# Get range for grid
 tau.range <- range(best.m$tau$tau)
 tau.min <- floor(tau.range[1])
 tau.max <- ceiling(tau.range[2])
 tau.grid <- seq(from = tau.min, to = tau.max, length.out = 51)
+tau.step <- tau.grid[2] - tau.grid[1]
 z.range <- range(best.m$z$z)
 z.min <- floor(z.range[1])
 z.max <- ceiling(z.range[2])
 z.grid <- seq(from = z.min, to = z.max, length.out = 51)
-grid <- expand.grid(tau = tau.grid, z = z.grid)
-sample_n(grid, 10)
+z.step <- z.grid[2] - z.grid[1]
+#
+# Expand into grid
+grid.df <- expand.grid(tau = tau.grid, z = z.grid)
+grid <- t(as.matrix(grid.df))
+class(grid)
 dim(grid)
+#
+# Covariance across grid points
+K.grid <- cov_symmetric(grid, dl$stan.data$lengthscales)
+class(K.grid)
+dim(K.grid)
+#
+# Covariance across latent points from posterior
 cell.post <- with(best.m, left_join(tau, z))
-combn(cell.post)
-combn(1:4, 2)
-stan.fns <- rstan::expose_stan_functions(fit)
-cov_fn(1.41, 0, 0, 0, 1)
-calc.K <- function(.df) {
-    N <- nrow(.df)
-    K <- matrix(NA, nrow = N, ncol = N)
-    for (i in 1:N) {
-        for (j in i:N) {
-            if (i == j) {
-                K[i,j] <- 1
-            } else {
-                rtau <- with(.df, tau[i] - tau[j])
-                rz   <- with(.df, z[i] - z[j])
-                K[i,j] <- K[j, i] <- cov_fn(rtau, rz, 0, 0, dl$stan.data$l)
-            }
-        }
-    }
-    K
-}
-K <- calc.K(cell.post)
+points.post <- t(as.matrix(select(cell.post, tau, z)))
+K.post <- cov_symmetric(points.post, dl$stan.data$lengthscales)
+dim(K.post)
+#
+# Cross-covariance
+K.cross <- cov(points.post, grid, dl$stan.data$lengthscales)
+dim(K.cross)
 ```
 
-
-Plot the predicted expression for selected genes across the latent space.
+Calculate the predicted expression for randomly selected genes across the latent space.
 ```{r predictExpr}
+calc.post <- function(row) {
+    message(row$gene)
+    y <- dl$expr[row$g,]
+    psi <- row$psi
+    omega <- row$omega
+    gp.post <- gp.predict(
+        y - mean(y),
+        psi * K.post + diag(omega, nrow = nrow(K.post)),
+        psi * K.cross,
+        psi * K.grid + diag(omega, nrow = nrow(K.grid)))
+    grid.df %>%
+        mutate(
+            # g = row$g,
+            # gene = row$gene,
+            expr.post = as.vector(gp.post$mu))
+}
+genes.df <- with(best.m, left_join(psi, omega) %>% left_join(dl$gene.map))
+all.post <-
+    genes.df %>%
+    sample_n(9) %>%
+    group_by(g) %>%
+    do(calc.post(.)) %>%
+    ungroup() %>%
+    left_join(dl$gene.map)
+gp.gex <-
+    ggplot(all.post,
+           aes(x = tau, y = z, fill = expr.post)) +
+    geom_tile(width = tau.step, height = z.step) +
+    scale_fill_gradient2(low = scales::muted("blue"), mid = "white", high = scales::muted("red")) +
+    geom_point(data = tau.z %>% mutate(expr.post = 0),
+               mapping = aes(x = tau, y = z, shape = cell.type),
+               size = 2) +
+    scale_colour_few() +
+    facet_wrap(~ gene) +
+    theme_few()
+ggsave('Guo-gene-expr.pdf', gp.gex)
 ```
+
+Calculate the predicted expression for randomly selected genes across the latent space.
+```{r plotGex}
+print(gp.gex)
+```
+
 
 # Session information
 
