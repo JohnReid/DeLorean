@@ -85,7 +85,7 @@ dev.off()
 #
 # Bi-plot
 biplot(pca)
-pdf('Plots/Guo-PCA-biplot.pdf', width = 18, height = 12)
+pdf('Plots/Guo-PCA-biplot.pdf', width = 12, height = 12)
 biplot(pca)
 dev.off()
 #
