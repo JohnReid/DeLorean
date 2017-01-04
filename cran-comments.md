@@ -4,7 +4,12 @@
 * win-builder (devel and release)
 
 ## R CMD check results
-There were no ERRORs, WARNINGs or NOTEs.
+There were no ERRORs or WARNINGs.
+
+There was one NOTE:
+
+* checking CRAN incoming feasibility ... NOTE
+Maintainer: 'John Reid <john.reid@mrc-bsu.cam.ac.uk>'
 
 License components with restrictions and base license permitting such:
   MIT + file LICENSE
