@@ -4,7 +4,7 @@
 \alias{plot.held.out.posterior}
 \title{Plot the posterior of held out genes}
 \usage{
-\method{plot}{held.out.posterior}(dl, posterior, facets = ~gene)
+plot.held.out.posterior(dl, posterior, facets = ~gene)
 }
 \arguments{
 \item{dl}{de.lorean object}
