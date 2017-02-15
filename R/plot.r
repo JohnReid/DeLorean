@@ -61,17 +61,68 @@ alpha.for.rug <- function(n, scale=100) {
 #'
 #' @export
 #'
-marg.like.plot <- function(dl) {
-    with(dl, {
-        gp <- (ggplot(samples.l$logmarglike %>% left_join(gene.map),
-                      aes(x=gene,
-                          y=logmarglike,
-                          colour=is.held.out),
-                      environment=environment())
-            + geom_boxplot()
-        )
-    })
-}
+marg.like.plot <- function(dl) with(dl,
+  ggplot(samples.l$logmarglike %>% left_join(gene.map),
+         aes(x = reorder(gene, logmarglike, FUN = median),
+             y = logmarglike,
+             colour = is.held.out),
+         environment=environment()) +
+    geom_boxplot() +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1)))
+
+#' Plot posterior of psi, the temporal variation parameter for all genes.
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+post.psi.plot <- function(dl) with(dl,
+  ggplot(dl$samples.l$psi, aes(x = log(psi))) +
+    geom_density() +
+    geom_rug() +
+    stat_function(fun = function(x) dnorm(x,
+                                          mean = hyper$mu_psi,
+                                          sd = hyper$sigma_psi),
+                  colour = "blue", alpha = .7, linetype = "dashed"))
+
+#' Boxplot posterior of psi, the temporal variation parameter for each gene.
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+post.gene.psi.plot <- function(dl) with(dl,
+  ggplot(samples.l$psi %>% left_join(gene.map),
+         aes(x = reorder(gene, psi, FUN = median),
+             y = log(psi))) +
+    geom_boxplot())
+
+#' Plot posterior of omega, the noise parameter for all genes.
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+post.omega.plot <- function(dl) with(dl,
+  ggplot(samples.l$omega, aes(x = log(omega))) +
+    geom_density() +
+    geom_rug() +
+    stat_function(fun = function(x) dnorm(x,
+                                          mean = hyper$mu_omega,
+                                          sd = hyper$sigma_omega),
+                  colour = "blue", alpha = .7, linetype = "dashed"))
+
+#' Boxplot posterior of omega, the noise parameter for each gene.
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+post.gene.omega.plot <- function(dl) with(dl,
+  ggplot(samples.l$omega %>% left_join(gene.map),
+         aes(x = reorder(gene, omega, FUN = median),
+             y = log(omega))) +
+    geom_boxplot())
 
 #' Plot pseudotime (tau) against observed capture time.
 #'
