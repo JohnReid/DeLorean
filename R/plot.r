@@ -1,3 +1,13 @@
+# Is a package installed?
+#
+is.installed <- function(mypkg) is.element(mypkg, installed.packages()[,1])
+
+# Configure ggplot2 colours
+if (is.installed('ggthemes')) {
+  scale_colour_discrete <- function(...) ggthemes::scale_colour_few(...)
+  scale_fill_discrete <- function(...) ggthemes::scale_fill_few(...)
+}
+
 #' Various DeLorean object plots
 #'
 #' @param x de.lorean object
@@ -95,7 +105,8 @@ post.gene.psi.plot <- function(dl) with(dl,
   ggplot(samples.l$psi %>% left_join(gene.map),
          aes(x = reorder(gene, psi, FUN = median),
              y = log(psi))) +
-    geom_boxplot())
+    geom_boxplot() +
+    geom_hline(yintercept = stan.data$mu_psi, linetype = "dashed"))
 
 #' Plot posterior of omega, the noise parameter for all genes.
 #'
@@ -122,7 +133,8 @@ post.gene.omega.plot <- function(dl) with(dl,
   ggplot(samples.l$omega %>% left_join(gene.map),
          aes(x = reorder(gene, omega, FUN = median),
              y = log(omega))) +
-    geom_boxplot())
+    geom_boxplot() +
+    geom_hline(yintercept = stan.data$mu_omega, linetype = "dashed"))
 
 #' Plot pseudotime (tau) against observed capture time.
 #'
