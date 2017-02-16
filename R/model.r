@@ -98,16 +98,16 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
         num.capture=n(),
         Mgk=mean(x.hat),
         Vgk=var(x.hat)) %>%
-      filter(! is.na(Vgk))
+      filter(! is.na(Vgk))  # Remove variances from capture times with one cell
     stopifnot(! is.na(gene.time.expr))
     stopifnot(nrow(gene.time.expr) > 0)  # Must have some rows left
     #
     # Expected variance of samples from zero-mean Gaussian with covariance K.obs
-    V.obs <- with(dl,
+    hyper.capture <- unique(gene.time.expr$capture)
+    hyper.obs <- unique(filter(cell.meta, capture %in% hyper.capture)$obstime)
+    V.obs <-
       expected.sample.var(
-        cov.matern.32(
-          cov.calc.dists(unique(dl$cell.meta$obstime)),
-          dl$opts$length.scale)))
+        cov.matern.32(cov.calc.dists(hyper.obs), dl$opts$length.scale))
     #
     # Variance within and between times
     gene.var <-
