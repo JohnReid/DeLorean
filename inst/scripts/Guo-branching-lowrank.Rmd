@@ -23,20 +23,28 @@ library(reshape2)
 library(ggplot2)
 library(ggthemes)
 library(DeLorean)
+#
+# Configure ggplot2
+theme_set(theme_few())
+scale_colour_discrete <- function(...) scale_colour_few(...)
+scale_fill_discrete <- function(...) scale_fill_few(...)
 ```
 
 
 ```{r config, echo=FALSE, message=FALSE}
+#
+# Configuration for knitr and rmarkdown
+#
 library(knitr)
 library(rmarkdown)
 #
 # knitr options
 #
 opts_chunk$set(
-    fig.path = 'figures/Guo-rand-',
-    stop_on_error = TRUE,
-    fig.width = 12.5,
-    fig.height = 8)
+  fig.path = 'figures/Guo-rand-',
+  stop_on_error = TRUE,
+  fig.width = 12.5,
+  fig.height = 8)
 #
 # Widths for saving figures
 #
@@ -47,8 +55,8 @@ fig.height <- text.width / golden.ratio
 #
 # Stylesheet
 #
-options(markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css",
-                                               package="DeLorean"))
+options(
+  markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css", package="DeLorean"))
 font.family <- "Verdana"
 font.theme <- theme_update(text=element_text(family=font.family))
 theme_set(font.theme)
@@ -57,12 +65,13 @@ dir.create('Plots')
 
 
 # Load data
+Load the data from the `DeLorean` package.
 ```{r load.test.data}
 data(GuoDeLorean)
 guo.expr.centred <- t(scale(t(guo.expr), scale=FALSE, center=TRUE))
 guo.cell.meta <-
-    guo.cell.meta %>%
-    mutate(cell.type = factor(ifelse(is.na(cell.type), "NA", as.character(cell.type))))
+  guo.cell.meta %>%
+  mutate(cell.type = factor(ifelse(is.na(cell.type), "NA", as.character(cell.type))))
 ```
 
 
@@ -93,9 +102,9 @@ dev.off()
 pca.l <- reshape2::melt(pca$x, varnames=c("cell", "PC"), value.name="x")
 sample_n(pca.l, 10)
 pca.df <-
-    pca.l %>%
-    reshape2::dcast(cell ~ PC, value.var = 'x') %>%
-    left_join(guo.cell.meta)
+  pca.l %>%
+  reshape2::dcast(cell ~ PC, value.var = 'x') %>%
+  left_join(guo.cell.meta)
 ```
 
 Calculate direction that best predicts capture time
@@ -113,14 +122,10 @@ with(pca.df, cor(obstime, PC1)) / with(pca.df, cor(obstime, PC2))
 # Calculate colours ggplot2 would use for continuous colour gradient
 # cc <- scales::seq_gradient_pal("blue", "red", "Lab")(seq(0,1,length.out = length(levels(pca.df$capture))))
 gp.pca <-
-    ggplot(pca.df,
-           aes(x = PC1, y = PC2, label = cell, colour = capture, shape = cell.type)) +
-    #geom_text() +
-    geom_point(size = 4) +
-    geom_abline(slope = capturetime.slope) +
-    scale_colour_few() +
-    # scale_colour_manual(values = cc) +
-    theme_few()
+  ggplot(pca.df, aes(x = PC1, y = PC2, label = cell, colour = capture, shape = cell.type)) +
+  #geom_text() +
+  geom_point(size = 4) +
+  geom_abline(slope = capturetime.slope)
 ggsave('Plots/Guo-PCA.pdf', gp.pca, width = 12, height = 8, units = 'in')
 ```
 
@@ -132,25 +137,24 @@ print(gp.pca)
 Calculate distances to capture time direction
 ```{r calcDistToCapture}
 to.radial <- function(x, y) {
-    r = sqrt(x**2 + y**2)
-    list(r = r, theta = atan2(y, x))
+  r = sqrt(x**2 + y**2)
+  list(r = r, theta = atan2(y, x))
 }
 dist.to.capturetime.axis <- function(x, y) {
-    with(to.radial(x, y), {
-        radians.diff <- (capturetime.angle - theta) %% (2 * pi)
-        sin(radians.diff) * r
-    })
+  with(to.radial(x, y), {
+    radians.diff <- (capturetime.angle - theta) %% (2 * pi)
+    sin(radians.diff) * r
+  })
 }
 pca.df <-
-    pca.df %>%
-    mutate(dist = dist.to.capturetime.axis(PC1, PC2),
-           z.hat = (dist - mean(dist)) / sd(dist))
+  pca.df %>%
+  mutate(dist = dist.to.capturetime.axis(PC1, PC2),
+         z.hat = (dist - mean(dist)) / sd(dist))
 gp.pca.z <- ggplot(pca.df,
-       aes(x = PC1, y = PC2, colour = z.hat)) +
-    geom_point(size = 4) +
-    geom_abline(slope = capturetime.slope) +
-    scale_colour_gradient2() +
-    theme_few()
+    aes(x = PC1, y = PC2, colour = z.hat)) +
+  geom_point(size = 4) +
+  geom_abline(slope = capturetime.slope) +
+  scale_colour_gradient2()
 ggsave('Plots/Guo-PCA-z.pdf', gp.pca.z, width = 12, height = 8, units = 'in')
 ```
 
@@ -162,7 +166,7 @@ print(gp.pca.z)
 
 Plot a histogram of the $z$ estimates.
 ```{r plotZhistogram}
-qplot(pca.df$z.hat) + theme_few()
+qplot(pca.df$z.hat)
 ```
 
 
@@ -171,9 +175,9 @@ qplot(pca.df$z.hat) + theme_few()
 Create DeLorean object.
 ```{r createDL}
 dl <- de.lorean(
-    guo.expr.centred,
-    guo.gene.meta,
-    guo.cell.meta)
+  guo.expr.centred,
+  guo.gene.meta,
+  guo.cell.meta)
 ```
 
 Estimate hyper-parameters
@@ -185,17 +189,17 @@ dl <- estimate.hyper(dl, sigma.tau = .25, model.name = model.name, adjust.cell.s
 Choose a few cells from each capture time
 ```{r chooseCells}
 guo.cell.meta %>%
-    group_by(capture) %>%
-    summarise(number = n())
+  group_by(capture) %>%
+  summarise(number = n())
 filter.cells <- FALSE
 if (filter.cells) {
-    # n.sample <- 157
-    n.sample <- 17
-    sampled.cells <- guo.cell.meta %>%
-        group_by(capture) %>%
-        do(sample_n(., min(nrow(.), n.sample)))
-    sampled.cells %>% summarise(number = n())
-    dl <- filter.cells(dl, cells=sampled.cells$cell)
+  # n.sample <- 157
+  n.sample <- 17
+  sampled.cells <- guo.cell.meta %>%
+    group_by(capture) %>%
+    do(sample_n(., min(nrow(.), n.sample)))
+  sampled.cells %>% summarise(number = n())
+  dl <- filter.cells(dl, cells=sampled.cells$cell)
 }
 ```
 
@@ -208,19 +212,19 @@ num.inducing.tau <- 30
 num.inducing.latent <- 5
 dl$stan.data$M <- num.inducing.tau * num.inducing.latent
 dl$stan.data$u <- with(dl, {
-    taupseudo <- seq(
-        from = time.range[1] - num.sd.border * hyper$sigma_tau,
-        to = time.range[2] + num.sd.border * hyper$sigma_tau,
-        length.out = num.inducing.tau))
-    latentpseudo <- seq(
-        from = - num.sd.border,
-        to = num.sd.border,
-        length.out = num.inducing.latent))
-    t(expand.grid(taupseudo, latentpseudo))
+  taupseudo <- seq(
+    from = time.range[1] - num.sd.border * hyper$sigma_tau,
+    to = time.range[2] + num.sd.border * hyper$sigma_tau,
+    length.out = num.inducing.tau)
+  latentpseudo <- seq(
+    from = - num.sd.border,
+    to = num.sd.border,
+    length.out = num.inducing.latent)
+  t(expand.grid(taupseudo, latentpseudo))
 })
 dl$cell.map <-
-    dl$cell.map %>%
-    left_join(dplyr::select(pca.df, cell, z.hat))
+  dl$cell.map %>%
+  left_join(dplyr::select(pca.df, cell, z.hat))
 ```
 
 Compile
@@ -231,17 +235,18 @@ model <- rstan::stan_model(model.path)
 
 Fit
 ```{r fit}
-create.init <- function() with(dl$stan.data, list(
-        tauoffset = rnorm(C, sd = sigma_tau),
-        z = dl$cell.map$z.hat,
-        psi = rlnorm(G, meanlog = mu_psi, sdlog = sigma_psi),
-        omega = rlnorm(G, meanlog = mu_omega, sdlog = sigma_omega)))
+create.init <- function() with(dl$stan.data,
+  list(
+  tauoffset = rnorm(C, sd = sigma_tau),
+  z = dl$cell.map$z.hat,
+  psi = rlnorm(G, meanlog = mu_psi, sdlog = sigma_psi),
+  omega = rlnorm(G, meanlog = mu_omega, sdlog = sigma_omega)))
 init <- create.init()
 system.time(
-    fit <- rstan::vb(
-        model,
-        data = dl$stan.data,
-        init = init))
+  fit <- rstan::vb(
+    model,
+    data = dl$stan.data,
+    init = init))
 ```
 
 ```{r shinyStan, eval = FALSE, echo = FALSE}
@@ -257,15 +262,15 @@ my_sso <- shinystan::launch_shinystan(fit)
 Melt posterior into format suitable for processing
 ```{r processPosterior}
 sample.dims <- list(
-    lp__ = c(),
-    tau = c("c"),
-    z = c("c"),
-    psi = c("g"),
-    omega = c("g"))
+  lp__ = c(),
+  tau = c("c"),
+  z = c("c"),
+  psi = c("g"),
+  omega = c("g"))
 samples <- rstan::extract(fit, pars = names(sample.dims), permuted=TRUE)
 melt.param <- function(samples, name, dims) {
-    varnames <- c('iter', dims)
-    melt(samples, varnames, value.name = name)
+  varnames <- c('iter', dims)
+  melt(samples, varnames, value.name = name)
 }
 samples.m <- lapply(names(sample.dims), function(n) melt.param(samples[[n]], n, sample.dims[[n]]))
 names(samples.m) <- names(sample.dims)
@@ -282,14 +287,12 @@ Calculate best sample estimates for tau and z
 init.df <- data.frame(c = 1:dl$stan.data$C, tau.init = init$tauoffset + dl$stan.data$time, z.init = init$z)
 tau.z <- with(best.m, left_join(tau, z) %>% left_join(dl$cell.map))
 gp.tau.z <-
-    ggplot(tau.z, aes(x = tau, y = z, color = capture, shape = cell.type)) +
-    geom_point(size = 4) +
-    geom_segment(
-        data = left_join(tau.z, init.df),
-        mapping = aes(x = tau.init, xend = tau, y = z.init, yend = z),
-        alpha = .2) +
-    scale_colour_few() +
-    theme_few()
+  ggplot(tau.z, aes(x = tau, y = z, color = capture, shape = cell.type)) +
+  geom_point(size = 4) +
+  geom_segment(
+    data = left_join(tau.z, init.df),
+    mapping = aes(x = tau.init, xend = tau, y = z.init, yend = z),
+    alpha = .2)
 ggsave('Plots/Guo-tau-z.pdf', gp.tau.z, width = 12, height = 8, units = 'in')
 ```
 
@@ -302,25 +305,24 @@ print(gp.tau.z)
 Calculate the posterior for the noise and temporal variance levels
 ```{r postNoise}
 var.post.stats <-
-    with(samples.m, left_join(psi, omega)) %>%
-    group_by(g) %>%
-    summarise(
-        psi.mean   = mean(psi),
-        psi.sd     = sd(psi),
-        omega.mean = mean(omega),
-        omega.sd   = sd(omega)) %>%
-    left_join(dl$gene.map)
+  with(samples.m, left_join(psi, omega)) %>%
+  group_by(g) %>%
+  summarise(
+    psi.mean   = mean(psi),
+    psi.sd     = sd(psi),
+    omega.mean = mean(omega),
+    omega.sd   = sd(omega)) %>%
+  left_join(dl$gene.map)
 sample_n(var.post.stats, 10)
 gp.var <-
-    ggplot(var.post.stats,
-           aes(x = psi.mean, xmin = psi.mean - psi.sd, xmax = psi.mean + psi.sd,
-               y = omega.mean, ymin = omega.mean - omega.sd, ymax = omega.mean + omega.sd,
-               label = gene)) +
-    geom_point(alpha = .4) +
-    geom_errorbar(alpha = .4) +
-    geom_errorbarh(alpha = .4) +
-    geom_label(alpha = .8) +
-    theme_few()
+  ggplot(var.post.stats,
+         aes(x = psi.mean, xmin = psi.mean - psi.sd, xmax = psi.mean + psi.sd,
+             y = omega.mean, ymin = omega.mean - omega.sd, ymax = omega.mean + omega.sd,
+             label = gene)) +
+  geom_point(alpha = .4) +
+  geom_errorbar(alpha = .4) +
+  geom_errorbarh(alpha = .4) +
+  geom_label(alpha = .8)
 ggsave('Plots/Guo-var.pdf', gp.var, width = 12, height = 8, units = 'in')
 ```
 
@@ -340,14 +342,12 @@ dists.gene <- dists.gene / mean(dists.gene)
 latent <- as.matrix(select(tau.z, tau, z))
 dists.latent <- as.matrix(dist(latent))
 dists.latent <- dists.gene / mean(dists.latent)
-qplot(as.vector(dists.gene)) + theme_few()
+qplot(as.vector(dists.gene))
 dists.weighted <- exp(-dists.gene**2 / .7**2) * dists.latent / dists.gene
 diag(dists.weighted) <- 0
 ggplot(mutate(tau.z, weighted.dist = rowSums(dists.weighted)),
        aes(x = tau, y = z, color = weighted.dist, shape = cell.type)) +
-    geom_point(size = 4) +
-    # scale_colour_gradient2() +
-    theme_few()
+  geom_point(size = 4)
 ```
 
 
@@ -396,40 +396,38 @@ dim(K.cross)
 Calculate the predicted expression for randomly selected genes across the latent space.
 ```{r predictExpr}
 calc.post <- function(row) {
-    message(row$gene)
-    y <- dl$expr[row$g,]
-    psi <- row$psi
-    omega <- row$omega
-    gp.post <- gp.predict(
-        y - mean(y),
-        psi * K.post + diag(omega, nrow = nrow(K.post)),
-        psi * K.cross,
-        psi * K.grid + diag(omega, nrow = nrow(K.grid)))
-    grid.df %>%
-        mutate(
-            # g = row$g,
-            # gene = row$gene,
-            expr.post = as.vector(gp.post$mu))
+  message(row$gene)
+  y <- dl$expr[row$g,]
+  psi <- row$psi
+  omega <- row$omega
+  gp.post <- gp.predict(
+    y - mean(y),
+    psi * K.post + diag(omega, nrow = nrow(K.post)),
+    psi * K.cross,
+    psi * K.grid + diag(omega, nrow = nrow(K.grid)))
+  grid.df %>%
+    mutate(
+      # g = row$g,
+      # gene = row$gene,
+      expr.post = as.vector(gp.post$mu))
 }
 genes.df <- with(best.m, left_join(psi, omega) %>% left_join(dl$gene.map))
 all.post <-
-    genes.df %>%
-    sample_n(9) %>%
-    group_by(g) %>%
-    do(calc.post(.)) %>%
-    ungroup() %>%
-    left_join(dl$gene.map)
+  genes.df %>%
+  sample_n(9) %>%
+  group_by(g) %>%
+  do(calc.post(.)) %>%
+  ungroup() %>%
+  left_join(dl$gene.map)
 gp.gex <-
-    ggplot(all.post,
-           aes(x = tau, y = z, fill = expr.post)) +
-    geom_tile(width = tau.step, height = z.step) +
-    scale_fill_gradient2(low = scales::muted("blue"), mid = "white", high = scales::muted("red")) +
-    geom_point(data = tau.z %>% mutate(expr.post = 0),
-               mapping = aes(x = tau, y = z, shape = cell.type),
-               size = 2) +
-    scale_colour_few() +
-    facet_wrap(~ gene) +
-    theme_few()
+  ggplot(all.post,
+         aes(x = tau, y = z, fill = expr.post)) +
+  geom_tile(width = tau.step, height = z.step) +
+  scale_fill_gradient2(low = scales::muted("blue"), mid = "white", high = scales::muted("red")) +
+  geom_point(data = tau.z %>% mutate(expr.post = 0),
+             mapping = aes(x = tau, y = z, shape = cell.type),
+             size = 2) +
+  facet_wrap(~ gene)
 ggsave('Plots/Guo-gene-expr.pdf', gp.gex, width = 12, height = 8, units = 'in')
 ```
 
