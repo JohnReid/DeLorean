@@ -9,11 +9,6 @@ devtools::load_all('../..')
 rmarkdown::render('Guo-branching-lowrank.Rmd')
 ```
 
-Seed RNG:
-```{r seed}
-set.seed(1)
-```
-
 
 Load libraries
 ```{r loadLibs, message=FALSE}
@@ -23,23 +18,24 @@ library(reshape2)
 library(ggplot2)
 library(ggthemes)
 library(DeLorean)
-#
-# Configure ggplot2
-theme_set(theme_few())
-scale_colour_discrete <- function(...) scale_colour_few(...)
-scale_fill_discrete <- function(...) scale_fill_few(...)
 ```
 
 
 ```{r config, echo=FALSE, message=FALSE}
 #
-# Configuration for knitr and rmarkdown
+# Seed RNG
+set.seed(1)
 #
+# Configure ggplot2
+theme_set(theme_few())
+scale_colour_discrete <- function(...) scale_colour_few(...)
+scale_fill_discrete <- function(...) scale_fill_few(...)
+#
+# Configuration for knitr and rmarkdown
 library(knitr)
 library(rmarkdown)
 #
 # knitr options
-#
 opts_chunk$set(
   fig.path = 'figures/Guo-rand-',
   stop_on_error = TRUE,
@@ -47,20 +43,21 @@ opts_chunk$set(
   fig.height = 8)
 #
 # Widths for saving figures
-#
 text.width <- 4.79  # LaTeX width in inches
 golden.ratio <- 1.618  # Pleasing ratio
 fig.width <- text.width
 fig.height <- text.width / golden.ratio
 #
 # Stylesheet
-#
 options(
   markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css", package="DeLorean"))
 font.family <- "Verdana"
 font.theme <- theme_update(text=element_text(family=font.family))
 theme_set(font.theme)
+#
+# Create directory for plots and list to store them
 dir.create('Plots')
+plots <- list()
 ```
 
 
@@ -75,101 +72,6 @@ guo.cell.meta <-
 ```
 
 
-# PCA
-
-Perform a PCA
-```{r PCA}
-pca <- prcomp(t(guo.expr.centred), center=TRUE, scale.=FALSE)
-names(pca)
-summary(pca)
-# print(pca)
-# print(pca)
-# summary(pca)
-#
-# Scree plot
-plot(pca)
-pdf('Plots/Guo-PCA-scree.pdf', width = 12, height = 8)
-plot(pca)
-dev.off()
-#
-# Bi-plot
-biplot(pca)
-pdf('Plots/Guo-PCA-biplot.pdf', width = 12, height = 12)
-biplot(pca)
-dev.off()
-#
-# Convert to data frame
-pca.l <- reshape2::melt(pca$x, varnames=c("cell", "PC"), value.name="x")
-sample_n(pca.l, 10)
-pca.df <-
-  pca.l %>%
-  reshape2::dcast(cell ~ PC, value.var = 'x') %>%
-  left_join(guo.cell.meta)
-```
-
-Calculate direction that best predicts capture time
-```{r calcCaptureDir}
-lm.fit <- lm(obstime ~ PC1 + PC2, pca.df)
-lm.fit
-a <- lm.fit$coefficients[['PC1']]
-b <- lm.fit$coefficients[['PC2']]
-lambda <- sqrt(a**2 + b**2) / 2
-slope.x <- a / 2 * lambda
-slope.y <- b / 2 * lambda
-capturetime.slope <- slope.y / slope.x
-capturetime.angle <- atan2(slope.y, slope.x)
-with(pca.df, cor(obstime, PC1)) / with(pca.df, cor(obstime, PC2))
-# Calculate colours ggplot2 would use for continuous colour gradient
-# cc <- scales::seq_gradient_pal("blue", "red", "Lab")(seq(0,1,length.out = length(levels(pca.df$capture))))
-gp.pca <-
-  ggplot(pca.df, aes(x = PC1, y = PC2, label = cell, colour = capture, shape = cell.type)) +
-  #geom_text() +
-  geom_point(size = 4) +
-  geom_abline(slope = capturetime.slope)
-ggsave('Plots/Guo-PCA.pdf', gp.pca, width = 12, height = 8, units = 'in')
-```
-
-Plot the cells' locations on first two PCA components with the direction that best describes capture time progression.
-```{r plotPCA}
-print(gp.pca)
-```
-
-Calculate distances to capture time direction
-```{r calcDistToCapture}
-to.radial <- function(x, y) {
-  r = sqrt(x**2 + y**2)
-  list(r = r, theta = atan2(y, x))
-}
-dist.to.capturetime.axis <- function(x, y) {
-  with(to.radial(x, y), {
-    radians.diff <- (capturetime.angle - theta) %% (2 * pi)
-    sin(radians.diff) * r
-  })
-}
-pca.df <-
-  pca.df %>%
-  mutate(dist = dist.to.capturetime.axis(PC1, PC2),
-         z.hat = (dist - mean(dist)) / sd(dist))
-gp.pca.z <- ggplot(pca.df,
-    aes(x = PC1, y = PC2, colour = z.hat)) +
-  geom_point(size = 4) +
-  geom_abline(slope = capturetime.slope) +
-  scale_colour_gradient2()
-ggsave('Plots/Guo-PCA-z.pdf', gp.pca.z, width = 12, height = 8, units = 'in')
-```
-
-Plot the distance from each cell's location in 2D PCA space to the axis describing pseudotime.
-We will use this as our initial estimate of our latent dimension $z$ in our model.
-```{r plotPCAZ}
-print(gp.pca.z)
-```
-
-Plot a histogram of the $z$ estimates.
-```{r plotZhistogram}
-qplot(pca.df$z.hat)
-```
-
-
 # Fit DeLorean model
 
 Create DeLorean object.
@@ -180,7 +82,39 @@ dl <- de.lorean(
   guo.cell.meta)
 ```
 
-Estimate hyper-parameters
+## PCA
+Perform PCA
+```{r pcaPkg}
+devtools::load_all()
+```
+
+Perform a PCA on the expression data and calculate which direction in PC1-PC2 space best
+correlates with capture time.
+```{r}
+dl <- pca.expr(dl)
+```
+
+Project the cells onto PC1 and PC2. Show the direction that best reflects capture time.
+```{r}
+plots$PCA <-
+  ggplot(dl$pca.df, aes(x = PC1, y = PC2, label = cell, colour = capture, shape = cell.type)) +
+  geom_point(size = 4) +
+  geom_abline(slope = dl$capturetime.slope)
+plots$PCA
+```
+
+Project the cells onto PC1 and PC2 coloured by the z estimates
+```{r}
+plots[['PCA-z']] <-
+  ggplot(pca.df, aes(x = PC1, y = PC2, colour = z.hat)) +
+  geom_point(size = 4) +
+  geom_abline(slope = capturetime.slope) +
+  scale_colour_gradient2()
+plots[['PCA-z']]
+```
+
+
+## Estimate hyperparameters
 ```{r empiricalBayes}
 model.name <- 'exact'
 dl <- estimate.hyper(dl, sigma.tau = .25, model.name = model.name, adjust.cell.sizes = FALSE)
@@ -203,7 +137,7 @@ if (filter.cells) {
 }
 ```
 
-Prepare for fitting
+## Prepare for fitting
 ```{r prepare}
 dl <- prepare.for.stan(dl)
 dl$stan.data$lengthscales = c(dl$stan.data$l, 6)  # Length scale for pseudotime and z
@@ -286,20 +220,19 @@ Calculate best sample estimates for tau and z
 ```{r tauVsZ}
 init.df <- data.frame(c = 1:dl$stan.data$C, tau.init = init$tauoffset + dl$stan.data$time, z.init = init$z)
 tau.z <- with(best.m, left_join(tau, z) %>% left_join(dl$cell.map))
-gp.tau.z <-
+plots[['tau.z']] <-
   ggplot(tau.z, aes(x = tau, y = z, color = capture, shape = cell.type)) +
   geom_point(size = 4) +
   geom_segment(
     data = left_join(tau.z, init.df),
     mapping = aes(x = tau.init, xend = tau, y = z.init, yend = z),
     alpha = .2)
-ggsave('Plots/Guo-tau-z.pdf', gp.tau.z, width = 12, height = 8, units = 'in')
 ```
 
 Plot tau vs. z from the best sample.
 The line segments show where they were initialised at the start of inference.
 ```{r plotTauZ}
-print(gp.tau.z)
+plots[['tau.z']]
 ```
 
 Calculate the posterior for the noise and temporal variance levels
@@ -314,7 +247,7 @@ var.post.stats <-
     omega.sd   = sd(omega)) %>%
   left_join(dl$gene.map)
 sample_n(var.post.stats, 10)
-gp.var <-
+plots$var <-
   ggplot(var.post.stats,
          aes(x = psi.mean, xmin = psi.mean - psi.sd, xmax = psi.mean + psi.sd,
              y = omega.mean, ymin = omega.mean - omega.sd, ymax = omega.mean + omega.sd,
@@ -323,12 +256,11 @@ gp.var <-
   geom_errorbar(alpha = .4) +
   geom_errorbarh(alpha = .4) +
   geom_label(alpha = .8)
-ggsave('Plots/Guo-var.pdf', gp.var, width = 12, height = 8, units = 'in')
 ```
 
 Plot the posterior for the noise and temporal variance levels
 ```{r plotVarPost}
-print(gp.var)
+plots$var
 ```
 
 
@@ -345,9 +277,12 @@ dists.latent <- dists.gene / mean(dists.latent)
 qplot(as.vector(dists.gene))
 dists.weighted <- exp(-dists.gene**2 / .7**2) * dists.latent / dists.gene
 diag(dists.weighted) <- 0
-ggplot(mutate(tau.z, weighted.dist = rowSums(dists.weighted)),
-       aes(x = tau, y = z, color = weighted.dist, shape = cell.type)) +
+plots[['rel.dists']] <-
+  ggplot(
+    mutate(tau.z, weighted.dist = rowSums(dists.weighted)),
+    aes(x = tau, y = z, color = weighted.dist, shape = cell.type)) +
   geom_point(size = 4)
+plots[['rel.dists']]
 ```
 
 
@@ -419,7 +354,7 @@ all.post <-
   do(calc.post(.)) %>%
   ungroup() %>%
   left_join(dl$gene.map)
-gp.gex <-
+plots$gex <-
   ggplot(all.post,
          aes(x = tau, y = z, fill = expr.post)) +
   geom_tile(width = tau.step, height = z.step) +
@@ -428,12 +363,27 @@ gp.gex <-
              mapping = aes(x = tau, y = z, shape = cell.type),
              size = 2) +
   facet_wrap(~ gene)
-ggsave('Plots/Guo-gene-expr.pdf', gp.gex, width = 12, height = 8, units = 'in')
 ```
 
-Calculate the predicted expression for randomly selected genes across the latent space.
+Plot the posterior mean of the expression levels for randomly selected genes across the latent space.
 ```{r plotGex}
-print(gp.gex)
+plots$gex
+```
+
+
+```{r savePlots, echo = FALSE}
+save_plot <- function(name) {
+  filename <- str_c('Plots/Guo-', name, '.pdf')
+  message('Saving: ', filename)
+  ggsave(
+    filename,
+    plots[[name]],
+    width = 12,
+    height = 8,
+    units = 'in')
+  filename
+}
+invisible(lapply(names(plots), save_plot))
 ```
 
 
