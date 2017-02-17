@@ -391,6 +391,11 @@ within(dl, {
     left_join(cell.sizes)
   stopifnot(! is.na(cell.map %>% dplyr::select(cell, capture, obstime)))
   #
+  # Add the z.hat estimates to the cell map if PCA data frame exists
+  if (exists('pca.df')) {
+    cell.map <- dplyr::left_join(cell.map, dplyr::select(pca.df, cell, z.hat))
+  }
+  #
   # Calculate the time points at which to make predictions
   if (opts$periodic) {
     test.input <- seq(0, opts$period, length.out=num.test)

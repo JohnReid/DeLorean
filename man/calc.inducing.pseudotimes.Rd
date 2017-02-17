@@ -4,12 +4,15 @@
 \alias{calc.inducing.pseudotimes}
 \title{Calculate inducing pseudotimes for sparse approximation}
 \usage{
-calc.inducing.pseudotimes(dl, num.inducing, period = 0, num.sd.border = 7)
+calc.inducing.pseudotimes(dl, num.inducing.tau, num.inducing.z, period = 0,
+  num.sd.border = 7)
 }
 \arguments{
 \item{dl}{de.lorean object}
 
-\item{num.inducing}{Number of inducing points}
+\item{num.inducing.tau}{Number of inducing points}
+
+\item{num.inducing.z}{Number of inducing latent dimension points}
 
 \item{period}{Period of expression patterns}
 

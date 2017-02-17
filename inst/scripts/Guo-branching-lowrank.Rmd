@@ -83,14 +83,9 @@ dl <- de.lorean(
 ```
 
 ## PCA
-Perform PCA
-```{r pcaPkg}
-devtools::load_all()
-```
-
 Perform a PCA on the expression data and calculate which direction in PC1-PC2 space best
 correlates with capture time.
-```{r}
+```{r pcaPkg}
 dl <- pca.expr(dl)
 ```
 

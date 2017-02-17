@@ -4,15 +4,18 @@
 \alias{prepare.for.stan}
 \title{Prepare for Stan}
 \usage{
-prepare.for.stan(dl, num.test = 101, num.inducing = 30, period = 0,
-  hold.out = 0, num.sd.border = 7)
+prepare.for.stan(dl, num.test = 101, num.inducing.tau = 30,
+  num.inducing.z = 5, period = 0, hold.out = 0, num.sd.border = 7,
+  l.z = 6)
 }
 \arguments{
 \item{dl}{de.lorean object}
 
 \item{num.test}{Number of test points to consider}
 
-\item{num.inducing}{Number of inducing points}
+\item{num.inducing.tau}{Number of inducing pseudotime points}
+
+\item{num.inducing.z}{Number of inducing latent dimension points}
 
 \item{period}{Period of expression patterns}
 
@@ -21,6 +24,8 @@ prepare.for.stan(dl, num.test = 101, num.inducing = 30, period = 0,
 \item{num.sd.border}{The size of the border of the inducing inputs
 around the capture times in units of number of standard
 deviations}
+
+\item{l.z}{length scale for latent dimension}
 }
 \description{
 Prepare for Stan
