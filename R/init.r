@@ -1,3 +1,8 @@
+#
+# Code to initialise latent variables (particularly tau) with sensible values.
+#
+
+
 #' Returns a function that constructs parameter settings with good tau if they are available.
 #'
 #' @param dl de.lorean object
@@ -66,6 +71,8 @@ init.from.tau.prior <- function(dl) {
 }
 
 
+# Spread tau values from min(time) - sigma_tau to max(time) + sigma_tau
+#
 even.tau.spread <- function(dl) {
     with(dl$stan.data,
          seq(min(time) - sigma_tau,
@@ -229,6 +236,7 @@ magda.find.orderings <- function(
 }
 
 # Reverse ordering if it is better correlated with observed times
+#
 rev.order.if.better <- function(dl, ser.order) {
   rev.order <- rev(ser.order)
   if (cor(ser.order, dl$cell.map$obstime) < cor(rev.order, dl$cell.map$obstime)) {
@@ -455,7 +463,3 @@ within(dl, {
   tau.inits <- tau.inits[tau.inits.order[1:num.tau.to.keep]]
   rm(tau.inits.order, try.tau.init)
 })
-
-
-
-
