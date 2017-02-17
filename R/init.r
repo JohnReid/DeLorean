@@ -46,6 +46,26 @@ make.init.from.prior.fn <- function(dl) {
 }
 
 
+# Choose an initialisation by sampling tau from the prior. Use estimated
+# values for all other parameters.
+#
+# @param dl de.lorean object
+#
+init.from.tau.prior <- function(dl) {
+  with(dl$stan.data, {
+    init <- list(
+      S = dl$cell.map$S.hat,
+      z = dl$cell.map$z.hat,
+      psi = dl$gene.map$psi.hat[1:G],
+      omega = dl$gene.map$omega.hat[1:G],
+      tauoffset = rnorm(C, 0, sd = sigma_tau)
+    )
+    init$tau <- init$tauoffset + time
+    init
+  })
+}
+
+
 even.tau.spread <- function(dl) {
     with(dl$stan.data,
          seq(min(time) - sigma_tau,
@@ -252,7 +272,7 @@ within(deduplicate.orderings(dl), {
     function(O) {
       message('Using ordering ', O$method.name, '; LL = ', O$ll)
       # Create an initialisation using the ordering
-      init <- init.chain.sample.tau(dl)
+      init <- init.from.tau.prior(dl)
       init$tau <- even.tau.spread(dl)[O$ser.order]
       init
     })
@@ -335,7 +355,7 @@ find.smooth.tau <- function(
     # Make the complete chain initialisation with the tau.
     lapply(orderings[best.order[1:num.tau.to.keep]],
            function(ordering) {
-             init <- init.chain.sample.tau(dl)
+             init <- init.from.tau.prior(dl)
              init$tau <- even.tau.spread(dl)[ordering.invert(ordering)]
              init
            })
@@ -392,26 +412,6 @@ test.mh <- function(
 }
 
 
-# Choose an initialisation by sampling tau from the prior.
-#
-# @param dl de.lorean object
-#
-init.chain.sample.tau <- function(dl) {
-    with(dl$stan.data, {
-        init <- list(
-            alpha = dl$cell.map$alpha.hat,
-            beta = rep(0, G),
-            S = dl$cell.map$S.hat,
-            tau = rnorm(C, time, sd = sigma_tau),
-            psi = dl$gene.map$psi.hat[1:G],
-            omega = dl$gene.map$omega.hat[1:G]
-        )
-        init$tauoffset <- init$tau - time
-        init
-    })
-}
-
-
 #' Find best tau to initialise chains with by sampling tau from the prior
 #' and using empirical Bayes parameter estimates for the other parameters.
 #'
@@ -433,7 +433,7 @@ within(dl, {
   # random seeded tau
   try.tau.init <- function(i) {
     set.seed(i)
-    pars <- init.chain.sample.tau(dl)
+    pars <- init.from.tau.prior(dl)
     lp <- rstan::log_prob(fit, rstan::unconstrain_pars(fit, pars),
                           adjust_transform = FALSE)
     list(lp = lp, tau = pars$tau)
