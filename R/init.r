@@ -1,16 +1,44 @@
+#' Returns a function that constructs parameter settings with good tau if they are available.
+#'
+#' @param dl de.lorean object
+#'
+make.init.fn <- function(dl) {
+  function(chain_id) {
+    #
+    # Create random parameters
+    pars <- make.init.from.prior.fn(dl)()
+    #
+    # Use initialisations for tau if we have them
+    if (chain_id <= length(dl$tau.inits)) {
+      #
+      # Replace tau with good tau
+      pars$tau <- dl$tau.inits[[chain_id]]$tau
+      #
+      # Also replace the tau offsets
+      pars$tauoffset <- dl$tau.inits[[chain_id]]$tau - dl$cell.map$obstime
+    } else {
+      message('Using tau initialisation from prior.')
+    }
+    pars
+  }
+}
+
+
 # Define a function to initialise the chains
 #
 # @param dl de.lorean object
 #
-make.chain.init.fn <- function(dl) {
+make.init.from.prior.fn <- function(dl) {
   function() {
     with(dl$stan.data, {
       # message("Creating initialisation")
       init <- list(
-        S=dl$cell.map$S.hat,
-        tau=rnorm(C, mean=time, sd=sigma_tau),
-        psi=rlnorm(G, meanlog=mu_psi, sdlog=sigma_psi),
-        omega=rlnorm(G, meanlog=mu_omega, sdlog=sigma_omega)
+        S = dl$cell.map$S.hat,
+        tau = rnorm(C, mean = time, sd = sigma_tau),
+        tauoffset = rnorm(C, mean = 0, sd = sigma_tau),
+        z = rnorm(C, mean = 0, sd = 1),
+        psi = rlnorm(G, meanlog = mu_psi, sdlog = sigma_psi),
+        omega = rlnorm(G, meanlog = mu_omega, sdlog = sigma_omega)
       )
       init
     })
@@ -22,7 +50,7 @@ even.tau.spread <- function(dl) {
     with(dl$stan.data,
          seq(min(time) - sigma_tau,
              max(time) + sigma_tau,
-             length=C))
+             length = C))
 }
 
 # From http://stackoverflow.com/questions/11094822/numbers-in-geometric-progression
@@ -55,11 +83,11 @@ seriation.find.orderings <- function(
 {
   #
   # Calculate all combinations of parameters
-  combinations <- expand.grid(method=.methods,
-                              scaled=scaled,
-                              dim.red=dim.red,
-                              dims=dims,
-                              stringsAsFactors=FALSE) %>%
+  combinations <- expand.grid(method = .methods,
+                              scaled = scaled,
+                              dim.red = dim.red,
+                              dims = dims,
+                              stringsAsFactors = FALSE) %>%
     # Only keep one combination with no dimensionality reduction
     dplyr::filter(dim.red != 'none' | 1 == dims) %>%
     # Cannot do KFA with 1 dimension
@@ -75,13 +103,13 @@ seriation.find.orderings <- function(
     switch(dim.red,
       none = expr,
       pca = prcomp(expr)$x[,1:dims],
-      ica = fastICA::fastICA(expr, n.comp=dims)$S,
-      kfa = t(kernlab::kfa(t(expr), features=dims)@xmatrix),
-      mds = cmdscale(dist(expr), k=dims),
+      ica = fastICA::fastICA(expr, n.comp = dims)$S,
+      kfa = t(kernlab::kfa(t(expr), features = dims)@xmatrix),
+      mds = cmdscale(dist(expr), k = dims),
       stop('dim.red must be "none", "ica", "kfa", "mds" or "pca"'))
   }
   get.red.mem <- memoise::memoise(get.red)
-  get.dist <- function(scaled, dim.red, dims=5) {
+  get.dist <- function(scaled, dim.red, dims = 5) {
     dist(get.red.mem(scaled, dim.red, dims))
   }
   get.dist.mem <- memoise::memoise(get.dist)
@@ -94,12 +122,12 @@ seriation.find.orderings <- function(
                                     ':', dims)
       elapsed <- system.time(
         per <- seriation::seriate(get.dist.mem(scaled, dim.red, dims),
-                                   method=method))
+                                   method = method))
       ser.order <- seriation::get_order(per)
       ll <- dl$ordering.ll(ser.order)
       message(method.name, '; time=', elapsed[3], 's; LL=', ll)
     })),
-    mc.cores=num.cores)
+    mc.cores = num.cores)
   result
 }
 
@@ -136,10 +164,10 @@ find.good.ordering <- function(dl, method, ...)
 #'
 orderings.plot <- function(dl) with(dl, {
   results.df <- data.frame(
-    method=sapply(order.inits, function(r) r$method.name),
-    elapsed=sapply(order.inits, function(r) r$elapsed[3]),
-    ll=sapply(order.inits, function(r) r$ll))
-  ggplot2::ggplot(results.df, aes(x=elapsed, y=ll, label=method)) +
+    method = sapply(order.inits, function(r) r$method.name),
+    elapsed = sapply(order.inits, function(r) r$elapsed[3]),
+    ll = sapply(order.inits, function(r) r$ll))
+  ggplot2::ggplot(results.df, aes(x = elapsed, y = ll, label = method)) +
     ggplot2::geom_text()
 })
 
@@ -166,8 +194,8 @@ magda.find.orderings <- function(
   elapsed <- system.time(
     magda.paths <- CombfuncPaths(
       dl$expr,
-      starting_points=starting_points,
-      number_paths=number_paths))
+      starting_points = starting_points,
+      number_paths = number_paths))
   #
   # Convert Magda's paths into our format
   lapply(
@@ -207,10 +235,10 @@ deduplicate.orderings <- function(dl) {
 #'
 pseudotimes.from.orderings <- function(
   dl,
-  num.to.keep=default.num.cores())
+  num.to.keep = default.num.cores())
 within(deduplicate.orderings(dl), {
   order.orderings <- order(sapply(order.inits, function(i) i$ll),
-                           decreasing=TRUE)
+                           decreasing = TRUE)
   #
   # Make sure we don't try to keep too many (due to duplicates, etc...)
   actually.keep <- min(length(order.orderings), num.to.keep)
@@ -222,7 +250,7 @@ within(deduplicate.orderings(dl), {
   tau.inits <- lapply(
     best.orderings,
     function(O) {
-      message('Using ordering ', O$method.name, '; LL=', O$ll)
+      message('Using ordering ', O$method.name, '; LL = ', O$ll)
       # Create an initialisation using the ordering
       init <- init.chain.sample.tau(dl)
       init$tau <- even.tau.spread(dl)[O$ser.order]
@@ -262,22 +290,22 @@ find.smooth.tau <- function(
     ordering.search <- function(seed) {
       set.seed(seed)
       # Choose a starting point by random projection
-      expr.centre <- t(scale(t(expr), center=T, scale=F))
+      expr.centre <- t(scale(t(expr), center = T, scale = F))
       init.ordering <- order(rnorm(nrow(expr.centre)) %*% expr.centre)
       # init.ordering <- sample(stan.data$C)
       metropolis.fn <- function(ordering, log.likelihood, ...) {
         mh.run <- ordering.metropolis.hastings(
           ordering,
           log.likelihood,
-          proposal.fn=ordering.random.block.move,
+          proposal.fn = ordering.random.block.move,
           ...)
         best.sample <- which.max(mh.run$log.likelihoods)
         #ordering.maximise(mh.run$chain[best.sample,], log.likelihood)
         mh.run$chain[best.sample,]
       }
       method.fn <- switch(method,
-                          "maximise"=ordering.maximise,
-                          "metropolis"=metropolis.fn,
+                          "maximise" = ordering.maximise,
+                          "metropolis" = metropolis.fn,
                           NA)
       ordering <- method.fn(init.ordering, log.likelihood, ...)
       stopifnot(! is.null(ordering))
@@ -345,9 +373,9 @@ test.mh <- function(
             mh.run <- ordering.metropolis.hastings(
                 init.ordering,
                 log.likelihood,
-                proposal.fn=ordering.random.block.move,
-                iterations=iterations,
-                thin=thin)
+                proposal.fn = ordering.random.block.move,
+                iterations = iterations,
+                thin = thin)
         }
         # Choose seeds
         seeds <- sample.int(.Machine$integer.max, num.cores)
@@ -371,14 +399,14 @@ test.mh <- function(
 init.chain.sample.tau <- function(dl) {
     with(dl$stan.data, {
         init <- list(
-            alpha=dl$cell.map$alpha.hat,
-            beta=rep(0, G),
-            S=dl$cell.map$S.hat,
-            tau=rnorm(C, time, sd=sigma_tau),
-            psi=dl$gene.map$psi.hat[1:G],
-            omega=dl$gene.map$omega.hat[1:G]
+            alpha = dl$cell.map$alpha.hat,
+            beta = rep(0, G),
+            S = dl$cell.map$S.hat,
+            tau = rnorm(C, time, sd = sigma_tau),
+            psi = dl$gene.map$psi.hat[1:G],
+            omega = dl$gene.map$omega.hat[1:G]
         )
-        init$tauoffsets <- init$tau - time
+        init$tauoffset <- init$tau - time
         init
     })
 }
@@ -407,14 +435,14 @@ within(dl, {
     set.seed(i)
     pars <- init.chain.sample.tau(dl)
     lp <- rstan::log_prob(fit, rstan::unconstrain_pars(fit, pars),
-                          adjust_transform=FALSE)
-    list(lp=lp, tau=pars$tau)
+                          adjust_transform = FALSE)
+    list(lp = lp, tau = pars$tau)
   }
   #
   # Choose tau several times and calculate log probability
   if (num.cores > 1) {
     tau.inits <- parallel::mclapply(1:num.tau.candidates,
-                                    mc.cores=num.cores,
+                                    mc.cores = num.cores,
                                     try.tau.init)
   } else {
     tau.inits <- lapply(1:num.tau.candidates, try.tau.init)
@@ -429,21 +457,5 @@ within(dl, {
 })
 
 
-#' Returns a function that constructs parameter settings with good tau.
-#'
-#' @param dl de.lorean object
-#'
-make.init.fn <- function(dl) {
-  function(chain_id) {
-    stopifnot(chain_id <= length(dl$tau.inits))
-    #
-    # Create random parameters
-    pars <- make.chain.init.fn(dl)()
-    #
-    # Replace tau with good tau
-    pars$tau <- dl$tau.inits[[chain_id]]$tau
-    pars
-  }
-}
 
 
