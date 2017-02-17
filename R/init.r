@@ -11,7 +11,7 @@ make.init.fn <- function(dl) {
   function(chain_id) {
     #
     # Create random parameters
-    pars <- make.init.from.prior.fn(dl)()
+    pars <- init.from.tau.prior(dl)
     #
     # Use initialisations for tau if we have them
     if (chain_id <= length(dl$tau.inits)) {
@@ -39,12 +39,12 @@ make.init.from.prior.fn <- function(dl) {
       # message("Creating initialisation")
       init <- list(
         S = dl$cell.map$S.hat,
-        tau = rnorm(C, mean = time, sd = sigma_tau),
         tauoffset = rnorm(C, mean = 0, sd = sigma_tau),
         z = rnorm(C, mean = 0, sd = 1),
         psi = rlnorm(G, meanlog = mu_psi, sdlog = sigma_psi),
         omega = rlnorm(G, meanlog = mu_omega, sdlog = sigma_omega)
       )
+      init$tau <- init$tauoffset + time
       init
     })
   }
@@ -361,12 +361,13 @@ find.smooth.tau <- function(
     lls <- sapply(orderings, function(o) -log.likelihood(o))
     best.order <- order(lls)
     # Make the complete chain initialisation with the tau.
-    lapply(orderings[best.order[1:num.tau.to.keep]],
-           function(ordering) {
-             init <- init.from.tau.prior(dl)
-             init$tau <- even.tau.spread(dl)[ordering.invert(ordering)]
-             init
-           })
+    lapply(
+      orderings[best.order[1:num.tau.to.keep]],
+      function(ordering) {
+        init <- init.from.tau.prior(dl)
+        init$tau <- even.tau.spread(dl)[ordering.invert(ordering)]
+        init
+      })
   })
   dl
 }

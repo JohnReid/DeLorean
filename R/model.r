@@ -321,11 +321,11 @@ calc.inducing.pseudotimes <- function(dl, num.inducing.tau, num.inducing.z, peri
         from = time.range[1] - num.sd.border * hyper$sigma_tau,
         to = time.range[2] + num.sd.border * hyper$sigma_tau,
         length.out = num.inducing.tau)
-      latentpseudo <- seq(
+      zpseudo <- seq(
         from = - num.sd.border,
         to = num.sd.border,
-        length.out = num.inducing.latent)
-      t(expand.grid(taupseudo, latentpseudo))
+        length.out = num.inducing.z)
+      t(expand.grid(taupseudo, zpseudo))
     } else {
       seq(from = time.range[1] - num.sd.border * hyper$sigma_tau,
           to = time.range[2] + num.sd.border * hyper$sigma_tau,
@@ -392,7 +392,7 @@ within(dl, {
   stopifnot(! is.na(cell.map %>% dplyr::select(cell, capture, obstime)))
   #
   # Add the z.hat estimates to the cell map if PCA data frame exists
-  if (exists('pca.df')) {
+  if (! is.null(dl$pca.df)) {
     cell.map <- dplyr::left_join(cell.map, dplyr::select(pca.df, cell, z.hat))
   }
   #
@@ -442,7 +442,7 @@ within(dl, {
   # If we have a branching model fill in all the details we will need
   if (opts$model.is.branching) {
     stan.data$lengthscales = c(stan.data$l, l.z)  # Length scale for pseudotime and z
-    stan.data$M <- num.inducing.tau * num.inducing.latent
+    stan.data$M <- num.inducing.tau * num.inducing.z
     cell.map <- cell.map %>% left_join(dplyr::select(pca.df, cell, z.hat))
   }
 })
@@ -482,7 +482,7 @@ compile.model <- function(dl) {
     fit <- rstan::stan(
       fit = compiled,
       data = stan.data,
-      init = make.init.from.prior.fn(dl),
+      init = make.init.fn(dl),
       warmup = 1,
       iter = 1,
       chains = 1)
@@ -637,25 +637,25 @@ fit.model.vb <- function(
     init.idx = 1,
     ...)
 {
-  init.chain.good.tau <- make.init.fn(dl)
+  init.fn <- make.init.fn(dl)
   if (num.cores > 1) {
     #
     # Run variational Bayes in parallel
     sflist <- parallel::mclapply(
       1:num.inits,
-      mc.cores=num.cores,
-      # mc.cores=1,
+      mc.cores = num.cores,
+      # mc.cores = 1,
       function(i) within(list(), {
         fit <- rstan::vb(
           rstan::get_stanmodel(dl$fit),
-          data=dl$stan.data,
-          seed=i,
-          init=init.chain.good.tau(i),
+          data = dl$stan.data,
+          seed = i,
+          init = init.fn(i),
           ...)
         pars <- get.posterior.mean(rstan::extract(fit))
         upars <- rstan::unconstrain_pars(fit, pars)
-        lp <- rstan::log_prob(fit, upars, adjust_transform=TRUE)
-        lp.unadj <- rstan::log_prob(fit, upars, adjust_transform=FALSE)
+        lp <- rstan::log_prob(fit, upars, adjust_transform = TRUE)
+        lp.unadj <- rstan::log_prob(fit, upars, adjust_transform = FALSE)
       }))
     #
     # Only keep results that worked
@@ -683,9 +683,9 @@ fit.model.vb <- function(
     # Run single variational Bayes
     dl$fit <- rstan::vb(
       rstan::get_stanmodel(dl$fit),
-      data=dl$stan.data,
-      seed=init.idx,
-      init=init.chain.good.tau(init.idx),
+      data = dl$stan.data,
+      seed = init.idx,
+      init = init.fn(init.idx),
       ...)
   }
   return(dl)

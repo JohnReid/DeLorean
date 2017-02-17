@@ -5,7 +5,7 @@ output: pdf_document
 ---
 
 ```{r build, echo=FALSE, eval=FALSE}
-devtools::load_all('../..')
+devtools::load_all()
 rmarkdown::render('Guo-branching-lowrank.Rmd')
 ```
 
@@ -101,9 +101,9 @@ plots$PCA
 Project the cells onto PC1 and PC2 coloured by the z estimates
 ```{r}
 plots[['PCA-z']] <-
-  ggplot(pca.df, aes(x = PC1, y = PC2, colour = z.hat)) +
+  ggplot(dl$pca.df, aes(x = PC1, y = PC2, colour = z.hat)) +
   geom_point(size = 4) +
-  geom_abline(slope = capturetime.slope) +
+  geom_abline(slope = dl$capturetime.slope) +
   scale_colour_gradient2()
 plots[['PCA-z']]
 ```
@@ -120,7 +120,7 @@ Choose a few cells from each capture time
 guo.cell.meta %>%
   group_by(capture) %>%
   summarise(number = n())
-filter.cells <- FALSE
+filter.cells <- TRUE
 if (filter.cells) {
   # n.sample <- 157
   n.sample <- 17
@@ -140,24 +140,11 @@ dl <- prepare.for.stan(dl)
 Compile
 ```{r compile}
 dl <- compile.model(dl)
-# model.path <- system.file('inst/Stan/branching-lowrank.stan', package = 'DeLorean')
-# model <- rstan::stan_model(model.path)
 ```
 
 Fit
 ```{r fit}
-create.init <- function() with(dl$stan.data,
-  list(
-    tauoffset = rnorm(C, sd = sigma_tau),
-    z = dl$cell.map$z.hat,
-    psi = rlnorm(G, meanlog = mu_psi, sdlog = sigma_psi),
-    omega = rlnorm(G, meanlog = mu_omega, sdlog = sigma_omega)))
-init <- create.init()
-system.time(
-  fit <- rstan::vb(
-    model,
-    data = dl$stan.data,
-    init = init))
+dl <- fit.model(dl, method = 'vb', num.cores = 1)
 ```
 
 ```{r shinyStan, eval = FALSE, echo = FALSE}
