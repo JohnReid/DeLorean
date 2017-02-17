@@ -449,11 +449,10 @@ within(dl, {
 #' @export
 #'
 compile.model <- function(dl) {
-  stan.model.file <- system.file(file.path('Stan',
-                                            sprintf('%s.stan',
-                                                    dl$opts$model.name)),
-                                  package = 'DeLorean',
-                                  mustWork = TRUE)
+  stan.model.file <-
+    system.file(file.path('Stan', sprintf('%s.stan', dl$opts$model.name)),
+                package = 'DeLorean',
+                mustWork = TRUE)
   data.dir <- system.file('extdata', package='DeLorean')
   compiled.model.file <- paste(data.dir,
                                sprintf("%s.rds", dl$opts$model.name),
@@ -478,7 +477,7 @@ compile.model <- function(dl) {
     fit <- rstan::stan(
       fit = compiled,
       data = stan.data,
-      init = make.chain.init.fn(dl),
+      init = make.init.from.prior.fn(dl),
       warmup = 1,
       iter = 1,
       chains = 1)
@@ -571,21 +570,21 @@ fit.model.sample <- function(
     thin = 50,
     ...)
 {
-  init.chain.good.tau <- make.init.fn(dl)
+  init.fn <- make.init.fn(dl)
   # Run the chains in parallel
   sflist <- parallel::mclapply(
     1:num.cores,
-    mc.cores=num.cores,
+    mc.cores = num.cores,
     function(i)
       rstan::stan(
-        fit=dl$fit,
-        data=dl$stan.data,
-        thin=thin,
-        init=init.chain.good.tau,
-        seed=i,
-        chains=chains,
-        chain_id=i,
-        refresh=-1,
+        fit = dl$fit,
+        data = dl$stan.data,
+        thin = thin,
+        init = init.fn,
+        seed = i,
+        chains = chains,
+        chain_id = i,
+        refresh = -1,
         ...))
   dl$fit <- rstan::sflist2stanfit(sflist)
   dl$compiled <- NULL  # Delete large unneeded object

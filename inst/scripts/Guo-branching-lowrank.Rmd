@@ -153,10 +153,10 @@ Fit
 ```{r fit}
 create.init <- function() with(dl$stan.data,
   list(
-  tauoffset = rnorm(C, sd = sigma_tau),
-  z = dl$cell.map$z.hat,
-  psi = rlnorm(G, meanlog = mu_psi, sdlog = sigma_psi),
-  omega = rlnorm(G, meanlog = mu_omega, sdlog = sigma_omega)))
+    tauoffset = rnorm(C, sd = sigma_tau),
+    z = dl$cell.map$z.hat,
+    psi = rlnorm(G, meanlog = mu_psi, sdlog = sigma_psi),
+    omega = rlnorm(G, meanlog = mu_omega, sdlog = sigma_omega)))
 init <- create.init()
 system.time(
   fit <- rstan::vb(
