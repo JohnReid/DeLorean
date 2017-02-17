@@ -20,21 +20,6 @@ pca.expr <- function(dl) with(dl, {
   pca <- prcomp(t(expr), center=TRUE, scale.=FALSE)
   names(pca)
   summary(pca)
-  # print(pca)
-  # print(pca)
-  # summary(pca)
-  #
-  # Scree plot
-  # plot(pca)
-  # pdf('Plots/Guo-PCA-scree.pdf', width = 12, height = 8)
-  # plot(pca)
-  # dev.off()
-  #
-  # Bi-plot
-  # biplot(pca)
-  # pdf('Plots/Guo-PCA-biplot.pdf', width = 12, height = 12)
-  # biplot(pca)
-  # dev.off()
   #
   # Convert to data frame
   pca.l <- reshape2::melt(pca$x, varnames=c("cell", "PC"), value.name="x")
@@ -54,12 +39,6 @@ pca.expr <- function(dl) with(dl, {
   slope.y <- b / 2 * lambda
   capturetime.slope <- slope.y / slope.x
   capturetime.angle <- atan2(slope.y, slope.x)
-  # with(pca.df, cor(obstime, PC1)) / with(pca.df, cor(obstime, PC2))
-  # gp.pca <-
-  #   ggplot(pca.df, aes(x = PC1, y = PC2, label = cell, colour = capture, shape = cell.type)) +
-  #   #geom_text() +
-  #   geom_point(size = 4) +
-  #   geom_abline(slope = capturetime.slope)
   dist.to.capturetime.axis <- function(x, y) {
     with(to.radial(x, y), {
       radians.diff <- (capturetime.angle - theta) %% (2 * pi)

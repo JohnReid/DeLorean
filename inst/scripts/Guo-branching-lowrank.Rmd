@@ -116,7 +116,7 @@ plots[['PCA-z']]
 
 ## Estimate hyperparameters
 ```{r empiricalBayes}
-model.name <- 'branching-lowrank'
+model.name <- 'branching'
 dl <- estimate.hyper(dl, sigma.tau = .25, model.name = model.name, adjust.cell.sizes = FALSE)
 ```
 

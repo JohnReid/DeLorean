@@ -186,19 +186,19 @@ estimate.hyper <- function(
         opts$length.scale <- length.scale
     }
   })
-  dl <- analyse.variance(dl, adjust.cell.sizes=adjust.cell.sizes)
+  dl <- analyse.variance(dl, adjust.cell.sizes = adjust.cell.sizes)
   within(dl, {
     hyper <- list(
-      mu_S=mean(cell.sizes$S.hat),
-      sigma_S=sd(cell.sizes$S.hat),
-      mu_phi=mean(gene.expr$phi.hat),
-      sigma_phi=sd(gene.expr$phi.hat),
-      mu_psi=mean(log(gene.var$psi.hat), na.rm=TRUE),
-      sigma_psi=sd(log(gene.var$psi.hat), na.rm=TRUE),
-      mu_omega=mean(log(gene.var$omega.hat), na.rm=TRUE),
-      sigma_omega=sd(log(gene.var$omega.hat), na.rm=TRUE),
-      sigma_tau=opts$sigma.tau,
-      l=opts$length.scale
+      mu_S = mean(cell.sizes$S.hat),
+      sigma_S = sd(cell.sizes$S.hat),
+      mu_phi = mean(gene.expr$phi.hat),
+      sigma_phi = sd(gene.expr$phi.hat),
+      mu_psi = mean(log(gene.var$psi.hat), na.rm = TRUE),
+      sigma_psi = sd(log(gene.var$psi.hat), na.rm = TRUE),
+      mu_omega = mean(log(gene.var$omega.hat), na.rm = TRUE),
+      sigma_omega = sd(log(gene.var$omega.hat), na.rm = TRUE),
+      sigma_tau = opts$sigma.tau,
+      l = opts$length.scale
     )
     # Check we don't have any NAs
     stopifnot(all(! sapply(hyper, is.na)))
@@ -217,9 +217,9 @@ estimate.hyper <- function(
 #' @export
 #'
 filter.genes <- function(dl,
-                         .filter=function(x) x %in% genes,
-                         number=NULL,
-                         genes=sample(rownames(dl$expr), number))
+                         .filter = function(x) x %in% genes,
+                         number = NULL,
+                         genes = sample(rownames(dl$expr), number))
 {
     within(dl, {
         expr <- expr[.filter(rownames(expr)),]
@@ -239,9 +239,9 @@ filter.genes <- function(dl,
 #' @export
 #'
 filter.cells <- function(dl,
-                         .filter=function(x) x %in% cells,
-                         number=NULL,
-                         cells=sample(colnames(dl$expr), number))
+                         .filter = function(x) x %in% cells,
+                         number = NULL,
+                         cells = sample(colnames(dl$expr), number))
 {
     within(dl, {
         expr <- expr[,.filter(colnames(expr))]
@@ -268,7 +268,7 @@ sample.per.capture <- function(dl, cells.per.capture) {
         # %>% do(sample_n(., min(cells.per.capture, length(cell))))
         %>% do(sample.at.most(., cells.per.capture))
     )
-    filter.cells(dl, cells=sampled.cells$cell)
+    filter.cells(dl, cells = sampled.cells$cell)
 }
 
 
