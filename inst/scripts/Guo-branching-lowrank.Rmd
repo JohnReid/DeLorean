@@ -132,19 +132,13 @@ if (filter.cells) {
 }
 ```
 
-## Prepare for fitting
-```{r prepare}
-dl <- prepare.for.stan(dl)
-```
-
-Compile
-```{r compile}
-dl <- compile.model(dl)
-```
-
-Fit
+## Fit
 ```{r fit}
+dl <- prepare.for.stan(dl)
+dl <- compile.model(dl)
 dl <- fit.model(dl, method = 'vb', num.cores = 1)
+dl <- process.posterior(dl)
+dl <- analyse.noise.levels(dl)
 ```
 
 ```{r shinyStan, eval = FALSE, echo = FALSE}
@@ -155,35 +149,15 @@ my_sso <- shinystan::launch_shinystan(fit)
 ```
 
 
-# Examine posterior
-
-Melt posterior into format suitable for processing
-```{r processPosterior}
-sample.dims <- list(
-  lp__ = c(),
-  tau = c("c"),
-  z = c("c"),
-  psi = c("g"),
-  omega = c("g"))
-samples <- rstan::extract(fit, pars = names(sample.dims), permuted=TRUE)
-melt.param <- function(samples, name, dims) {
-  varnames <- c('iter', dims)
-  melt(samples, varnames, value.name = name)
-}
-samples.m <- lapply(names(sample.dims), function(n) melt.param(samples[[n]], n, sample.dims[[n]]))
-names(samples.m) <- names(sample.dims)
-```
-
-Locate best sample
-```{r findBest}
-best.iter <- which.max(samples.m$lp__$lp__)
-best.m <- lapply(samples.m, function(s) filter(s, iter == best.iter))
-```
-
 Calculate best sample estimates for tau and z
 ```{r tauVsZ}
 init.df <- data.frame(c = 1:dl$stan.data$C, tau.init = init$tauoffset + dl$stan.data$time, z.init = init$z)
 tau.z <- with(best.m, left_join(tau, z) %>% left_join(dl$cell.map))
+```
+
+Plot tau vs. z from the best sample.
+The line segments show where they were initialised at the start of inference.
+```{r plotTauZ}
 plots[['tau.z']] <-
   ggplot(tau.z, aes(x = tau, y = z, color = capture, shape = cell.type)) +
   geom_point(size = 4) +
@@ -191,11 +165,6 @@ plots[['tau.z']] <-
     data = left_join(tau.z, init.df),
     mapping = aes(x = tau.init, xend = tau, y = z.init, yend = z),
     alpha = .2)
-```
-
-Plot tau vs. z from the best sample.
-The line segments show where they were initialised at the start of inference.
-```{r plotTauZ}
 plots[['tau.z']]
 ```
 

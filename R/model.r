@@ -724,20 +724,28 @@ examine.convergence <- function(dl) {
 # @param dl de.lorean object
 #
 model.parameter.dimensions <- function(dl) {
-    sample.dims <- list(
-        lp__=c(),
-        S=c("c"),
-        tau=c("c"),
-        psi=c("g"),
-        omega=c("g"),
-        predictedmean=c("g", "t"),
-        predictedvar=c("g", "t"),
-        logmarglike=c("g")
-    )
-    if (! dl$opts$model.estimates.cell.sizes) {
-        sample.dims$S <- NULL
-    }
-    sample.dims
+  sample.dims <- list(
+    lp__ = c(),
+    S = c("c"),
+    tau = c("c"),
+    z = c("c"),
+    psi = c("g"),
+    omega = c("g"),
+    predictedmean = c("g", "t"),
+    predictedvar = c("g", "t"),
+    logmarglike = c("g")
+  )
+  if (! dl$opts$model.estimates.cell.sizes) {
+    sample.dims$S <- NULL
+  }
+  if (! dl$opts$model.is.branching) {
+    sample.dims$z <- NULL
+  } else {
+    sample.dims$logmarglike <- NULL
+    sample.dims$predictedmean <- NULL
+    sample.dims$predictedvar <- NULL
+  }
+  sample.dims
 }
 
 
@@ -745,7 +753,7 @@ model.parameter.dimensions <- function(dl) {
 #
 # @param dl de.lorean object
 #
-sample.melter <- function(dl, include.iter=TRUE) {
+sample.melter <- function(dl, include.iter = TRUE) {
     function(sample.list, sample.dims) {
         melt.var <- function(param) {
             # message(param)
@@ -782,22 +790,22 @@ join.tau.samples <- function(dl, tau.samples) {
 #' @export
 #'
 process.posterior <- function(dl) {
-    within(dl, {
-        # Define a function to melt samples into a long format
-        samples.l <- sample.melter(dl)(rstan::extract(dl$fit, permuted=TRUE),
-                                       model.parameter.dimensions(dl))
-        best.sample <- which.max(samples.l$lp__$lp__)
-        if (TRUE %in% samples.l$logmarglike$is.held.out) {
-            mean.held.out.marg.ll <- mean(
-                (samples.l$logmarglike
-                %>% left_join(gene.map)
-                %>% filter(is.held.out))$logmarglike)
-            message('Mean held out marginal log likelihood per cell: ',
-                    mean.held.out.marg.ll / stan.data$C)
-        }
-        # Include meta data in tau samples
-        samples.l$tau <- join.tau.samples(dl, samples.l$tau)
-    })
+  within(dl, {
+    # Define a function to melt samples into a long format
+    samples.l <- sample.melter(dl)(rstan::extract(dl$fit, permuted = TRUE),
+                                   model.parameter.dimensions(dl))
+    best.sample <- which.max(samples.l$lp__$lp__)
+    if (TRUE %in% samples.l$logmarglike$is.held.out) {
+      mean.held.out.marg.ll <- mean(
+        (samples.l$logmarglike
+        %>% left_join(gene.map)
+        %>% filter(is.held.out))$logmarglike)
+      message('Mean held out marginal log likelihood per cell: ',
+              mean.held.out.marg.ll / stan.data$C)
+    }
+    # Include meta data in tau samples
+    samples.l$tau <- join.tau.samples(dl, samples.l$tau)
+  })
 }
 
 
