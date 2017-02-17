@@ -116,7 +116,7 @@ plots[['PCA-z']]
 
 ## Estimate hyperparameters
 ```{r empiricalBayes}
-model.name <- 'exact'
+model.name <- 'branching-lowrank'
 dl <- estimate.hyper(dl, sigma.tau = .25, model.name = model.name, adjust.cell.sizes = FALSE)
 ```
 
@@ -140,31 +140,13 @@ if (filter.cells) {
 ## Prepare for fitting
 ```{r prepare}
 dl <- prepare.for.stan(dl)
-dl$stan.data$lengthscales = c(dl$stan.data$l, 6)  # Length scale for pseudotime and z
-num.sd.border <- 5
-num.inducing.tau <- 30
-num.inducing.latent <- 5
-dl$stan.data$M <- num.inducing.tau * num.inducing.latent
-dl$stan.data$u <- with(dl, {
-  taupseudo <- seq(
-    from = time.range[1] - num.sd.border * hyper$sigma_tau,
-    to = time.range[2] + num.sd.border * hyper$sigma_tau,
-    length.out = num.inducing.tau)
-  latentpseudo <- seq(
-    from = - num.sd.border,
-    to = num.sd.border,
-    length.out = num.inducing.latent)
-  t(expand.grid(taupseudo, latentpseudo))
-})
-dl$cell.map <-
-  dl$cell.map %>%
-  left_join(dplyr::select(pca.df, cell, z.hat))
 ```
 
 Compile
 ```{r compile}
-model.path <- system.file('inst/Stan/branching-lowrank.stan', package = 'DeLorean')
-model <- rstan::stan_model(model.path)
+dl <- compile.model(dl)
+# model.path <- system.file('inst/Stan/branching-lowrank.stan', package = 'DeLorean')
+# model <- rstan::stan_model(model.path)
 ```
 
 Fit

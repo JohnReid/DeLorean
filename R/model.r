@@ -158,12 +158,23 @@ estimate.hyper <- function(
     # Remember options that depend on the model
     opts$model.name <- model.name
     opts$model.estimates.cell.sizes <- switch(
-        opts$model.name,
-        "exact-sizes" = TRUE,
-        "exact" = FALSE,
-        "lowrank-sizes" = TRUE,
-        "lowrank" = FALSE,
-        stop('Unknown model name'))
+      opts$model.name,
+      "exact-sizes" = TRUE,
+      "exact" = FALSE,
+      "lowrank-sizes" = TRUE,
+      "lowrank" = FALSE,
+      "branching" = FALSE,
+      "branching-lowrank" = FALSE,
+      stop('Unknown model name'))
+    opts$model.is.branching <- switch(
+      opts$model.name,
+      "exact-sizes" = FALSE,
+      "exact" = FALSE,
+      "lowrank-sizes" = FALSE,
+      "lowrank" = FALSE,
+      "branching" = TRUE,
+      "branching-lowrank" = TRUE,
+      stop('Unknown model name'))
     #
     # Set up temporal hyper-parameters
     opts$sigma.tau <- sigma.tau
@@ -289,7 +300,8 @@ sample.genes.and.cells <- function(
 #' Calculate inducing pseudotimes for sparse approximation
 #'
 #' @param dl de.lorean object
-#' @param num.inducing Number of inducing points
+#' @param num.inducing.tau Number of inducing points
+#' @param num.inducing.z Number of inducing latent dimension points
 #' @param period Period of expression patterns
 #' @param num.sd.border The size of the border of the inducing inputs
 #'            around the capture times in units of number of standard
@@ -297,15 +309,28 @@ sample.genes.and.cells <- function(
 #'
 #' @export
 #'
-calc.inducing.pseudotimes <- function(dl, num.inducing, period = 0, num.sd.border = 7) with(dl, {
+calc.inducing.pseudotimes <- function(dl, num.inducing.tau, num.inducing.z, period = 0, num.sd.border = 7) with(dl, {
   if (period > 0) {
+    stopifnot(! opts$model.is.branching)  # Cannot have periodic branching processes
     seq(from = 0,
-        to = period * (1 - 1/num.inducing),
-        length.out = num.inducing)
+        to = period * (1 - 1/num.inducing.tau),
+        length.out = num.inducing.tau)
   } else {
-    seq(from = time.range[1] - num.sd.border * hyper$sigma_tau,
+    if (opts$model.is.branching) {
+      taupseudo <- seq(
+        from = time.range[1] - num.sd.border * hyper$sigma_tau,
         to = time.range[2] + num.sd.border * hyper$sigma_tau,
-        length.out = num.inducing)
+        length.out = num.inducing.tau)
+      latentpseudo <- seq(
+        from = - num.sd.border,
+        to = num.sd.border,
+        length.out = num.inducing.latent)
+      t(expand.grid(taupseudo, latentpseudo))
+    } else {
+      seq(from = time.range[1] - num.sd.border * hyper$sigma_tau,
+          to = time.range[2] + num.sd.border * hyper$sigma_tau,
+          length.out = num.inducing.tau)
+    }
   }
 })
 
@@ -314,22 +339,26 @@ calc.inducing.pseudotimes <- function(dl, num.inducing, period = 0, num.sd.borde
 #'
 #' @param dl de.lorean object
 #' @param num.test Number of test points to consider
-#' @param num.inducing Number of inducing points
+#' @param num.inducing.tau Number of inducing pseudotime points
+#' @param num.inducing.z Number of inducing latent dimension points
 #' @param period Period of expression patterns
 #' @param hold.out Number genes to hold out for generalisation tests
 #' @param num.sd.border The size of the border of the inducing inputs
 #'            around the capture times in units of number of standard
 #'            deviations
+#' @param l.z length scale for latent dimension
 #'
 #' @export prepare.for.stan
 #'
 prepare.for.stan <- function(
   dl,
   num.test = 101,
-  num.inducing = 30,  # M
+  num.inducing.tau = 30,
+  num.inducing.z = 5,
   period = 0,
   hold.out = 0,
-  num.sd.border = 7)
+  num.sd.border = 7,
+  l.z = 6)
 within(dl, {
   opts$num.test <- num.test
   opts$period <- period
@@ -343,13 +372,12 @@ within(dl, {
   #
   # Calculate the map from gene indices to genes and their meta data
   gene.map <- (
-      data.frame(g=1:(.G+hold.out),
-                  gene=factor(rownames(expr),
-                              levels=levels(gene.meta$gene)))
-      %>% mutate(is.held.out=g>.G)
-      %>% left_join(gene.expr)
-      %>% left_join(gene.var)
-      %>% left_join(gene.meta))
+    data.frame(g=1:(.G+hold.out),
+               gene=factor(rownames(expr), levels=levels(gene.meta$gene)))
+    %>% mutate(is.held.out=g>.G)
+    %>% left_join(gene.expr)
+    %>% left_join(gene.var)
+    %>% left_join(gene.meta))
   stopifnot(! is.na(gene.map[
     c("g", "gene", "phi.hat", "psi.hat", "omega.hat")
   ]))
@@ -365,45 +393,53 @@ within(dl, {
   #
   # Calculate the time points at which to make predictions
   if (opts$periodic) {
-      test.input <- seq(0, opts$period, length.out=num.test)
+    test.input <- seq(0, opts$period, length.out=num.test)
   } else {
-      test.input <- seq(
-          time.range[1] - num.sd.border * opts$sigma.tau,
-          time.range[2] + num.sd.border * opts$sigma.tau,
-          length.out = num.test)
+    test.input <- seq(
+      time.range[1] - num.sd.border * opts$sigma.tau,
+      time.range[2] + num.sd.border * opts$sigma.tau,
+      length.out = num.test)
   }
   #
   # Gather all the data into one list
   stan.data <- c(
-      # Hyper-parameters
-      hyper,
-      list(
-          # Dimensions
-          C=.C,
-          G=.G,
-          H=hold.out,
-          M=num.inducing,
-          # Data
-          time=cell.map$obstime,
-          expr=expr,
-          phi=gene.map$phi.hat,
-          # Inducing pseudotimes
-          u = calc.inducing.pseudotimes(
-            dl,
-            num.inducing = num.inducing,
-            period = period,
-            num.sd.border = num.sd.border),
-          # Held out parameters
-          heldout_psi=filter(gene.map, g > .G)$psi.hat,
-          heldout_omega=filter(gene.map, g > .G)$omega.hat,
-          # Generated quantities
-          numtest=opts$num.test,
-          testinput=test.input,
-          # Periodic?
-          periodic=opts$periodic,
-          period=opts$period
-      )
+    # Hyper-parameters
+    hyper,
+    list(
+      # Dimensions
+      C = .C,
+      G = .G,
+      H = hold.out,
+      M = num.inducing.tau,
+      # Data
+      time = cell.map$obstime,
+      expr = expr,
+      phi = gene.map$phi.hat,
+      # Inducing pseudotimes
+      u = calc.inducing.pseudotimes(
+        dl,
+        num.inducing.tau = num.inducing.tau,
+        num.inducing.z = num.inducing.z,
+        period = period,
+        num.sd.border = num.sd.border),
+      # Held out parameters
+      heldout_psi = filter(gene.map, g > .G)$psi.hat,
+      heldout_omega = filter(gene.map, g > .G)$omega.hat,
+      # Generated quantities
+      numtest = opts$num.test,
+      testinput = test.input,
+      # Periodic?
+      periodic = opts$periodic,
+      period = opts$period
+    )
   )
+  #
+  # If we have a branching model fill in all the details we will need
+  if (opts$model.is.branching) {
+    stan.data$lengthscales = c(stan.data$l, l.z)  # Length scale for pseudotime and z
+    stan.data$M <- num.inducing.tau * num.inducing.latent
+    cell.map <- cell.map %>% left_join(dplyr::select(pca.df, cell, z.hat))
+  }
 })
 
 #' Compile the model and cache the DSO to avoid unnecessary recompilation.
@@ -416,12 +452,12 @@ compile.model <- function(dl) {
   stan.model.file <- system.file(file.path('Stan',
                                             sprintf('%s.stan',
                                                     dl$opts$model.name)),
-                                  package='DeLorean',
-                                  mustWork=TRUE)
+                                  package = 'DeLorean',
+                                  mustWork = TRUE)
   data.dir <- system.file('extdata', package='DeLorean')
   compiled.model.file <- paste(data.dir,
                                sprintf("%s.rds", dl$opts$model.name),
-                               sep='/')
+                               sep = '/')
   within(dl, {
     if (file.exists(compiled.model.file)
         &&
@@ -440,12 +476,12 @@ compile.model <- function(dl) {
     # Try one iteration to check everything is OK
     # message("Trying iteration")
     fit <- rstan::stan(
-      fit=compiled,
-      data=stan.data,
-      init=make.chain.init.fn(dl),
-      warmup=1,
-      iter=1,
-      chains=1)
+      fit = compiled,
+      data = stan.data,
+      init = make.chain.init.fn(dl),
+      warmup = 1,
+      iter = 1,
+      chains = 1)
   })
 }
 
