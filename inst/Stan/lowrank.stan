@@ -188,13 +188,13 @@ transformed data {
   }
 }
 parameters {
-  row_vector[C] tauoffsets;    # Pseudotime
+  row_vector[C] tauoffset;       # Pseudotime
   row_vector<lower=0>[G] psi;    # Between time variance
   row_vector<lower=0>[G] omega;  # Within time variance
 }
 transformed parameters {
   row_vector[C] tau;    # Pseudotime
-  tau = time + tauoffsets;
+  tau = time + tauoffset;
 }
 model {
   #
@@ -218,7 +218,7 @@ model {
   target += lognormal_lpdf(omega|mu_omega, sigma_omega);
   #
   # Sample pseudotime
-  target += normal_lpdf(tauoffsets|0, sigma_tau);  # Pseudotime
+  target += normal_lpdf(tauoffset|0, sigma_tau);  # Pseudotime
   #
   # Expression values for each gene
   for (g in 1:G) {

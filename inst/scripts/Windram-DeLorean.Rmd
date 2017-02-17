@@ -174,7 +174,7 @@ with `r num.inits` initialisations, the seed is `r seed` and the data have
 `r dim(dl)[1]` genes and `r dim(dl)[2]` cells.
 
 ```{r fitModel, eval=fit.model}
-dl <- prepare.for.stan(dl, num.inducing=30)
+dl <- prepare.for.stan(dl, num.inducing.tau = 30)
 # Save for input to Monocle
 saveRDS(list(expr=dl$expr,
              held.out.expr=held.out.expr,
@@ -369,6 +369,7 @@ pars <- with(extracted, list(
     tau=tau[dl$best.sample,],
     psi=psi[dl$best.sample,],
     omega=omega[dl$best.sample,]))
+pars$tauoffset = pars$tau - dl$cell.map$obstime
 if (dl$opts$model.estimates.cell.sizes) {
     pars$S <- extracted$S[dl$best.sample,]
 }
