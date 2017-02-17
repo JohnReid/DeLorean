@@ -3,72 +3,78 @@
 #
 
 
-#' Returns a function that constructs parameter settings with good tau if they are available.
-#'
-#' @param dl de.lorean object
-#'
-make.init.fn <- function(dl) {
-  function(chain_id) {
-    #
-    # Create random parameters
-    pars <- init.from.tau.prior(dl)
-    #
-    # Use initialisations for tau if we have them
-    if (chain_id <= length(dl$tau.inits)) {
-      #
-      # Replace tau with good tau
-      pars$tau <- dl$tau.inits[[chain_id]]$tau
-      #
-      # Also replace the tau offsets
-      pars$tauoffset <- dl$tau.inits[[chain_id]]$tau - dl$cell.map$obstime
-    } else {
-      message('Using tau initialisation from prior.')
-    }
-    pars
+# Create the given number of initialisations
+#
+create.inits <- function(dl, num.inits)
+  within(dl, inits <- lapply(1:num.inits, function(chain.id) create.init.for.chain(dl, chain.id)))
+
+
+# Returns a function that retrieves the initialisation for the given chain.id. This function
+# can be passed to Stan inference methods.
+#
+get.init.fn <- function(dl) function(chain.id) dl$inits[[chain.id]]
+
+
+# Create the initialisations for the given chain.id
+#
+create.init.for.chain <- function(dl, chain.id) {
+  init <- init.z.with.PCA.estimates(dl, init.from.prior(dl))
+  #
+  # Use initialisations for tau if we have them
+  if (chain.id <= length(dl$tau.inits)) {
+    init <- init.tau.with.good(dl, chain.id, init)
+  } else {
+    message('Using tau initialisation from prior for chain: ', chain.id)
   }
+  init
 }
 
 
-# Define a function to initialise the chains
+# Replace initialisations with draws from the prior
 #
-# @param dl de.lorean object
-#
-make.init.from.prior.fn <- function(dl) {
-  function() {
-    with(dl$stan.data, {
-      # message("Creating initialisation")
-      init <- list(
-        S = dl$cell.map$S.hat,
-        tauoffset = rnorm(C, mean = 0, sd = sigma_tau),
-        z = rnorm(C, mean = 0, sd = 1),
-        psi = rlnorm(G, meanlog = mu_psi, sdlog = sigma_psi),
-        omega = rlnorm(G, meanlog = mu_omega, sdlog = sigma_omega)
-      )
-      init$tau <- init$tauoffset + time
-      init
-    })
-  }
-}
+init.from.prior <- function(dl, init = list()) with(dl$stan.data, {
+  init$z = rnorm(C, mean = 0, sd = 1)
+  init$psi = rlnorm(G, meanlog = mu_psi, sdlog = sigma_psi)
+  init$omega = rlnorm(G, meanlog = mu_omega, sdlog = sigma_omega)
+  init.tau.from.prior(dl, init)
+})
 
 
-# Choose an initialisation by sampling tau from the prior. Use estimated
-# values for all other parameters.
+# Replace initialisations with the hyper parameter estimates
 #
-# @param dl de.lorean object
+init.from.hyper <- function(dl, init = list()) with(dl$stan.data, {
+  init$S = dl$cell.map$S.hat
+  init$z = dl$cell.map$z.hat
+  init$psi = dl$gene.map$psi.hat[1:G]
+  init$omega = dl$gene.map$omega.hat[1:G]
+  init
+})
+
+
+# Replace tau initialisations with draws from its prior
 #
-init.from.tau.prior <- function(dl) {
-  with(dl$stan.data, {
-    init <- list(
-      S = dl$cell.map$S.hat,
-      z = dl$cell.map$z.hat,
-      psi = dl$gene.map$psi.hat[1:G],
-      omega = dl$gene.map$omega.hat[1:G],
-      tauoffset = rnorm(C, 0, sd = sigma_tau)
-    )
-    init$tau <- init$tauoffset + time
-    init
-  })
-}
+init.tau.from.prior <- function(dl, init = list()) with(dl$stan.data, {
+  init$tauoffset = rnorm(C, 0, sd = sigma_tau)
+  init$tau <- init$tauoffset + time
+  init
+})
+
+
+# Replace tau initialisations with 'good' tau from previously performed seriation analysis
+#
+init.tau.with.good <- function(dl, chain_id, init = list()) with(dl$stan.data, {
+  init$tau <- dl$tau.inits[[chain_id]]$tau
+  init$tauoffset <- init$tau - time
+  init
+})
+
+
+# Replace z initialisations with estimates from previously performed PCA analysis
+#
+init.z.with.PCA.estimates <- function(dl, init = list()) with(dl$stan.data, {
+  init$z <- dl$cell.map$z.hat
+  init
+})
 
 
 # Spread tau values from min(time) - sigma_tau to max(time) + sigma_tau
@@ -280,8 +286,9 @@ within(deduplicate.orderings(dl), {
     function(O) {
       message('Using ordering ', O$method.name, '; LL = ', O$ll)
       # Create an initialisation using the ordering
-      init <- init.from.tau.prior(dl)
+      init <- init.from.prior(dl)
       init$tau <- even.tau.spread(dl)[O$ser.order]
+      init$tauoffset <- init$tau - dl$stan.data$time
       init
     })
 })
@@ -364,8 +371,9 @@ find.smooth.tau <- function(
     lapply(
       orderings[best.order[1:num.tau.to.keep]],
       function(ordering) {
-        init <- init.from.tau.prior(dl)
+        init <- init.from.prior(dl)
         init$tau <- even.tau.spread(dl)[ordering.invert(ordering)]
+        init$tauoffset <- init$tau - dl$stan.data$time
         init
       })
   })
@@ -442,10 +450,10 @@ within(dl, {
   # random seeded tau
   try.tau.init <- function(i) {
     set.seed(i)
-    pars <- init.from.tau.prior(dl)
-    lp <- rstan::log_prob(fit, rstan::unconstrain_pars(fit, pars),
+    init <- init.from.prior(dl)
+    lp <- rstan::log_prob(fit, rstan::unconstrain_pars(fit, init),
                           adjust_transform = FALSE)
-    list(lp = lp, tau = pars$tau)
+    list(lp = lp, tau = init$tau)
   }
   #
   # Choose tau several times and calculate log probability

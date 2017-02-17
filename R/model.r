@@ -482,7 +482,7 @@ compile.model <- function(dl) {
     fit <- rstan::stan(
       fit = compiled,
       data = stan.data,
-      init = make.init.fn(dl),
+      init = list(init.from.prior(dl)),
       warmup = 1,
       iter = 1,
       chains = 1)
@@ -575,7 +575,8 @@ fit.model.sample <- function(
     thin = 50,
     ...)
 {
-  init.fn <- make.init.fn(dl)
+  dl <- create.inits(dl, num.cores)
+  init.fn <- get.init.fn(dl)
   # Run the chains in parallel
   sflist <- parallel::mclapply(
     1:num.cores,
@@ -637,7 +638,8 @@ fit.model.vb <- function(
     init.idx = 1,
     ...)
 {
-  init.fn <- make.init.fn(dl)
+  dl <- create.inits(dl, num.cores)
+  init.fn <- get.init.fn(dl)
   if (num.cores > 1) {
     #
     # Run variational Bayes in parallel

@@ -151,7 +151,11 @@ my_sso <- shinystan::launch_shinystan(fit)
 
 Calculate best sample estimates for tau and z
 ```{r tauVsZ}
-init.df <- data.frame(c = 1:dl$stan.data$C, tau.init = init$tauoffset + dl$stan.data$time, z.init = init$z)
+init.df <-
+  data.frame(
+    c = 1:dl$stan.data$C,
+    tau.init = init$tauoffset + dl$stan.data$time,
+    z.init = init$z)
 tau.z <- with(best.m, left_join(tau, z) %>% left_join(dl$cell.map))
 ```
 
