@@ -4,14 +4,17 @@ author: John Reid
 output: pdf_document
 ---
 
-```{r build, echo=FALSE, eval=FALSE}
+```{r build, echo = FALSE, eval = FALSE}
+#
+# Execute to render this document.
+#
 devtools::load_all()
 rmarkdown::render('Guo-branching-lowrank.Rmd')
 ```
 
 
-Load libraries
-```{r loadLibs, message=FALSE}
+Load packages
+```{r loadPkgs, message = FALSE}
 library(stringr)
 library(dplyr)
 library(reshape2)
@@ -21,7 +24,7 @@ library(DeLorean)
 ```
 
 
-```{r config, echo=FALSE, message=FALSE}
+```{r config, echo = FALSE, message = FALSE}
 #
 # Seed RNG
 set.seed(1)
@@ -50,9 +53,9 @@ fig.height <- text.width / golden.ratio
 #
 # Stylesheet
 options(
-  markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css", package="DeLorean"))
+  markdown.HTML.stylesheet = system.file("inst/Rmd/foghorn.css", package = "DeLorean"))
 font.family <- "Verdana"
-font.theme <- theme_update(text=element_text(family=font.family))
+font.theme <- theme_update(text = element_text(family = font.family))
 theme_set(font.theme)
 #
 # Create directory for plots and list to store them
@@ -65,7 +68,7 @@ plots <- list()
 Load the data from the `DeLorean` package.
 ```{r load.test.data}
 data(GuoDeLorean)
-guo.expr.centred <- t(scale(t(guo.expr), scale=FALSE, center=TRUE))
+guo.expr.centred <- t(scale(t(guo.expr), scale = FALSE, center = TRUE))
 guo.cell.meta <-
   guo.cell.meta %>%
   mutate(cell.type = factor(ifelse(is.na(cell.type), "NA", as.character(cell.type))))
@@ -73,7 +76,6 @@ guo.cell.meta <-
 
 
 # Fit DeLorean model
-
 Create DeLorean object.
 ```{r createDL}
 dl <- de.lorean(
@@ -129,7 +131,7 @@ if (filter.cells) {
     group_by(capture) %>%
     do(sample_n(., min(nrow(.), n.sample)))
   sampled.cells %>% summarise(number = n())
-  dl <- filter.cells(dl, cells=sampled.cells$cell)
+  dl <- filter.cells(dl, cells = sampled.cells$cell)
 }
 ```
 
