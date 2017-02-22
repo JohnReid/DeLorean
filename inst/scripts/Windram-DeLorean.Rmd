@@ -185,7 +185,7 @@ dl <- compile.model(dl)
 dl <- find.good.ordering(dl, seriation.find.orderings)
 plot(dl, type='orderings')
 dl <- pseudotimes.from.orderings(dl, num.to.keep=num.inits)
-system.time(dl <- fit.model(dl, method=inf.method, num.inits=num.inits))
+system.time(dl <- fit.model(dl, method = inf.method, num.inits = num.inits))
 plots <- list()
 if ("vb" == inf.method) {
     plots$pair.plot <- pseudotimes.pair.plot(dl)
