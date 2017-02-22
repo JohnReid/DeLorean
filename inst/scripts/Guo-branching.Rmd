@@ -118,21 +118,18 @@ model.name <- 'branching'
 dl <- estimate.hyper(dl, sigma.tau = .25, model.name = model.name, adjust.cell.sizes = FALSE)
 ```
 
-Choose a few cells from each capture time
-```{r chooseCells}
+
+```{r chooseCells, eval = FALSE}
 guo.cell.meta %>%
   group_by(capture) %>%
   summarise(number = n())
-filter.cells <- TRUE
-if (filter.cells) {
-  # n.sample <- 157
-  n.sample <- 17
-  sampled.cells <- guo.cell.meta %>%
-    group_by(capture) %>%
-    do(sample_n(., min(nrow(.), n.sample)))
-  sampled.cells %>% summarise(number = n())
-  dl <- filter.cells(dl, cells = sampled.cells$cell)
-}
+# n.sample <- 157
+n.sample <- 17
+sampled.cells <- guo.cell.meta %>%
+  group_by(capture) %>%
+  do(sample_n(., min(nrow(.), n.sample)))
+sampled.cells %>% summarise(number = n())
+dl <- filter.cells(dl, cells = sampled.cells$cell)
 ```
 
 
