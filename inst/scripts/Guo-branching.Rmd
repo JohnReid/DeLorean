@@ -1,5 +1,5 @@
 ---
-title: Fit low-rank branching model to Guo data
+title: Fit branching model to Guo data
 author: John Reid
 output: pdf_document
 ---
@@ -9,7 +9,7 @@ output: pdf_document
 # Execute to render this document.
 #
 devtools::load_all()
-rmarkdown::render('Guo-branching-lowrank.Rmd')
+rmarkdown::render('Guo-branching.Rmd')
 ```
 
 
