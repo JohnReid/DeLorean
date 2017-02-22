@@ -18,7 +18,7 @@ update.levels <- function(.factor,
 # @param dl de.lorean object
 # @param sample.iter Which sample to use, defaults to best sample
 #
-tau.for.sample <- function(dl, sample.iter=dl$best.sample) {
+tau.for.sample <- function(dl, sample.iter = dl$best.sample) {
     (
         dl$samples.l$tau
         %>% filter(sample.iter == iter)  # Filter correct iteration
@@ -571,28 +571,21 @@ fit.model <- function(
 fit.model.sample <- function(
     dl,
     num.cores = getOption("DL.num.cores", max(parallel::detectCores() - 1, 1)),
-    chains = 1,
+    chains = num.cores,
     thin = 50,
     ...)
 {
   dl <- create.inits(dl, num.cores)
-  init.fn <- get.init.fn(dl)
-  # Run the chains in parallel
-  sflist <- parallel::mclapply(
-    1:num.cores,
-    mc.cores = num.cores,
-    function(i)
-      rstan::stan(
-        fit = dl$fit,
-        data = dl$stan.data,
-        thin = thin,
-        init = init.fn,
-        seed = i,
-        chains = chains,
-        chain_id = i,
-        refresh = -1,
-        ...))
-  dl$fit <- rstan::sflist2stanfit(sflist)
+  dl$fit <-
+    rstan::stan(
+      fit = dl$fit,
+      data = dl$stan.data,
+      thin = thin,
+      init = get.init.fn(dl),
+      chains = chains,
+      cores = num.cores,
+      refresh = -1,
+      ...)
   dl$compiled <- NULL  # Delete large unneeded object
   return(dl)
 }
@@ -674,13 +667,13 @@ fit.model.vb <- function(
     dl$vb.lls.unadj <- sapply(sflist, function(sf) sf$lp.unadj)
     #
     # Calculate which run had best lp for posterior mean parameters
-    best.idx <- which.max(dl$vb.lls.unadj)
+    dl$best.vb.id <- which.max(dl$vb.lls.unadj)
     #
     # Save the estimated tau for analysis
     dl$vb.tau <- sapply(sflist, function(sf) sf$pars$tau)
     #
     # Use those results
-    dl$fit <- sflist[[best.idx]]$fit
+    dl$fit <- sflist[[dl$best.vb.id]]$fit
   } else {
     # Run single variational Bayes
     dl$fit <- rstan::vb(
@@ -689,6 +682,7 @@ fit.model.vb <- function(
       seed = init.idx,
       init = init.fn(init.idx),
       ...)
+    dl$best.vb.id <- init.idx
   }
   return(dl)
 }
@@ -820,7 +814,7 @@ process.posterior <- function(dl) {
 optimise.sample <- function(
     dl,
     parameters=sample.parameters(dl, sample.iter=sample.iter),
-    sample.iter=dl$best.sample,
+    sample.iter = dl$best.sample,
     ...)
 {
     with(dl, {
@@ -893,19 +887,29 @@ optimise.best.sample <- function(
 #' @export
 #'
 analyse.noise.levels <- function(dl, num.high.psi=25) {
-    within(dl, {
-        noise.levels <- (
-            with(samples.l, left_join(psi, omega))
-            %>% left_join(gene.map))
-        # Summarise by gene
-        gene.noise.levels <- (
-            noise.levels
-            %>% group_by(g)
-            %>% dplyr::summarise(omega=mean(omega), psi=mean(psi))
-            %>% left_join(gene.map)
-            %>% arrange(-psi/omega))
-        genes.high.psi <- head(gene.noise.levels$gene, num.high.psi)
-    })
+  within(dl, {
+    noise.levels <- (
+      with(samples.l, left_join(psi, omega))
+      %>% left_join(gene.map))
+    # Summarise by gene
+    gene.noise.levels <- (
+      noise.levels
+      %>% group_by(g)
+      %>% dplyr::summarise(omega=mean(omega), psi=mean(psi))
+      %>% left_join(gene.map)
+      %>% arrange(-psi/omega))
+    genes.high.psi <- head(gene.noise.levels$gene, num.high.psi)
+    # Calculate some statistics of the posterior of the gene parameters
+    var.post.stats <-
+      with(samples.l, left_join(psi, omega)) %>%
+      group_by(g) %>%
+      summarise(
+        psi.mean   = mean(psi),
+        psi.sd     = sd(psi),
+        omega.mean = mean(omega),
+        omega.sd   = sd(omega)) %>%
+      left_join(gene.map)
+  })
 }
 
 
@@ -919,7 +923,7 @@ analyse.noise.levels <- function(dl, num.high.psi=25) {
 sampled.gene.param <- function(dl,
                                gene.idx,
                                param,
-                               sample.iter=dl$best.sample) {
+                               sample.iter = dl$best.sample) {
     with(dl, {
         filter(samples.l[[param]], gene.idx == g, sample.iter == iter)[[param]]
     })
@@ -952,7 +956,7 @@ make.predictions <- function(dl) {
 fit.held.out <- function(
     dl,
     expr.held.out,
-    sample.iter=dl$best.sample)
+    sample.iter = dl$best.sample)
 {
     with(dl, {
         if (opts$model.estimates.cell.sizes) {
@@ -995,8 +999,8 @@ fit.held.out <- function(
 # @param sample.iter The sample we want the parameters for.
 #
 sample.parameters <- function(dl,
-                              sample.iter=dl$best.sample,
-                              param.names=names(dl$samples.l))
+                              sample.iter = dl$best.sample,
+                              param.names = names(dl$samples.l))
 {
     parameters <- lapply(param.names,
                          function(param)

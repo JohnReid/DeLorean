@@ -12,7 +12,7 @@ create.inits <- function(dl, num.inits)
 # Returns a function that retrieves the initialisation for the given chain.id. This function
 # can be passed to Stan inference methods.
 #
-get.init.fn <- function(dl) function(chain.id) dl$inits[[chain.id]]
+get.init.fn <- function(dl) { function(chain.id = 1) { message(chain.id); dl$inits[[chain.id]] } }
 
 
 # Create the initialisations for the given chain.id

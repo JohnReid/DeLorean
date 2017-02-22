@@ -36,17 +36,18 @@ if (is.installed('ggthemes')) {
 #' @method plot de.lorean
 #' @export
 #'
-plot.de.lorean <- function(x, type="profiles", ...) {
+plot.de.lorean <- function(x, type = "profiles", ...) {
     result <- switch(type,
-        profiles=profiles.plot(x, ...),
-        pseudotime=pseudotime.plot(x, ...),
-        Rhat=Rhat.plot(x, ...),
-        expr.data=expr.data.plot(x, ...),
-        roughnesses=roughnesses.plot(x, ...),
-        marg.like=marg.like.plot(x, ...),
-        orderings=orderings.plot(x, ...),
-        tau.offsets=tau.offsets.plot(x, ...),
-        init.vs.pseudotimes=init.orderings.vs.pseudotimes.plot(x, ...)
+        profiles = profiles.plot(x, ...),
+        pseudotime = pseudotime.plot(x, ...),
+        Rhat = Rhat.plot(x, ...),
+        expr.data = expr.data.plot(x, ...),
+        roughnesses = roughnesses.plot(x, ...),
+        marg.like = marg.like.plot(x, ...),
+        orderings = orderings.plot(x, ...),
+        tau.offsets = tau.offsets.plot(x, ...),
+        gene.params = gene.params.plot(x, ...),
+        init.vs.pseudotimes = init.orderings.vs.pseudotimes.plot(x, ...)
     )
     if (is.null(result)) {
         stop('Unknown plot type')
@@ -176,6 +177,24 @@ tau.offsets.plot <- function(dl, rug.alpha=.3) with(dl, {
     stat_function(fun=function(x) prior.scale * dnorm(x, sd=hyper$sigma_tau),
                   linetype='dashed')
 })
+
+
+#' Plot the posterior of the gene parameters.
+#'
+#' @param dl de.lorean object
+#' @param alpha Transparency for points and error bars
+#'
+#' @export
+#'
+gene.params.plot <- function(dl, alpha = .4)
+  ggplot(dl$var.post.stats,
+         aes(x = psi.mean, xmin = psi.mean - psi.sd, xmax = psi.mean + psi.sd,
+             y = omega.mean, ymin = omega.mean - omega.sd, ymax = omega.mean + omega.sd,
+             label = gene)) +
+  geom_point(alpha = .4) +
+  geom_errorbar(alpha = .4) +
+  geom_errorbarh(alpha = .4) +
+  geom_label(alpha = .8)
 
 
 #' Plot the Rhat convergence statistics. \code{\link{examine.convergence}}
@@ -491,3 +510,35 @@ pseudotimes.pair.plot <- function(dl, fits=NULL) {
           color=capture)) +
     ggplot2::geom_segment(alpha=.3) + facet_wrap(~ fit)
 }
+
+
+#' Plot tau vs. z for the branching model.
+#'
+#' @param dl The DeLorean object
+#' @param sample.iter The sample (iteration) to use
+#'
+#' @export
+#'
+branching.tau.z.plot <- function(dl, sample.iter = dl$best.sample) {
+  best.m <- lapply(dl$samples.l[c('tau', 'z')], function(s) filter(s, iter == sample.iter))
+  tau.z <- with(best.m, left_join(tau, z))
+  ggplot(tau.z, aes(x = tau, y = z, color = capture, shape = cell.type)) +
+    geom_point(size = 4)
+}
+
+
+#' Plot the posterior of the branching model
+#'
+#' @param dl The DeLorean object
+#'
+#' @export
+#'
+branching.post.plot <- function(dl, post) with(dl, {
+  ggplot(post, aes(x = tau, y = z, fill = post.mean)) +
+    geom_tile(width = tau.step, height = z.step) +
+    scale_fill_gradient2(low = scales::muted("blue"), mid = "white", high = scales::muted("red")) +
+    geom_point(data = tau.z %>% mutate(post.mean = 0),
+              mapping = aes(x = tau, y = z, shape = cell.type),
+              size = 2) +
+    facet_wrap(~ gene)
+})

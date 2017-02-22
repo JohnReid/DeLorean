@@ -82,6 +82,7 @@ dl <- de.lorean(
   guo.cell.meta)
 ```
 
+
 ## PCA
 Perform a PCA on the expression data and calculate which direction in PC1-PC2 space best
 correlates with capture time.
@@ -132,11 +133,13 @@ if (filter.cells) {
 }
 ```
 
+
 ## Fit
 ```{r fit}
 dl <- prepare.for.stan(dl)
 dl <- compile.model(dl)
 dl <- fit.model(dl, method = 'vb', num.cores = 1)
+# dl <- fit.model(dl, method = 'sample', num.cores = 2, iter = 100)
 dl <- process.posterior(dl)
 dl <- analyse.noise.levels(dl)
 ```
@@ -149,161 +152,28 @@ my_sso <- shinystan::launch_shinystan(fit)
 ```
 
 
-Calculate best sample estimates for tau and z
-```{r tauVsZ}
-init.df <-
-  data.frame(
-    c = 1:dl$stan.data$C,
-    tau.init = init$tauoffset + dl$stan.data$time,
-    z.init = init$z)
-tau.z <- with(best.m, left_join(tau, z) %>% left_join(dl$cell.map))
-```
-
+## Locations in latent space
 Plot tau vs. z from the best sample.
-The line segments show where they were initialised at the start of inference.
 ```{r plotTauZ}
-plots[['tau.z']] <-
-  ggplot(tau.z, aes(x = tau, y = z, color = capture, shape = cell.type)) +
-  geom_point(size = 4) +
-  geom_segment(
-    data = left_join(tau.z, init.df),
-    mapping = aes(x = tau.init, xend = tau, y = z.init, yend = z),
-    alpha = .2)
+plots[['tau.z']] <- branching.tau.z.plot(dl)
 plots[['tau.z']]
 ```
 
-Calculate the posterior for the noise and temporal variance levels
-```{r postNoise}
-var.post.stats <-
-  with(samples.m, left_join(psi, omega)) %>%
-  group_by(g) %>%
-  summarise(
-    psi.mean   = mean(psi),
-    psi.sd     = sd(psi),
-    omega.mean = mean(omega),
-    omega.sd   = sd(omega)) %>%
-  left_join(dl$gene.map)
-sample_n(var.post.stats, 10)
-plots$var <-
-  ggplot(var.post.stats,
-         aes(x = psi.mean, xmin = psi.mean - psi.sd, xmax = psi.mean + psi.sd,
-             y = omega.mean, ymin = omega.mean - omega.sd, ymax = omega.mean + omega.sd,
-             label = gene)) +
-  geom_point(alpha = .4) +
-  geom_errorbar(alpha = .4) +
-  geom_errorbarh(alpha = .4) +
-  geom_label(alpha = .8)
-```
 
+## Gene noise and temporal variances
 Plot the posterior for the noise and temporal variance levels
-```{r plotVarPost}
+```{r postNoise}
+plots$var <- plot(dl, type = 'gene.params')
 plots$var
 ```
 
 
-## Calculate distances between cells
-
-We want to know if there are any cells that are significantly further away
-from their closest neighbours in latent-space compared to gene-space.
-```{r calcDists}
-dists.gene <- as.matrix(dist(t(dl$expr)))
-dists.gene <- dists.gene / mean(dists.gene)
-latent <- as.matrix(select(tau.z, tau, z))
-dists.latent <- as.matrix(dist(latent))
-dists.latent <- dists.gene / mean(dists.latent)
-qplot(as.vector(dists.gene))
-dists.weighted <- exp(-dists.gene**2 / .7**2) * dists.latent / dists.gene
-diag(dists.weighted) <- 0
-plots[['rel.dists']] <-
-  ggplot(
-    mutate(tau.z, weighted.dist = rowSums(dists.weighted)),
-    aes(x = tau, y = z, color = weighted.dist, shape = cell.type)) +
-  geom_point(size = 4)
-plots[['rel.dists']]
-```
-
-
 ## Predicted expression
-
-Calculate the predicted mean and variances on a grid across the latent space.
-```{r calcPost}
-#
-# Expose Stan functions
-stan.fns <- rstan::expose_stan_functions(fit)
-#
-# Get range for grid
-tau.range <- range(best.m$tau$tau)
-tau.min <- floor(tau.range[1])
-tau.max <- ceiling(tau.range[2])
-tau.grid <- seq(from = tau.min, to = tau.max, length.out = 51)
-tau.step <- tau.grid[2] - tau.grid[1]
-z.range <- range(best.m$z$z)
-z.min <- floor(z.range[1])
-z.max <- ceiling(z.range[2])
-z.grid <- seq(from = z.min, to = z.max, length.out = 51)
-z.step <- z.grid[2] - z.grid[1]
-#
-# Expand into grid
-grid.df <- expand.grid(tau = tau.grid, z = z.grid)
-grid <- t(as.matrix(grid.df))
-class(grid)
-dim(grid)
-#
-# Covariance across grid points
-K.grid <- cov_symmetric(grid, dl$stan.data$lengthscales)
-class(K.grid)
-dim(K.grid)
-#
-# Covariance across latent points from posterior
-cell.post <- with(best.m, left_join(tau, z))
-points.post <- t(as.matrix(select(cell.post, tau, z)))
-K.post <- cov_symmetric(points.post, dl$stan.data$lengthscales)
-dim(K.post)
-#
-# Cross-covariance
-K.cross <- cov(points.post, grid, dl$stan.data$lengthscales)
-dim(K.cross)
-```
-
-Calculate the predicted expression for randomly selected genes across the latent space.
+Calculate and plot the predicted expression for randomly selected genes across the latent space.
 ```{r predictExpr}
-calc.post <- function(row) {
-  message(row$gene)
-  y <- dl$expr[row$g,]
-  psi <- row$psi
-  omega <- row$omega
-  gp.post <- gp.predict(
-    y - mean(y),
-    psi * K.post + diag(omega, nrow = nrow(K.post)),
-    psi * K.cross,
-    psi * K.grid + diag(omega, nrow = nrow(K.grid)))
-  grid.df %>%
-    mutate(
-      # g = row$g,
-      # gene = row$gene,
-      expr.post = as.vector(gp.post$mu))
-}
-genes.df <- with(best.m, left_join(psi, omega) %>% left_join(dl$gene.map))
-all.post <-
-  genes.df %>%
-  sample_n(9) %>%
-  group_by(g) %>%
-  do(calc.post(.)) %>%
-  ungroup() %>%
-  left_join(dl$gene.map)
-plots$gex <-
-  ggplot(all.post,
-         aes(x = tau, y = z, fill = expr.post)) +
-  geom_tile(width = tau.step, height = z.step) +
-  scale_fill_gradient2(low = scales::muted("blue"), mid = "white", high = scales::muted("red")) +
-  geom_point(data = tau.z %>% mutate(expr.post = 0),
-             mapping = aes(x = tau, y = z, shape = cell.type),
-             size = 2) +
-  facet_wrap(~ gene)
-```
-
-Plot the posterior mean of the expression levels for randomly selected genes across the latent space.
-```{r plotGex}
+dl <- branching.prepare.posterior(dl)
+genes.post <- branching.genes.post(dl, sample(dl$gene.map$gene, 9))
+plots$gex <- branching.post.plot(dl, genes.post)
 plots$gex
 ```
 
@@ -325,7 +195,6 @@ invisible(lapply(names(plots), save_plot))
 
 
 # Session information
-
 R version and packages used:
 ```{r Rversion}
 date()
