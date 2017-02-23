@@ -27,7 +27,7 @@ pca.expr <- function(dl) with(dl, {
   pca.df <-
     pca.l %>%
     reshape2::dcast(cell ~ PC, value.var = 'x') %>%
-    left_join(guo.cell.meta)
+    left_join(cell.meta)
   #
   # Calculate direction that best predicts capture time
   lm.fit <- lm(obstime ~ PC1 + PC2, pca.df)

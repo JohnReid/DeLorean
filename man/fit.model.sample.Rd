@@ -5,7 +5,7 @@
 \title{Fit the model using Stan sampler}
 \usage{
 fit.model.sample(dl, num.cores = getOption("DL.num.cores",
-  max(parallel::detectCores() - 1, 1)), chains = 1, thin = 50, ...)
+  max(parallel::detectCores() - 1, 1)), chains = num.cores, thin = 50, ...)
 }
 \arguments{
 \item{dl}{de.lorean object}
