@@ -32,6 +32,7 @@ utils::globalVariables(names=c(
   'cell.expr',
   'cell.meta',
   'cell.sizes',
+  'cell.type',
   'dynamic.var',
   'expr',
   'expr.l',
@@ -56,12 +57,15 @@ utils::globalVariables(names=c(
   'obstime',
   'omega',
   'omega.hat',
+  'omega.mean',
+  'omega.sd',
   'opts',
   'opts',
   'order.inits',
   'ordering',
   'ordering.label',
   'p.value',
+  'pca.df',
   'phi',
   'phi.hat',
   'predictedmean',
@@ -71,6 +75,8 @@ utils::globalVariables(names=c(
   'pseudotime.label',
   'psi',
   'psi.hat',
+  'psi.mean',
+  'psi.sd',
   'sample.iter',
   'samples.l',
   'size',
@@ -84,7 +90,9 @@ utils::globalVariables(names=c(
   'x.hat.sd',
   'x.mean',
   'x.sd',
-  'x.var'))
+  'x.var',
+  'z',
+  'z.hat'))
 
 .onLoad <- function(libname, pkgname) { # nocov start
   # loadRcppModules()
