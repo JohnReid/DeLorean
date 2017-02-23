@@ -31,7 +31,6 @@ pca.expr <- function(dl) with(dl, {
   #
   # Calculate direction that best predicts capture time
   lm.fit <- lm(obstime ~ PC1 + PC2, pca.df)
-  lm.fit
   a <- lm.fit$coefficients[['PC1']]
   b <- lm.fit$coefficients[['PC2']]
   lambda <- sqrt(a**2 + b**2) / 2

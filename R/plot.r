@@ -530,6 +530,7 @@ branching.tau.z.plot <- function(dl, sample.iter = dl$best.sample) {
 #' Plot the posterior of the branching model
 #'
 #' @param dl The DeLorean object
+#' @param post The posterior (output of branching.genes.post)
 #'
 #' @export
 #'

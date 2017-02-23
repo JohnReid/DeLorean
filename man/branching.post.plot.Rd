@@ -8,6 +8,8 @@ branching.post.plot(dl, post)
 }
 \arguments{
 \item{dl}{The DeLorean object}
+
+\item{post}{The posterior (output of branching.genes.post)}
 }
 \description{
 Plot the posterior of the branching model
