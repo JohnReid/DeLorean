@@ -516,13 +516,14 @@ pseudotimes.pair.plot <- function(dl, fits=NULL) {
 #'
 #' @param dl The DeLorean object
 #' @param sample.iter The sample (iteration) to use
+#' @param ... Arguments to be passed to ggplot(aes(...))
 #'
 #' @export
 #'
-branching.tau.z.plot <- function(dl, sample.iter = dl$best.sample) {
+branching.tau.z.plot <- function(dl, sample.iter = dl$best.sample, ...) {
   best.m <- lapply(dl$samples.l[c('tau', 'z')], function(s) filter(s, iter == sample.iter))
   tau.z <- with(best.m, left_join(tau, z))
-  ggplot(tau.z, aes(x = tau, y = z, color = capture, shape = cell.type)) +
+  ggplot(tau.z, aes(x = tau, y = z, color = capture, ...)) +
     geom_point(size = 4)
 }
 
@@ -531,15 +532,16 @@ branching.tau.z.plot <- function(dl, sample.iter = dl$best.sample) {
 #'
 #' @param dl The DeLorean object
 #' @param post The posterior (output of branching.genes.post)
+#' @param ... Arguments to be passed to geom_point(aes(...))
 #'
 #' @export
 #'
-branching.post.plot <- function(dl, post) with(dl, {
+branching.post.plot <- function(dl, post, ...) with(dl, {
   ggplot(post, aes(x = tau, y = z, fill = post.mean)) +
     geom_tile(width = tau.step, height = z.step) +
     scale_fill_gradient2(low = scales::muted("blue"), mid = "white", high = scales::muted("red")) +
     geom_point(data = tau.z %>% mutate(post.mean = 0),
-              mapping = aes(x = tau, y = z, shape = cell.type),
+              mapping = aes(x = tau, y = z, ...),
               size = 2) +
     facet_wrap(~ gene)
 })

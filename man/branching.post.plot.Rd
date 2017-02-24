@@ -4,12 +4,14 @@
 \alias{branching.post.plot}
 \title{Plot the posterior of the branching model}
 \usage{
-branching.post.plot(dl, post)
+branching.post.plot(dl, post, ...)
 }
 \arguments{
 \item{dl}{The DeLorean object}
 
 \item{post}{The posterior (output of branching.genes.post)}
+
+\item{...}{Arguments to be passed to geom_point(aes(...))}
 }
 \description{
 Plot the posterior of the branching model

@@ -16,6 +16,7 @@ Imports:
     reshape2 (>= 1.4),
     stringr (>= 0.6.2),
     ggplot2 (>= 1.0.0),
+    scales,
     MASS (>= 7.3),
     broom,
     coda,

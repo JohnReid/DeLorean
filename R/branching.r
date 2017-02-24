@@ -67,6 +67,11 @@ pca.expr <- function(dl) with(dl, {
 #' @export
 #'
 branching.prepare.posterior <- function(dl, sample.iter = dl$best.sample, tau.grid.size = 51, z.grid.size = 51) {
+  #
+  # To remove CRAN check problem
+  cov_symmetric <- NA
+  rm(cov_symmetric)
+  #
   dl$best.m <- lapply(dl$samples.l, function(s) filter(s, iter == sample.iter))
   dl$tau.z <- with(dl$best.m, left_join(tau, z))
   #
@@ -140,3 +145,31 @@ branching.gene.post <- function(dl, g, psi, omega) with(dl, {
     psi * K.grid + diag(omega, nrow = nrow(K.grid)))
   dl$grid.df %>% mutate(post.mean = as.vector(gp.post$mu))
 })
+
+
+#' Calculate the log marginal likelihoods of each cell's expression
+#' of each gene.
+#'
+#' @param dl The DeLorean object.
+#'
+#' @export
+#'
+branching.calc.log.marg.lik <- function(dl) {
+  #
+  # To remove CRAN check problem
+  cov_symmetric <- NA
+  rm(cov_symmetric)
+  #
+  cell.post <- with(dl$best.m, left_join(tau, z))
+  points.post <- t(as.matrix(select(cell.post, tau, z)))
+  K.post <- cov_symmetric(points.post, dl$stan.data$lengthscales)
+  gene.log.marg.lik <- function(g1) {
+    psi = filter(dl$best.m$psi, g == g1)$psi
+    omega = filter(dl$best.m$omega, g == g1)$omega
+    # message(psi, ' ', omega)
+    y = dl$stan.data$expr[g1,]
+    K = psi * K.post + diag(omega, nrow = length(y))
+    gp.log.marg.like.individual(y, K = K)
+  }
+  t(sapply(1:dl$stan.data$G, gene.log.marg.lik))
+}

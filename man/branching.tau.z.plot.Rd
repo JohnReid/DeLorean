@@ -4,12 +4,14 @@
 \alias{branching.tau.z.plot}
 \title{Plot tau vs. z for the branching model.}
 \usage{
-branching.tau.z.plot(dl, sample.iter = dl$best.sample)
+branching.tau.z.plot(dl, sample.iter = dl$best.sample, ...)
 }
 \arguments{
 \item{dl}{The DeLorean object}
 
 \item{sample.iter}{The sample (iteration) to use}
+
+\item{...}{Arguments to be passed to ggplot(aes(...))}
 }
 \description{
 Plot tau vs. z for the branching model.
