@@ -68,16 +68,6 @@ pca.expr <- function(dl) with(dl, {
 #'
 branching.prepare.posterior <- function(dl, sample.iter = dl$best.sample, tau.grid.size = 51, z.grid.size = 51) {
   #
-  # To remove CRAN check problem
-  cov_symmetric <- NA
-  rm(cov_symmetric)
-  #
-  dl$best.m <- lapply(dl$samples.l, function(s) filter(s, iter == sample.iter))
-  dl$tau.z <- with(dl$best.m, left_join(tau, z))
-  #
-  # Expose Stan functions
-  dl$stan.fns <- rstan::expose_stan_functions(dl$fit)
-  #
   # Get range for grid
   tau.range <- range(dl$best.m$tau$tau)
   tau.min <- floor(tau.range[1])
@@ -95,15 +85,15 @@ branching.prepare.posterior <- function(dl, sample.iter = dl$best.sample, tau.gr
   grid <- t(as.matrix(dl$grid.df))
   #
   # Covariance across grid points
-  dl$K.grid <- cov_symmetric(grid, dl$stan.data$lengthscales)
+  dl$K.grid <- dl$stan.fns$cov_symmetric(grid, dl$stan.data$lengthscales)
   #
   # Covariance across latent points from posterior
   cell.post <- with(dl$best.m, left_join(tau, z))
   points.post <- t(as.matrix(select(cell.post, tau, z)))
-  dl$K.post <- cov_symmetric(points.post, dl$stan.data$lengthscales)
+  dl$K.post <- dl$stan.fns$cov_symmetric(points.post, dl$stan.data$lengthscales)
   #
   # Cross-covariance
-  dl$K.cross <- cov(points.post, grid, dl$stan.data$lengthscales)
+  dl$K.cross <- dl$stan.fns$cov(points.post, grid, dl$stan.data$lengthscales)
   #
   # Return DeLorean object
   dl
@@ -145,31 +135,3 @@ branching.gene.post <- function(dl, g, psi, omega) with(dl, {
     psi * K.grid + diag(omega, nrow = nrow(K.grid)))
   dl$grid.df %>% mutate(post.mean = as.vector(gp.post$mu))
 })
-
-
-#' Calculate the log marginal likelihoods of each cell's expression
-#' of each gene.
-#'
-#' @param dl The DeLorean object.
-#'
-#' @export
-#'
-branching.calc.log.marg.lik <- function(dl) {
-  #
-  # To remove CRAN check problem
-  cov_symmetric <- NA
-  rm(cov_symmetric)
-  #
-  cell.post <- with(dl$best.m, left_join(tau, z))
-  points.post <- t(as.matrix(select(cell.post, tau, z)))
-  K.post <- cov_symmetric(points.post, dl$stan.data$lengthscales)
-  gene.log.marg.lik <- function(g1) {
-    psi = filter(dl$best.m$psi, g == g1)$psi
-    omega = filter(dl$best.m$omega, g == g1)$omega
-    # message(psi, ' ', omega)
-    y = dl$stan.data$expr[g1,]
-    K = psi * K.post + diag(omega, nrow = length(y))
-    gp.log.marg.like.individual(y, K = K)
-  }
-  t(sapply(1:dl$stan.data$G, gene.log.marg.lik))
-}

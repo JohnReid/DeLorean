@@ -154,7 +154,11 @@ my_sso <- shinystan::launch_shinystan(fit)
 ## Locations in latent space
 Plot tau vs. z from the best sample.
 ```{r plotTauZ}
-plots[['tau.z']] <- branching.tau.z.plot(dl)
+plots[['tau.z']] <-
+  ggplot(
+    with(dl$best.m, left_join(tau, z)),
+    aes(x = tau, y = z, color = capture, shape = cell.type)) +
+  geom_point(size = 4)
 plots[['tau.z']]
 ```
 
@@ -172,8 +176,31 @@ Calculate and plot the predicted expression for randomly selected genes across t
 ```{r predictExpr}
 dl <- branching.prepare.posterior(dl)
 genes.post <- branching.genes.post(dl, sample(dl$gene.map$gene, 9))
-plots$gex <- branching.post.plot(dl, genes.post)
+plots$gex <-
+  branching.post.plot(dl, genes.post) +
+  geom_point(data = with(dl$best.m, left_join(tau, z)) %>% mutate(post.mean = 0),
+             mapping = aes(x = tau, y = z, shape = cell.type),
+             size = 2)
 plots$gex
+```
+
+
+## Log marginal likelihoods
+```{r logMargLike}
+dl <- calc.log.marg.lik(dl)
+plots[['cell-ll']] <-
+  ggplot(
+    with(dl$best.m, left_join(tau, z)) %>% mutate(log.lik = calc.cell.ll(dl)),
+    aes(x = tau, y = z, color = log.lik, shape = cell.type)) +
+  geom_point(size = 4) +
+  scale_colour_gradient(low = 'red', high = 'blue')
+plots[['cell-ll']]
+plots[['gene-ll']] <-
+  ggplot(
+    dl$gene.map %>% mutate(log.lik = calc.gene.ll(dl)),
+    aes(x = capture, y = log.lik)) +
+  geom_boxplot()
+plots[['gene-ll']]
 ```
 
 

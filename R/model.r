@@ -799,8 +799,16 @@ process.posterior <- function(dl) {
       message('Mean held out marginal log likelihood per cell: ',
               mean.held.out.marg.ll / stan.data$C)
     }
+    #
     # Include meta data in tau samples
     samples.l$tau <- join.tau.samples(dl, samples.l$tau)
+    #
+    # Get parameters from best iteration
+    best.m <- lapply(samples.l, function(s) filter(s, iter == best.sample))
+    #
+    # Expose Stan functions from model
+    stan.fns <- new.env()
+    rstan::expose_stan_functions(fit, stan.fns)
   })
 }
 
@@ -1050,3 +1058,77 @@ sample.iters <- function(dl) dl$samples.l$lp__$iter
 #' @export
 #'
 make.fit.valid <- function(dl) rstan::stan(fit=dl$fit, data=dl$stan.data, iter=1, chains=1)
+
+
+#' Calculate the log likelihoods for each cell
+#'
+#' @param dl The DeLorean object.
+#'
+#' @export
+#'
+calc.cell.ll <- function(dl) with(dl$ll, {
+  result <- colSums(x) + tau
+  if (dl$opts$model.is.branching) {
+    result <- result + z
+  }
+  result
+})
+
+
+#' Calculate the log likelihoods for each gene
+#'
+#' @param dl The DeLorean object.
+#'
+#' @export
+#'
+calc.gene.ll <- function(dl) with(dl$ll, rowSums(x) + psi + omega)
+
+
+#' Calculate the GP log marginal likelihoods for the data given the parameters
+#' from the best sample. Also calculate the log likelihoods of these parameters.
+#'
+#' @param dl The DeLorean object.
+#'
+#' @export
+#'
+calc.log.marg.lik <- function(dl) {
+  K.post <- calc.K.post(dl)
+  gene.log.marg.lik <- function(g1) {
+    psi = filter(dl$best.m$psi, g == g1)$psi
+    omega = filter(dl$best.m$omega, g == g1)$omega
+    # message(psi, ' ', omega)
+    y = dl$stan.data$expr[g1,]
+    K = psi * K.post + diag(omega, nrow = length(y))
+    gp.log.marg.like.individual(y, K = K)
+  }
+  dl$ll <- with(
+    dl$stan.data,
+    list(
+      x = t(sapply(1:G, gene.log.marg.lik)),
+      psi = dlnorm(dl$best.m$psi$psi, mean = mu_psi, sd = sigma_psi, log = TRUE),
+      omega = dlnorm(dl$best.m$omega$omega, mean = mu_omega, sd = sigma_omega, log = TRUE),
+      tau = dnorm(dl$best.m$tau$tau, mean = time, sd = sigma_tau, log = TRUE)))
+  if (dl$opts$model.is.branching) {
+    dl$ll$z <- with(dl$stan.data, dnorm(dl$best.m$z$z, log = TRUE))
+  }
+  dl
+}
+
+
+# Calculate the temporal covariance of the data
+#
+calc.K.post <- function(dl) with(dl, {
+  if (opts$model.is.branching) {
+    cell.post <- with(best.m, left_join(tau, z))
+    points.post <- t(as.matrix(select(cell.post, tau, z)))
+    dl$stan.fns$cov_symmetric(
+      points.post,
+      stan.data$lengthscales)
+  } else {
+    dl$stan.fns$cov_symmetric(
+      best.m$tau$tau,
+      stan.data$periodic,
+      stan.data$period,
+      stan.data$l)
+  }
+})
