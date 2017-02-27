@@ -114,12 +114,15 @@ plots[['PCA-z']]
 
 ## Estimate hyperparameters
 ```{r empiricalBayes}
-model.name <- 'branching'
+model.name <- 'branching-lowrank'
 dl <- estimate.hyper(dl, sigma.tau = .25, model.name = model.name, adjust.cell.sizes = FALSE)
 ```
 
 
 ```{r chooseCells, eval = FALSE}
+#
+# Only evaluate this block if you want to reduce the number of cells analysed.
+#
 guo.cell.meta %>%
   group_by(capture) %>%
   summarise(number = n())
@@ -196,11 +199,38 @@ plots[['cell-ll']] <-
   scale_colour_gradient(low = 'red', high = 'blue')
 plots[['cell-ll']]
 plots[['gene-ll']] <-
-  ggplot(
-    dl$gene.map %>% mutate(log.lik = calc.gene.ll(dl)),
-    aes(x = capture, y = log.lik)) +
-  geom_boxplot()
+  ggplot(dl$var.post.stats %>% mutate(log.lik = calc.gene.ll(dl)),
+         aes(x = psi.mean, xmin = psi.mean - psi.sd, xmax = psi.mean + psi.sd,
+             y = omega.mean, ymin = omega.mean - omega.sd, ymax = omega.mean + omega.sd,
+             label = gene, colour = log.lik)) +
+  geom_point(alpha = .4) +
+  geom_errorbar(alpha = .4) +
+  geom_errorbarh(alpha = .4) +
+  geom_label(alpha = .8) +
+  scale_colour_gradient(low = 'red', high = 'blue')
 plots[['gene-ll']]
+```
+
+Plot posterior mean of expression for genes with high and low log likelihoods.
+```{r geneExprByLL}
+genes.ll <-
+  dl$var.post.stats %>%
+  mutate(log.lik = calc.gene.ll(dl)) %>%
+  arrange(-log.lik)
+genes.post.high.ll <- branching.genes.post(dl, head(genes.ll$gene, 9))
+plots[['gex-high-ll']] <-
+  branching.post.plot(dl, genes.post.high.ll) +
+  geom_point(data = with(dl$best.m, left_join(tau, z)) %>% mutate(post.mean = 0),
+             mapping = aes(x = tau, y = z, shape = cell.type),
+             size = 2)
+plots[['gex-high-ll']]
+genes.post.low.ll <- branching.genes.post(dl, tail(genes.ll$gene, 9))
+plots[['gex-low-ll']] <-
+  branching.post.plot(dl, genes.post.low.ll) +
+  geom_point(data = with(dl$best.m, left_join(tau, z)) %>% mutate(post.mean = 0),
+             mapping = aes(x = tau, y = z, shape = cell.type),
+             size = 2)
+plots[['gex-low-ll']]
 ```
 
 
