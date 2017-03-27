@@ -239,11 +239,12 @@ This is the naive method we compare our predicted peaks against.
 ```{r peakTimeDistances}
 source(system.file("scripts/McDavid-fns.R", package="DeLorean"))
 naive.peaks <-
-    get.gene.peaks(melt.expr(dl) %>%
-                   left_join(dl$cell.map %>%select(cell, capture, obstime)) %>%
+  get.gene.peaks(
+      melt.expr(dl) %>%
+      left_join(dl$cell.map %>%select(cell, capture, obstime))) %>%
     left_join(dl$gene.map %>% select(gene, cbPeaktime)) %>%
     filter(! is.na(cbPeaktime)) %>%
-    mutate(capture.dist=peak.distance(cbPeaktime, tau.to.cbtime(peak.tau))))
+    mutate(capture.dist=peak.distance(cbPeaktime, tau.to.cbtime(peak.tau)))
 naive.peaks
 # Calculate RMSE for naive method
 capture.RMSE <- calc.rms(naive.peaks$capture.dist)
@@ -442,9 +443,9 @@ do.call(ggsave,
            plot=plots$profiles + bioinf.config +
              theme(axis.text.x = element_text(angle = 90, hjust = 1))),
       plot.save.args))
-ggsave('McDavid-profiles.eps', plot=plots$profiles + plos.theme,
-       width=single.col.width, height=single.col.width/golden.ratio,
-       units='mm', device='cairo_ps')
+# ggsave('McDavid-profiles.eps', plot=plots$profiles + plos.theme,
+       # width=single.col.width, height=single.col.width/golden.ratio,
+       # units='mm', device='cairo_ps')
 save.output <- getOption('McDavid.save.output', TRUE)
 ```
 ```{r saveDL, echo=FALSE, eval=save.output}
