@@ -525,3 +525,33 @@ branching.post.plot <- function(dl, post) with(dl, {
     scale_fill_gradient2(low = scales::muted("blue"), mid = "white", high = scales::muted("red")) +
     facet_wrap(~ gene)
 })
+
+
+#' Plot the posterior of the temporal variation and show the prior
+#'
+#' @param dl The DeLorean object
+#'
+#' @export
+#'
+psi.post.plot <- function(dl) with(dl,
+  ggplot(samples.l$psi, aes(x = log(psi))) +
+    geom_density() +
+    geom_rug() +
+    stat_function(
+      fun = function(x) dnorm(x, mean = hyper$mu_psi, sd = hyper$sigma_psi),
+      colour = "blue", alpha = .7, linetype = "dashed"))
+
+
+#' Plot the posterior of the noise levels and show the prior
+#'
+#' @param dl The DeLorean object
+#'
+#' @export
+#'
+omega.post.plot <- function(dl) with(dl,
+  ggplot(samples.l$omega, aes(x = log(omega))) +
+    geom_density() +
+    geom_rug() +
+    stat_function(
+      fun = function(x) dnorm(x, mean = hyper$mu_omega, sd = hyper$sigma_omega),
+      colour = "blue", alpha = .7, linetype = "dashed"))
