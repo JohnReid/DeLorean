@@ -22,8 +22,9 @@ pca.expr <- function(dl) with(dl, {
   summary(pca)
   #
   # Convert to data frame
-  pca.l <- reshape2::melt(pca$x, varnames=c("cell", "PC"), value.name="x")
-  # sample_n(pca.l, 10)
+  pca.l <-
+    reshape2::melt(pca$x, varnames=c("cell", "PC"), value.name="x") %>%
+    mutate(cell = factor(cell, levels = levels(dl$cell.meta$cell)))
   pca.df <-
     pca.l %>%
     reshape2::dcast(cell ~ PC, value.var = 'x') %>%
@@ -46,8 +47,9 @@ pca.expr <- function(dl) with(dl, {
   }
   pca.df <-
     pca.df %>%
-    mutate(dist = dist.to.capturetime.axis(PC1, PC2),
-           z.hat = (dist - mean(dist)) / sd(dist))
+    mutate(d = dist.to.capturetime.axis(PC1, PC2)) %>%
+    mutate(z.hat = (d - mean(d)) / sd(d))
+  stopifnot(all(! is.na(pca.df$z.hat)))
   dl$pca <- pca
   dl$lm.fit <- lm.fit
   dl$capturetime.slope <- capturetime.slope
