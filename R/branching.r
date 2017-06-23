@@ -110,7 +110,9 @@ branching.prepare.posterior <- function(dl, sample.iter = dl$best.sample, tau.gr
 #' @export
 #'
 branching.genes.post <- function(dl, genes) with(dl, {
-  with(dl$best.m, left_join(psi, omega) %>% left_join(dl$gene.map)) %>%
+  with(dl$best.m,
+    left_join(psi, omega) %>%
+    left_join(dl$gene.map)) %>%
     filter(gene %in% genes) %>%
     group_by(g) %>%
     do(branching.gene.post(dl, .$g, .$psi, .$omega)) %>%
