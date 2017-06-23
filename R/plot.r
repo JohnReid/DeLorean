@@ -516,14 +516,15 @@ pseudotimes.pair.plot <- function(dl, fits=NULL) {
 #'
 #' @param dl The DeLorean object
 #' @param post The posterior (output of branching.genes.post)
+#' @param facets Facets to wrap plots (passed to facet_wrap())
 #'
 #' @export
 #'
-branching.post.plot <- function(dl, post) with(dl, {
+branching.post.plot <- function(dl, post, facets = ~ gene) with(dl, {
   ggplot(post, aes(x = tau, y = z, fill = post.mean)) +
     geom_tile(width = tau.step, height = z.step) +
     scale_fill_gradient2(low = scales::muted("blue"), mid = "white", high = scales::muted("red")) +
-    facet_wrap(~ gene)
+    facet_wrap(facets)
 })
 
 
