@@ -33,7 +33,6 @@ Suggests:
     extrafont,
     testthat,
     svglite,
-    fields,
     VGAM
 License: MIT + file LICENSE
 LazyData: true
