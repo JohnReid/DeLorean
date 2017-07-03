@@ -17,4 +17,3 @@ should respect.}
 Permute a data frame, x. If group.col is given it should name an ordered
 factor that the order of the permutation should respect.
 }
-

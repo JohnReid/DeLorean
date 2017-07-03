@@ -9,4 +9,3 @@ de.lorean.stylesheet()
 \description{
 The filename of the R markdown stylesheet
 }
-

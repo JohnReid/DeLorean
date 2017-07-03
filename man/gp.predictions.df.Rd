@@ -12,4 +12,3 @@ gp.predictions.df(predictions)
 \description{
 Convert the output of gp.predict() into a data.frame.
 }
-

@@ -42,7 +42,7 @@ time.course.cells <- (
                FALSE == disrupted,
                total > 1e6,
                "" == replicate))
-dl <- filter.cells(dl, cells=time.course.cells$cell)
+dl <- filter_cells(dl, cells=time.course.cells$cell)
 dl$cell.meta$cell <- factor(
     dl$cell.meta$cell,
     levels=(shalek.A.cell.meta %>% arrange(capture))$cell)
@@ -88,7 +88,7 @@ genes.for.stan <- (
     %>% filter(cluster %in% clusters)
     %>% arrange(- Psi / Omega)
     %>% head(max.genes))
-dl <- filter.genes(dl, genes=genes.for.stan$gene)
+dl <- filter_genes(dl, genes=genes.for.stan$gene)
 print(object.size(dl))
 print(sapply(dl, object.size))
 ```
@@ -125,7 +125,7 @@ for (model.name in model.names) {
         cell.timings,
         as.data.frame(t(sapply(
             number.of.cells,
-            function(num.cells) time.fit(filter.cells(dl, number=num.cells))
+            function(num.cells) time.fit(filter_cells(dl, number=num.cells))
         ))) %>%
         mutate(
             num.genes=dim(dl)[1],
@@ -138,7 +138,7 @@ for (model.name in model.names) {
         gene.timings,
         as.data.frame(t(sapply(
             number.of.genes,
-            function(num.genes) time.fit(filter.cells(filter.genes(dl, number=num.genes), number=default.num.genes))
+            function(num.genes) time.fit(filter_cells(filter_genes(dl, number=num.genes), number=default.num.genes))
         ))) %>%
         mutate(
             num.genes=number.of.genes,

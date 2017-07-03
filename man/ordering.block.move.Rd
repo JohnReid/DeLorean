@@ -20,4 +20,3 @@ ordering.block.move(ordering, from, width, to, reverse = FALSE)
 \description{
 Move a block in an ordering and shift the other items.
 }
-

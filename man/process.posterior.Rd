@@ -16,4 +16,3 @@ Process the posterior, that is extract and reformat the samples from
 Stan. We also determine which sample has the highest likelihood, this
 is labelled as the 'best' sample.
 }
-

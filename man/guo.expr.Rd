@@ -2,8 +2,8 @@
 % Please edit documentation in R/data.r
 \docType{data}
 \name{guo.expr}
-\alias{guo.cell.meta}
 \alias{guo.expr}
+\alias{guo.cell.meta}
 \alias{guo.gene.meta}
 \title{Single cell expression data and meta data from Guo et al. (2012).
 They investigated the expression of 48 genes in 500 mouse embryonic cells.}
@@ -28,4 +28,3 @@ Single cell expression data and meta data from Guo et al. (2012).
 They investigated the expression of 48 genes in 500 mouse embryonic cells.
 }
 \keyword{datasets}
-

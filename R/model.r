@@ -198,6 +198,60 @@ estimate.hyper <- function(
 #' Filter genes
 #'
 #' @param dl de.lorean object
+#' @param .filter Function that gakes a list of genes as input and returns
+#'     a vector of TRUE/FALSE
+#' @param number Number to sample if filter function or genes not supplied.
+#' @param genes The genes to keep.
+#' @examples
+#' \dontrun{
+#' genes <- c('NANOG', 'DAZ1', 'SOX4', 'PRDM14')
+#' filter.genes(dl, .filter = function(x) x %in% genes)
+#' filter.genes(dl, number = 4)
+#' filter.genes(dl, genes = genes)
+#' }
+#'
+#' @export filter.genes
+#'
+filter.genes <- function(dl,
+                         .filter=function(x) x %in% genes,
+                         number=NULL,
+                         genes=sample(rownames(dl$expr), number))
+{
+    .Deprecated('filter_genes', 'DeLorean')
+    filter_genes(dl, .filter, number, genes)
+}
+
+
+#' Filter cells
+#'
+#' @param dl de.lorean object
+#' @param .filter Function that gakes a list of cells as input and returns
+#'     a vector of TRUE/FALSE
+#' @param number Number to sample if filter function or cells not supplied.
+#' @param cells The cells to keep.
+#' @examples
+#' \dontrun{
+#' cells <- c('cell1', 'cell2', 'cell3', 'cell4')
+#' filter.cells(dl, .filter = function(x) x %in% cells)
+#' filter.cells(dl, number = 4)
+#' filter.cells(dl, cells = cells)
+#' }
+#'
+#' @export filter.cells
+#'
+filter.cells <- function(dl,
+                         .filter=function(x) x %in% cells,
+                         number=NULL,
+                         cells=sample(colnames(dl$expr), number))
+{
+    .Deprecated('filter_cells', 'DeLorean')
+    filter_cells(dl, .filter, number, cells)
+}
+
+
+#' Filter genes
+#'
+#' @param dl de.lorean object
 #' @param number Number to sample if filter function or genes not supplied.
 #' @param genes The genes to keep.
 #' @param .filter Function that gakes a list of genes as input and returns
@@ -205,7 +259,7 @@ estimate.hyper <- function(
 #'
 #' @export
 #'
-filter.genes <- function(dl,
+filter_genes <- function(dl,
                          .filter=function(x) x %in% genes,
                          number=NULL,
                          genes=sample(rownames(dl$expr), number))
@@ -227,7 +281,7 @@ filter.genes <- function(dl,
 #'
 #' @export
 #'
-filter.cells <- function(dl,
+filter_cells <- function(dl,
                          .filter=function(x) x %in% cells,
                          number=NULL,
                          cells=sample(colnames(dl$expr), number))
@@ -257,7 +311,7 @@ sample.per.capture <- function(dl, cells.per.capture) {
         # %>% do(sample_n(., min(cells.per.capture, length(cell))))
         %>% do(sample.at.most(., cells.per.capture))
     )
-    filter.cells(dl, cells=sampled.cells$cell)
+    filter_cells(dl, cells=sampled.cells$cell)
 }
 
 

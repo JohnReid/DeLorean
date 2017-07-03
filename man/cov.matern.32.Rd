@@ -14,4 +14,3 @@ cov.matern.32(r, l)
 \description{
 Matern 3/2 covariance function
 }
-

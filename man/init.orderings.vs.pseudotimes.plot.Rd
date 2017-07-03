@@ -14,4 +14,3 @@ init.orderings.vs.pseudotimes.plot(dl, sample.iter = dl$best.sample)
 \description{
 Plot the orderings for initialisation against the estimated pseudotime.
 }
-

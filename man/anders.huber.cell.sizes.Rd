@@ -14,4 +14,3 @@ anders.huber.cell.sizes(expr.l)
 Estimate the cell sizes according to Anders & Huber
 Differential expression analysis for sequence count data
 }
-

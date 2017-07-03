@@ -12,4 +12,3 @@ is.de.lorean(x)
 \description{
 Is a DeLorean object?
 }
-

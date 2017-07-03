@@ -15,4 +15,3 @@ object)}
 \description{
 Plot a comparison of the profiles from several de.lorean objects
 }
-

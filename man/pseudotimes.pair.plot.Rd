@@ -14,4 +14,3 @@ pseudotimes.pair.plot(dl, fits = NULL)
 \description{
 Plot two sets of pseudotimes against each other.
 }
-

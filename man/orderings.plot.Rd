@@ -14,4 +14,3 @@ orderings.plot(dl)
 Plot likelihoods of orderings against elapsed times taken
 to generate them
 }
-

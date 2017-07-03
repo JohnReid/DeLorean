@@ -119,7 +119,7 @@ sampled.cells <- (
     %>% do(sample.up.to(., max.at.each.stage)))
 sampled.cells
 
-dl <- filter.cells(dl, function(cells) cells %in% sampled.cells$cell)
+dl <- filter_cells(dl, function(cells) cells %in% sampled.cells$cell)
 
 ```
 
@@ -133,7 +133,7 @@ if (max.genes <= length(tang.key.genes)) {
 } else {
     sampled.genes <- sample(dl$gene.meta$gene, max.genes)
 }
-dl <- filter.genes(dl, function(genes) genes %in% sampled.genes)
+dl <- filter_genes(dl, function(genes) genes %in% sampled.genes)
 
 ```
 

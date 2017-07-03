@@ -12,4 +12,3 @@ get.posterior.mean(extract)
 \description{
 Get posterior mean of samples
 }
-

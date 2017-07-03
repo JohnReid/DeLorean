@@ -12,4 +12,3 @@ expected.sample.var(K)
 \description{
 The expected within sample variance of a Gaussian with the given covariance.
 }
-

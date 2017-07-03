@@ -18,4 +18,3 @@ cov.all.genes.conditioned(dl, cov.fn = NULL, tau = tau.for.sample(dl))
 Calculate covariances for all genes when conditioned on data at
 estimated pseudotimes.
 }
-

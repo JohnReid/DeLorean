@@ -22,4 +22,3 @@ Defaults to getOption("DL.num.cores", max(parallel::detectCores()-1, 1))}
 \description{
 Fit the model using Stan sampler
 }
-

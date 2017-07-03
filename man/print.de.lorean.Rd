@@ -14,4 +14,3 @@
 \description{
 Print details of DeLorean object
 }
-

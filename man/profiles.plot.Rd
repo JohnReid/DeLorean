@@ -26,4 +26,3 @@ profiles.plot(dl, genes = dl$genes.high.psi, profile.color = "black",
 \description{
 Plot best sample predicted expression.
 }
-

@@ -14,4 +14,3 @@ calc.roughness(x)
 Calculate the roughness of the vector. The roughness is the RMS
 of the differences between consecutive points.
 }
-

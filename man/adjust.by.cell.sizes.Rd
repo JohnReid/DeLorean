@@ -12,4 +12,3 @@ adjust.by.cell.sizes(dl)
 \description{
 Adjust the expression by the estimated cell sizes.
 }
-

@@ -12,4 +12,3 @@ make.fit.valid(dl)
 \description{
 Make a fit valid by running one iteration of the sampler.
 }
-

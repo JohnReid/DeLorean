@@ -11,7 +11,7 @@ Depends:
     R (>= 3.0.2),
     Rcpp (>= 0.12.0)
 Imports:
-    rstan (>= 2.14.1),
+    rstan (>= 2.15.1),
     dplyr (>= 0.4.3),
     reshape2 (>= 1.4),
     stringr (>= 0.6.2),
@@ -38,4 +38,4 @@ Suggests:
 License: MIT + file LICENSE
 LazyData: true
 VignetteBuilder: knitr
-RoxygenNote: 5.0.1
+RoxygenNote: 6.0.1

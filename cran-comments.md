@@ -4,20 +4,29 @@
 * win-builder (devel and release)
 
 ## R CMD check results
-There were no ERRORs or WARNINGs.
+There were no ERRORs or NOTEs.
 
-There was one NOTE:
+There was one WARNING:
 
-* checking CRAN incoming feasibility ... NOTE
-Maintainer: 'John Reid <john.reid@mrc-bsu.cam.ac.uk>'
+* checking S3 generic/method consistency ... WARNING
+filter:
+  function(x, filter, method, sides, circular, init)
+filter.cells:
+  function(dl, .filter, number, cells)
 
-License components with restrictions and base license permitting such:
-  MIT + file LICENSE
-File 'LICENSE':
-  YEAR: 2016
-  COPYRIGHT HOLDER: John Reid
+filter:
+  function(x, filter, method, sides, circular, init)
+filter.genes:
+  function(dl, .filter, number, genes)
 
-Possibly mis-spelled words in DESCRIPTION:
-  DeLorean (6:29, 7:38)
-  Pseudotimes (2:18)
-  pseudotimes (6:56)
+See section ‘Generic functions and methods’ in the ‘Writing R
+Extensions’ manual.
+
+Found the following apparent S3 methods exported but not registered:
+  filter.cells filter.genes
+See section ‘Registering S3 methods’ in the ‘Writing R Extensions’
+manual.
+
+I am deprecating two non-S3 methods and replacing them with methods that
+use underscores rather than dots. Until I can remove I have not been able
+to work out how to get around this WARNING.

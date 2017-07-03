@@ -2,8 +2,8 @@
 % Please edit documentation in R/data.r
 \docType{data}
 \name{kouno.expr}
-\alias{kouno.cell.meta}
 \alias{kouno.expr}
+\alias{kouno.cell.meta}
 \alias{kouno.gene.meta}
 \title{Kouno et al. investigated the transcriptional network controlling how
 THP-1 human myeloid monocytic leukemia cells differentiate into
@@ -32,4 +32,3 @@ macrophages. They provide expression values for 45 genes in 960 single
 cells captured across 8 distinct time points.
 }
 \keyword{datasets}
-

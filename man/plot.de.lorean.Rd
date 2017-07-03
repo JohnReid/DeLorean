@@ -35,4 +35,3 @@
 \description{
 Various DeLorean object plots
 }
-

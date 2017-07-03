@@ -12,4 +12,3 @@ report.file(report.name)
 \description{
 The filename of the R markdown report.
 }
-

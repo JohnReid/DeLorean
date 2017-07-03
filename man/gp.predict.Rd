@@ -24,4 +24,3 @@ Predictive mean, variance and log marginal likelihood of a GP.
 See "2.3 Varying the Hyperparameters"
 on page 19 of Rasmumssen and Williams' book.
 }
-

@@ -16,4 +16,3 @@ held.out.select.genes(dl, expr, num.held.out)
 \description{
 Select held out genes by those with highest variance
 }
-

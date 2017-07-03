@@ -29,4 +29,3 @@ cov.calc.gene(dl, gene.idx, cov.fn = cov.matern.32,
 Calculate covariance structure for gene over pseudotimes and test
 inputs.
 }
-

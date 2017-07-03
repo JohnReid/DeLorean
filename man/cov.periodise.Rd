@@ -14,4 +14,3 @@ cov.periodise(r, period)
 \description{
 Makes a distance periodic
 }
-

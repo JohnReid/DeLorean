@@ -23,4 +23,3 @@ inducing.covariance(cov.fn, length.scale, period = NULL, tau, num.inducing,
 \description{
 Calculate the covariance structure of the inducing points
 }
-

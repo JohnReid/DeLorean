@@ -14,4 +14,3 @@ partition.de.lorean(dl, pieces = 2)
 \description{
 Partition de.lorean object by cells
 }
-

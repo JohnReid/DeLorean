@@ -13,4 +13,3 @@ indexes the samples}
 \description{
 Average across a parameters samples.
 }
-

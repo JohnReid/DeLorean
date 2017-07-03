@@ -17,4 +17,3 @@ roughness.of.sample(dl, expr.held.out = dl$expr.held.out,
 \description{
 Calculate the roughness of the held out genes given the sample.
 }
-

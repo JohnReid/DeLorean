@@ -15,4 +15,3 @@ the cell size estimates}
 \description{
 Analyse variance of expression between and within capture times.
 }
-

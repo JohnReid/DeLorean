@@ -12,4 +12,3 @@ aov.dl(dl)
 \description{
 Perform an analysis of variance to select genes for the DeLorean model.
 }
-

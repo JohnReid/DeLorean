@@ -2,8 +2,8 @@
 % Please edit documentation in R/data.r
 \docType{data}
 \name{windram.expr}
-\alias{windram.cell.meta}
 \alias{windram.expr}
+\alias{windram.cell.meta}
 \alias{windram.gene.meta}
 \title{Windram et al. investigated the defense response in Arabidopsis
 thaliana to the necrotrophic fungal pathogen Botrytis cinerea.
@@ -32,4 +32,3 @@ They collected data at 24 time points in two conditions for
 30336 genes.
 }
 \keyword{datasets}
-

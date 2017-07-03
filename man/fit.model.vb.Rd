@@ -21,4 +21,3 @@ fit.model.vb(dl, num.cores = default.num.cores(), num.inits = num.cores,
 \description{
 Fit the model using Stan variational Bayes
 }
-

@@ -9,4 +9,3 @@ default.num.cores()
 \description{
 Default number of cores to use.
 }
-

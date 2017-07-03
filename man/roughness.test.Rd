@@ -18,4 +18,3 @@ roughness.test(dl, expr.held.out = dl$expr.held.out, num.perms = 1000)
 Calculate roughnesses under fit samples and also under random
 permutations
 }
-

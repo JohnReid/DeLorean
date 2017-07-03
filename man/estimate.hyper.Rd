@@ -30,4 +30,3 @@ Defaults to the range of the observed capture times.}
 \description{
 Estimate hyperparameters for model using empirical Bayes.
 }
-

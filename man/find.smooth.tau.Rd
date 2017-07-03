@@ -31,4 +31,3 @@ find.smooth.tau(dl, psi = exp(dl$hyper$mu_psi),
 Find best order of the samples assuming some smooth GP prior on the
 expression profiles over this ordering.
 }
-

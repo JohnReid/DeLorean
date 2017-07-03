@@ -14,4 +14,3 @@ Rhat.plot(dl)
 Plot the Rhat convergence statistics. \code{\link{examine.convergence}}
 must be called before this plot can be made.
 }
-

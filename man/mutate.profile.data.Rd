@@ -4,7 +4,7 @@
 \alias{mutate.profile.data}
 \title{Mutate the profile data into shape compatible with GP plot function}
 \usage{
-mutate.profile.data(.data)
+\method{mutate}{profile.data}(.data)
 }
 \arguments{
 \item{.data}{The data}
@@ -12,4 +12,3 @@ mutate.profile.data(.data)
 \description{
 Mutate the profile data into shape compatible with GP plot function
 }
-

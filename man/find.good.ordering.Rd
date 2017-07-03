@@ -16,4 +16,3 @@ find.good.ordering(dl, method, ...)
 \description{
 Run a find good ordering method and append results to existing orderings
 }
-

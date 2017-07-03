@@ -16,4 +16,3 @@ test.robustness.de.lorean(dl, pieces = 2)
 Test robustness of pseudotime estimation on subsets of de.lorean
 object
 }
-

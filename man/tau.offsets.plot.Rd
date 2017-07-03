@@ -16,4 +16,3 @@ tau.offsets.plot(dl, rug.alpha = 0.3)
 Plot the tau offsets, that is how much the pseudotimes (tau) differ
 from their prior means over the full posterior.
 }
-

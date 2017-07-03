@@ -107,7 +107,7 @@ epi.sampled.cells <- guo.cell.meta %>%
            "ICM" == cell.type) %>%
     group_by(capture) %>%
     do(sample_n(., num.at.each.stage))
-dl <- filter.cells(dl, cells=epi.sampled.cells$cell)
+dl <- filter_cells(dl, cells=epi.sampled.cells$cell)
 ```
 
 ### Choose genes
@@ -132,9 +132,9 @@ tail(dl$aov)
 and for instance you could run the model on the 20 most variable
 genes by executing
 ```{r, exec=FALSE}
-dl <- filter.genes(dl, genes=head(dl$aov, 20)$gene)
+dl <- filter_genes(dl, genes=head(dl$aov, 20)$gene)
 ```
-otherwise do not call `filter.genes` and `DeLorean` will use all the genes.
+otherwise do not call `filter_genes` and `DeLorean` will use all the genes.
 
 
 ### Fit the model

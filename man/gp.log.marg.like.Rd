@@ -18,4 +18,3 @@ gp.log.marg.like(y, K = NULL, U = chol(K))
 The log marginal likelihood. See "2.3 Varying the Hyperparameters"
 on page 19 of Rasmumssen and Williams' book.
 }
-

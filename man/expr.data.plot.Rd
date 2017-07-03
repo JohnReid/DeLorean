@@ -16,4 +16,3 @@ expr.data.plot(dl, genes = NULL, num.genes = 12)
 \description{
 Plot the expression data by the capture points
 }
-

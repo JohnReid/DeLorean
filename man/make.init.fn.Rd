@@ -12,4 +12,3 @@ make.init.fn(dl)
 \description{
 Returns a function that constructs parameter settings with good tau.
 }
-

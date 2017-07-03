@@ -4,7 +4,7 @@
 \alias{plot.add.mean.and.variance}
 \title{Add posterior representation to a plot.}
 \usage{
-plot.add.mean.and.variance(gp, .data = NULL, color = "black",
+\method{plot}{add.mean.and.variance}(gp, .data = NULL, color = "black",
   line.alpha = 0.3, ribbon.alpha = 0.1)
 }
 \arguments{
@@ -22,4 +22,3 @@ phi, predictedvar)}
 \description{
 Add posterior representation to a plot.
 }
-

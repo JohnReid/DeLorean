@@ -14,4 +14,3 @@ pseudotimes.from.orderings(dl, num.to.keep = default.num.cores())
 \description{
 Convert best orderings into initialisations
 }
-

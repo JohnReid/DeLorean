@@ -12,4 +12,3 @@ held.out.posterior.by.variation(posterior)
 \description{
 Order the genes by the variation of their posterior mean
 }
-

@@ -17,4 +17,3 @@ markdown report file in the package.}
 Knit a report, the file inst/Rmd/<report.name>.Rmd must exist in
 the package directory.
 }
-

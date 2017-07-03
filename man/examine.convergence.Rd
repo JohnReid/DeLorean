@@ -16,4 +16,3 @@ Analyse the samples and gather the convergence statistics. Note this
 only makes sense if a sampling method was used to fit the model as
 opposed to variational Bayes.
 }
-

@@ -27,4 +27,3 @@ seriation.find.orderings(dl, .methods = c("TSP", "R2E", "HC", "GW", "OLO"),
 \description{
 Use seriation package to find good orderings
 }
-

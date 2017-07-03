@@ -21,4 +21,3 @@ data(WindramDeLorean)
 dl <- de.lorean(windram.expr, windram.gene.meta, windram.cell.meta)
 
 }
-

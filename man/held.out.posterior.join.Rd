@@ -14,4 +14,3 @@ held.out.posterior.join(posterior, .df)
 \description{
 Join with another data frame. Useful for adding gene names etc..
 }
-

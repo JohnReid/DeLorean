@@ -16,4 +16,3 @@ cov.calc.dists(tau.1, tau.2 = tau.1, period = NULL)
 \description{
 Calculate distances between vectors of time points
 }
-

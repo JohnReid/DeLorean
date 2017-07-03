@@ -16,4 +16,3 @@ alpha.for.rug(n, scale = 100)
 Calculate a suitable value for a rug plot given the
 number of points
 }
-

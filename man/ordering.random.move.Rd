@@ -12,4 +12,3 @@ ordering.random.move(ordering)
 \description{
 Randomly move one item in an ordering to another location
 }
-

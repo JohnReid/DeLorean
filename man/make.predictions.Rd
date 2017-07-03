@@ -12,4 +12,3 @@ make.predictions(dl)
 \description{
 Make predictions
 }
-

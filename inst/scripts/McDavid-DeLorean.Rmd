@@ -155,20 +155,20 @@ ggplot(pc.scores, aes(x=PC1, y=PC3, color=capture)) + geom_point()
 
 Choose a few cells from the PC3 cell line.
 ```{r filterCells}
-dl <- filter.cells(dl, cells=cells.PC3$cell)
+dl <- filter_cells(dl, cells=cells.PC3$cell)
 max.cells <- getOption("McDavid.max.cells", 0)
 if (max.cells != 0) {
-    dl <- filter.cells(dl, number=max.cells)
+    dl <- filter_cells(dl, number=max.cells)
 }
 ```
 Choose genes with low $p$-values from the McDavid et al.
 differential expression test.
 ```{r filterGenes}
 genes.for.stan <- dl$gene.meta %>% filter(pvalue > 10)
-dl <- filter.genes(dl, genes=genes.for.stan$gene)
+dl <- filter_genes(dl, genes=genes.for.stan$gene)
 max.genes <- min(getOption("McDavid.max.genes", 0))
 if (max.genes != 0) {
-    dl <- filter.genes(dl, number=max.genes)
+    dl <- filter_genes(dl, number=max.genes)
 }
 ```
 Save expression data and meta data.

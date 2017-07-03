@@ -14,4 +14,3 @@ magda.find.orderings(dl, number_paths = 5)
 \description{
 Use Magda's code to find good orderings
 }
-
