@@ -649,43 +649,6 @@ orderings.plot <- function(dl) with(dl, {
     ggplot2::geom_text()
 })
 
-#' Use Magda's code to find good orderings
-#'
-#' @param dl de.lorean object
-#' @param number_paths Number of paths for each starting point
-#'
-#' @export
-#'
-magda.find.orderings <- function(
-    dl,
-    number_paths = 5)
-{
-  #
-  # Determine which cell indexes have either the highest or lowest
-  # observation times, we will use these as starting points
-  max.obs <- max(dl$cell.map$obstime)
-  min.obs <- min(dl$cell.map$obstime)
-  starting_points <-
-    (1:dl$.C)[which(dl$cell.map$obstime %in% c(max.obs, min.obs))]
-  #
-  # Call Magda's function to generate paths from these starting points
-  elapsed <- system.time(
-    magda.paths <- CombfuncPaths(
-      dl$expr,
-      starting_points=starting_points,
-      number_paths=number_paths))
-  #
-  # Convert Magda's paths into our format
-  lapply(
-    1:ncol(magda.paths),
-    function(c) within(list(), {
-      method.name <- stringr::str_c('Magda:', c)
-      elapsed <- elapsed / ncol(magda.paths)
-      ser.order <- magda.paths[,c]
-      ll <- dl$ordering.ll(ser.order)
-    }))
-}
-
 # Reverse ordering if it is better correlated with observed times
 rev.order.if.better <- function(dl, ser.order) {
   rev.order <- rev(ser.order)
