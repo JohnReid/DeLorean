@@ -326,10 +326,13 @@ gene.covariances <- function(
 #' @export
 create.ordering.ll.fn <- function(dl, cov.fn=cov.fn.for(dl)) within(dl, {
   if (! exists('even.tau.cov')) {
-    even.tau.cov <- gene.covariances(cov.fn, opts$length.scale,
-                                    opts$period, even.tau.spread(dl),
-                                    gene.var$psi.hat,
-                                    gene.var$omega.hat)
+    even.tau.cov <- gene.covariances(
+      cov.fn,
+      opts$length.scale,
+      opts$period,
+      even.tau.spread(dl),
+      gene.map$psi.hat,
+      gene.map$omega.hat)
     expr.centre <- t(scale(t(expr), scale=FALSE, center=TRUE))
     ordering.ll <- function(o) {
       # Return the sum of the marginal log likelihoods for each gene
