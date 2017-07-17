@@ -276,66 +276,75 @@ cmp.profiles.plot <- function(..., genes = NULL) {
 #'
 #' @export
 #'
-profiles.plot <- function(dl,
-                          genes=dl$genes.high.psi,
-                          profile.color='black',
-                          add.data=T,
-                          sample.iter=dl$best.sample,
-                          ignore.cell.sizes=FALSE,
-                          ...) {
-    varargs <- list(...)
-    with(dl, {
-        if (opts$periodic) {
-            modulo.period <- function(t) ( t - floor(t / opts$period)
-                                                * opts$period )
-        } else {
-            modulo.period <- function(t) { t }
+profiles.plot <- function(
+  dl,
+  genes=dl$genes.high.psi,
+  profile.color='black',
+  add.data=T,
+  sample.iter=dl$best.sample,
+  ignore.cell.sizes=FALSE,
+  ...)
+{
+  varargs <- list(...)
+  with(dl, {
+    if (opts$periodic) {
+      modulo.period <- function(t) ( t - floor(t / opts$period)
+                                          * opts$period )
+    } else {
+      modulo.period <- function(t) { t }
+    }
+    gp <-
+      ggplot(
+        predictions %>%
+          filter(sample.iter == iter) %>%
+          left_join(gene.map) %>%
+          filter(gene %in% genes),
+        environment=environment())
+    profile.data <-
+      predictions %>%
+      filter(sample.iter == iter) %>%
+      left_join(dl$samples.l$omega) %>%
+      left_join(dl$gene.map) %>%
+      left_join(dl$gene.expr) %>%
+      filter(gene %in% genes)
+    # stopifnot(! any(is.na(profile.data %>% select(-cbRank, -cbPeaktime))))
+    gp <-
+      plot.add.mean.and.variance(
+        gp,
+        .data=mutate.profile.data(profile.data),
+        color=profile.color,
+        add.noise=TRUE) +
+      facet_wrap(~ gene) +
+      scale_x_continuous(
+        name="Pseudotime",
+        breaks=unique(cell.meta$obstime)) +
+       scale_y_continuous(name="Expression")
+    if (add.data) {
+        expr.data <-
+          gene.map %>%
+          filter(gene %in% genes) %>%
+          left_join(
+            melt(
+              unname(expr),
+              varnames=c("g", "c"),
+              value.name="expr")) %>%
+          left_join(
+            samples.l$tau %>%
+              filter(sample.iter == iter) %>%
+              mutate(tau=modulo.period(tau)))
+        #
+        # Adjust for cell sizes if they are there and we have not
+        # been asked to ignore them
+        if ('S' %in% names(samples.l) && ! ignore.cell.sizes) {
+            expr.data <-
+              expr.data %>%
+              left_join(samples.l$S) %>%
+              mutate(expr=expr - S)
         }
-        gp <- (ggplot(predictions
-                      %>% filter(sample.iter == iter)
-                      %>% left_join(gene.map)
-                      %>% filter(gene %in% genes),
-                      environment=environment()))
-        profile.data <- (
-            predictions
-            %>% filter(sample.iter == iter)
-            %>% left_join(dl$gene.map)
-            %>% left_join(dl$gene.expr)
-            %>% filter(gene %in% genes)
-        )
-        # stopifnot(! any(is.na(profile.data %>% select(-cbRank, -cbPeaktime))))
-        gp <- (
-            plot.add.mean.and.variance(
-                gp,
-                .data=mutate.profile.data(profile.data),
-                color=profile.color)
-            + facet_wrap(~ gene)
-            + scale_x_continuous(name="Pseudotime",
-                                 breaks=unique(cell.meta$obstime))
-            + scale_y_continuous(name="Expression")
-        )
-        if (add.data) {
-            expr.data <- (
-                gene.map
-                %>% filter(gene %in% genes)
-                %>% left_join(melt(unname(expr),
-                                   varnames=c("g", "c"),
-                                   value.name="expr"))
-                %>% left_join(samples.l$tau
-                              %>% filter(sample.iter == iter)
-                              %>% mutate(tau=modulo.period(tau))))
-            #
-            # Adjust for cell sizes if they are there and we have not
-            # been asked to ignore them
-            if ('S' %in% names(samples.l) && ! ignore.cell.sizes) {
-                expr.data <- expr.data %>%
-                    left_join(samples.l$S) %>%
-                    mutate(expr=expr - S)
-            }
-            gp <- plot.add.expr(gp, .data=expr.data)
-        }
-        gp
-    })
+        gp <- plot.add.expr(gp, .data=expr.data)
+    }
+    gp
+  })
 }
 
 #' Mutate the profile data into shape compatible with GP plot function
@@ -343,8 +352,8 @@ profiles.plot <- function(dl,
 #' @param .data The data
 #'
 mutate.profile.data <- function(.data) .data %>%
-    mutate(x=tau, mean=predictedmean+phi.hat, var=predictedvar) %>%
-    dplyr::select(-tau, -predictedmean, -phi.hat, -predictedvar)
+  mutate(x=tau, mean=predictedmean+phi.hat, var=predictedvar, noise2=omega) %>%
+  dplyr::select(-tau, -predictedmean, -phi.hat, -predictedvar)
 
 
 # Adjust the predicted mean with the predictions from the model.

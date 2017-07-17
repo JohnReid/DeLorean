@@ -158,23 +158,36 @@ cov.all.genes.conditioned <- function(dl,
 #' @param color Color to use
 #' @param line.alpha Alpha to use for mean line
 #' @param ribbon.alpha Alpha to use for variance ribbon
+#' @param add.noise Add another ribbon with noise levels
 #'
 plot.add.mean.and.variance <- function(gp,
-                                       .data=NULL,
-                                       color='black',
-                                       line.alpha=.3,
-                                       ribbon.alpha=.1) {
-    (gp
-        + geom_line(data=.data,
-                    aes(x=x, y=mean),
-                    color=color,
-                    alpha=line.alpha)
-        + geom_ribbon(data=.data,
-                      aes(x=x,
-                          ymin=mean-2*sqrt(var),
-                          ymax=mean+2*sqrt(var)),
-                      fill=color,
-                      alpha=ribbon.alpha))
+                                       .data = NULL,
+                                       color = 'black',
+                                       line.alpha = .3,
+                                       ribbon.alpha = .1,
+                                       add.noise = FALSE) {
+    gp <-
+      gp +
+      geom_line(data=.data, aes(x=x, y=mean), color=color, alpha=line.alpha) +
+      geom_ribbon(
+        data=.data,
+        aes(x=x,
+            ymin=mean-2*sqrt(var),
+            ymax=mean+2*sqrt(var)),
+        fill=color,
+        alpha=ribbon.alpha)
+    if (add.noise) {
+      gp <-
+        gp +
+        geom_ribbon(
+          data=.data,
+          aes(x=x,
+              ymin=mean - 2 * sqrt(var + noise2),
+              ymax=mean + 2 * sqrt(var + noise2)),
+          fill=color,
+          alpha=ribbon.alpha)
+    }
+    gp
 }
 
 #' The log marginal likelihood. See "2.3 Varying the Hyperparameters"
