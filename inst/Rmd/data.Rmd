@@ -1,26 +1,25 @@
-```{r echo=FALSE}
+```{r echo = FALSE}
 library(ggplot2)
 library(dplyr)
 ```
 
 
-```{r dataAttach, include=FALSE}
+```{r dataAttach, include = FALSE}
 # Attach the DeLorean data frame to access members
-dl <- analyse.variance(dl, adjust.cell.sizes=FALSE)
+dl <- analyse.variance(dl, adjust.cell.sizes = FALSE)
 attach(dl)
 ```
 
 
 ## Expression
 
-This data set contains expression data, $x_{g,c}$, for
-$G=`r nrow(dl$expr)`$ genes and $C=`r ncol(dl$expr)`$ cells.
+This data set contains expression data for
+`r nrow(dl$expr)` genes and `r ncol(dl$expr)` cells.
 The expression values are distributed as
-```{r dataDist, echo=FALSE, message=FALSE}
+```{r dataDist, echo = FALSE, message = FALSE}
 stopifnot(ncol(expr) > 0)
 stopifnot(nrow(expr) > 0)
 qplot(as.vector(expr))
-
 ```
 
 
@@ -29,13 +28,13 @@ qplot(as.vector(expr))
 Meta data exists for `r nrow(dl$cell.meta)` cells. These were captured at
 `r length(levels(cell.meta$capture))` distinct time points.
 
-```{r cellCaptureTimes, echo=FALSE}
+```{r cellCaptureTimes, echo = FALSE}
 ggplot(cell.meta, aes(capture)) + geom_bar()
 
 ```
 
 We have the following meta data for the cells:
-```{r cellMetaData, echo=FALSE}
+```{r cellMetaData, echo = FALSE}
 summary(cell.meta)
 ```
 
@@ -43,7 +42,7 @@ summary(cell.meta)
 
 Estimates of cell sizes by capture time are:
 ```{r cellSizeEstimates}
-ggplot(cell.sizes %>% left_join(cell.meta), aes(x=capture, y=S.hat)) +
+ggplot(cell.sizes %>% left_join(cell.meta), aes(x = capture, y = S.hat)) +
     geom_boxplot()
 ```
 
@@ -53,18 +52,18 @@ ggplot(cell.sizes %>% left_join(cell.meta), aes(x=capture, y=S.hat)) +
 Boxplots of expression over capture time of some randomly sampled genes. The
 red lines show the mean expression at each capture time.
 ```{r plotGeneData}
-plot(dl, type="expr.data")
+plot(dl, type = "expr.data")
 ```
 
 
 We have the following meta data for the genes:
-```{r geneMeta, echo=FALSE}
+```{r geneMeta, echo = FALSE}
 summary(gene.meta)
 
 ```
 
 
-```{r dataDetach, include=FALSE}
+```{r dataDetach, include = FALSE}
 # Detach the previously attached DeLorean data frame
 detach(dl)
 ```
