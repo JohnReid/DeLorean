@@ -1,12 +1,33 @@
 ### Cell sizes
+
 The distribution of cell sizes by capture time.
 ```{r cellSizeByCapture}
 ggplot(samples.l$S %>% left_join(cell.map), aes(x=S, color=capture, fill=capture)) +
     geom_histogram(position='dodge') +
     geom_rug()
 ```
+
 The posterior mean and standard deviation of the cell sizes coloured by capture group.
 ```{r cellSizeMeanSD}
 S.l <- samples.l$S %>% group_by(c) %>% summarise(S.mean=mean(S), S.sd=sd(S))
 ggplot(S.l %>% left_join(cell.map), aes(x=S.mean, y=S.sd, color=capture)) + geom_point()
+```
+
+Correlations between cell size and pseudotime per capture time.
+```{r tauS}
+tau_S <- with(samples.l,
+  tau %>%
+    filter(iter == best.sample) %>%
+    left_join(S) %>%
+    left_join(cell.map))
+tau_S %>%
+  group_by(capture) %>%
+  summarise(cor = cor(tau, S)) %>%
+  knitr::kable()
+```
+
+Plot the relationship between pseudotime and cell size.
+```{r plotTauS}
+ggplot(tau_S, aes(x = tau, y = S, colour = capture)) + geom_point() +
+  geom_smooth(method="lm", fill=NA)
 ```
