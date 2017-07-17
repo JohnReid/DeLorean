@@ -1,4 +1,4 @@
-```{r posteriorAttach, include=FALSE}
+```{r posteriorAttach, include = FALSE}
 # Attach the DeLorean data frame to access members
 attach(dl)
 ```
@@ -10,46 +10,47 @@ attach(dl)
 The estimated pseudotime from the best sample against the observed
 capture time.
 ```{r tauBest}
-plot(dl, type="pseudotime")
+plot(dl, type = "pseudotime")
 ```
 
 The full tau posterior for each cell.
 ```{r tauPosterior}
-(
-    ggplot(samples.l$tau %>% arrange(capture),
-           aes(x=cell, y=tau, color=capture))
-    + geom_boxplot()
-    + coord_flip()
-)
+ggplot(
+    samples.l$tau %>% arrange(capture),
+    aes(x = reorder(cell, tau, FUN = median), y = tau, color = capture)) +
+  geom_boxplot() +
+  coord_flip()
 ```
 
 The posterior of the pseudotime offsets relative to the capture times.
 We also show the prior on the offset.
 ```{r tauPosteriorOffset}
-plot(dl, type="tau.offsets")
+plot(dl, type = "tau.offsets")
 ```
 
 ### Between time variation
 
 The posterior for the between time variation $\log \psi_g$:
 ```{r posteriorPsi}
-(ggplot(samples.l$psi, aes(x=log(psi)))
-    + geom_density()
-    + geom_rug()
-    + stat_function(fun=function(x) dnorm(x,
-                                          mean=hyper$mu_psi,
-                                          sd=hyper$sigma_psi),
-                    colour="blue", alpha=.7, linetype="dashed")
-)
+ggplot(samples.l$psi, aes(x = log(psi))) +
+  geom_density() +
+  geom_rug() +
+  stat_function(
+    fun = function(x) dnorm(x, mean = hyper$mu_psi, sd = hyper$sigma_psi),
+    colour = "blue", alpha = .7, linetype = "dashed")
 ```
 
 Temporal variation by gene:
 ```{r temporalVariation}
-(ggplot(noise.levels,
-        aes(x=gene, y=log10(psi), fill=gene %in% genes.high.psi),
-        environment=environment())
-    + geom_boxplot()
-    + coord_flip())
+ggplot(
+    noise.levels,
+    aes(
+      x = reorder(gene, psi, FUN = median),
+      y = log10(psi),
+      fill = gene %in% genes.high.psi),
+    environment = environment()) +
+  geom_boxplot() +
+  coord_flip()
 ```
 
 
@@ -57,23 +58,22 @@ Temporal variation by gene:
 
 The posterior for the within time variation $\log \omega_g$:
 ```{r posteriorOmega}
-(ggplot(samples.l$omega, aes(x=log(omega)))
-    + geom_density()
-    + geom_rug()
-    + stat_function(fun=function(x) dnorm(x,
-                                          mean=hyper$mu_omega,
-                                          sd=hyper$sigma_omega),
-                    colour="blue", alpha=.7, linetype="dashed")
-)
+ggplot(samples.l$omega, aes(x = log(omega))) +
+  geom_density() +
+  geom_rug() +
+  stat_function(
+    fun = function(x) dnorm(x, mean = hyper$mu_omega, sd = hyper$sigma_omega),
+    colour = "blue", alpha = .7, linetype = "dashed")
 ```
 
 Within time variation by gene:
 ```{r measurementNoise}
-(ggplot(noise.levels,
-        aes(x=gene, y=log10(omega), fill=gene %in% genes.high.psi),
-        environment=environment())
-    + geom_boxplot()
-    + coord_flip())
+ggplot(
+    noise.levels,
+    aes(x = reorder(gene, omega, FUN = median), y = log10(omega), fill = gene %in% genes.high.psi),
+    environment = environment()) +
+  geom_boxplot() +
+  coord_flip()
 ```
 
 
@@ -81,18 +81,19 @@ Within time variation by gene:
 
 The within time variation compared to the temporal variation (on log-log scale):
 ```{r noiseScatter}
-(ggplot(noise.levels,
-        aes(x=log(psi), y=log(omega), color=gene %in% genes.high.psi),
-        environment=environment())
-    + geom_point()
-    + geom_abline(intercept=0, slope=1, linetype="dashed", alpha=.7))
+ggplot(
+    noise.levels,
+    aes(x = log(psi), y = log(omega), color = gene %in% genes.high.psi),
+    environment = environment()) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", alpha = .7)
 ```
 
 
-```{r echo=FALSE}
+```{r echo = FALSE}
 have.cell.sizes <- 'S' %in% names(samples.l)
 ```
-```{r child=report.file("cellsizes"), eval=have.cell.sizes}
+```{r child = report.file("cellsizes"), eval = have.cell.sizes}
 ```
 
 
@@ -100,13 +101,13 @@ have.cell.sizes <- 'S' %in% names(samples.l)
 
 The posterior for the model log probability:
 ```{r posteriorLP}
-(ggplot(samples.l$lp__, aes(x=lp__))
-    + geom_density()
-    + geom_rug())
+ggplot(samples.l$lp__, aes(x = lp__)) +
+  geom_density() +
+  geom_rug()
 ```
 
 
-```{r posteriorDetach, include=FALSE}
+```{r posteriorDetach, include = FALSE}
 # Detach the previously attached DeLorean data frame
 detach(dl)
 ```
