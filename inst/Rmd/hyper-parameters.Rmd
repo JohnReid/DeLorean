@@ -52,12 +52,14 @@ $$
 $$
 Giving us this fit for our empirical Bayes prior on the $\log \hat{\omega}_g$
 ```{r omegaPrior}
-(ggplot(gene.var, aes(x=log(omega.hat))) + geom_density() + geom_rug()
-    + stat_function(fun=function(x) dnorm(x,
-                                          mean=hyper$mu_omega,
-                                          sd=hyper$sigma_omega),
-                    colour="blue", alpha=.7, linetype="dashed")
-)
+ggplot(
+    gene.var,
+    aes(x=log(omega.hat))) +
+  geom_density() +
+  geom_rug() +
+  stat_function(
+    fun=function(x) dnorm(x, mean=hyper$mu_omega, sd=hyper$sigma_omega),
+    colour="blue", alpha=.7, linetype="dashed")
 ```
 
 
@@ -82,13 +84,16 @@ $$
 Giving us this fit for our empirical Bayes prior on the temporal variation
 $\log \hat{\psi}_g$
 ```{r psiPrior}
-(ggplot(gene.var, aes(x=log(psi.hat))) + geom_density() + geom_rug()
-    + stat_function(fun=function(x) dnorm(x,
-                                          mean=hyper$mu_psi,
-                                          sd=hyper$sigma_psi),
-                    colour="blue", alpha=.7, linetype="dashed")
-)
+ggplot(
+    gene.var,
+    aes(x=log(psi.hat))) +
+  geom_density() +
+  geom_rug() +
+  stat_function(
+    fun=function(x) dnorm(x, mean=hyper$mu_psi, sd=hyper$sigma_psi),
+    colour="blue", alpha=.7, linetype="dashed")
 ```
+
 
 ### Correlation between temporal variation and noise
 
@@ -96,11 +101,9 @@ The correlation between the temporal variation and noise estimates is
 `r with(gene.var, round(cor(psi.hat, omega.hat), digits=2))`.
 Plotting the estimated noise levels against temporal variation gives:
 ```{r geneWithinVsBetweenVar}
-(
-    ggplot(gene.var, aes(x=log10(psi.hat), y=log10(omega.hat)))
-    + geom_point()
-    + geom_abline(intercept=0, slope=1, linetype="dashed", alpha=.7)
-)
+ggplot(gene.var, aes(x=log10(psi.hat), y=log10(omega.hat))) +
+  geom_point() +
+  geom_abline(intercept=0, slope=1, linetype="dashed", alpha=.7)
 ```
 
 
