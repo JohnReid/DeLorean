@@ -1,6 +1,7 @@
 # Is a package installed?
 #
-is.installed <- function(mypkg) is.element(mypkg, installed.packages()[,1])
+is.installed <- function(mypkg)
+  is.element(mypkg, utils::installed.packages()[,1])
 
 # Configure ggplot2 colours
 if (is.installed('ggthemes')) {
