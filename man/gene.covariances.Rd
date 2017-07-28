@@ -22,4 +22,3 @@ gene.covariances(cov.fn, length.scale, period = NULL, tau, psi, omega)
 \description{
 Calculate the covariance structure of the tau
 }
-

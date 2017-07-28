@@ -4,7 +4,7 @@
 \alias{plot.add.expr}
 \title{Add expression data to a plot}
 \usage{
-\method{plot}{add.expr}(gp, .data = NULL)
+plot.add.expr(gp, .data = NULL)
 }
 \arguments{
 \item{gp}{Plot object}
@@ -14,4 +14,3 @@
 \description{
 Add expression data to a plot
 }
-

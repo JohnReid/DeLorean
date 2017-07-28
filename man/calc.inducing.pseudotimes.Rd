@@ -23,4 +23,3 @@ deviations}
 \description{
 Calculate inducing pseudotimes for sparse approximation
 }
-

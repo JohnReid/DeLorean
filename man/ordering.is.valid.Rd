@@ -14,4 +14,3 @@ ordering.is.valid(ordering, full.check = FALSE)
 \description{
 Check that it is a valid ordering
 }
-

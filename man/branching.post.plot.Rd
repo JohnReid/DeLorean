@@ -4,14 +4,15 @@
 \alias{branching.post.plot}
 \title{Plot the posterior of the branching model}
 \usage{
-branching.post.plot(dl, post)
+branching.post.plot(dl, post, facets = ~gene)
 }
 \arguments{
 \item{dl}{The DeLorean object}
 
 \item{post}{The posterior (output of branching.genes.post)}
+
+\item{facets}{Facets to wrap plots (passed to facet_wrap())}
 }
 \description{
 Plot the posterior of the branching model
 }
-

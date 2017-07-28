@@ -16,4 +16,3 @@ ordering.maximise(ordering, fn)
 Find a good ordering in the sense that some function is
 locally maximised.
 }
-

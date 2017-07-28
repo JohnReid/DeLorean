@@ -103,7 +103,7 @@ time.course.cells <- (
                FALSE == disrupted,
                total > 1e6,
                "" == replicate))
-dl <- filter.cells(dl, cells=time.course.cells$cell)
+dl <- filter_cells(dl, cells=time.course.cells$cell)
 ```
 Re-level the cells by their capture time. This improves the ordering in later
 plots.
@@ -140,7 +140,7 @@ if (! dl$opts$model.estimates.cell.sizes) {
 Only use induced genes that have been assigned to a cluster.
 ```{r useInducedGenes, eval=fit.model}
 induced.genes <- dl$gene.meta %>% filter(! is.na(cluster))
-dl <- filter.genes(dl, genes=induced.genes$gene)
+dl <- filter_genes(dl, genes=induced.genes$gene)
 ```
 Choose genes: take those with highest variance between time points
 relative to the noise level.
@@ -179,12 +179,12 @@ dl <- analyse.variance(dl, adjust.cell.sizes=TRUE)
 gene.variances <- dl$gene.var  # Save copy for later
 max.genes <- getOption("Shalek.max.genes", 74)
 genes.for.stan <-
-    dl$gene.var %>%
-    left_join(dl$gene.meta) %>%
-    mutate(key=gene %in% shalek.key.genes) %>%
-    filter(cluster %in% clusters) %>%
-    arrange(- psi.hat / omega.hat) %>%
-    head(max.genes)
+  dl$gene.var %>%
+  left_join(dl$gene.meta) %>%
+  mutate(key=gene %in% shalek.key.genes) %>%
+  filter(cluster %in% clusters) %>%
+  arrange(- psi.hat / omega.hat) %>%
+  head(max.genes)
 dl <- filter.genes(dl, genes=genes.for.stan$gene)
 # How many come from each cluster?
 qplot(genes.for.stan$cluster)
@@ -203,7 +203,7 @@ if (max.cells != 0) {
     if (! "LPS_1h_S52" %in% sampled.cells) {
         sampled.cells[2] <- "LPS_1h_S52"
     }
-    dl <- filter.cells(dl, cells=sampled.cells)
+    dl <- filter_cells(dl, cells=sampled.cells)
 }
 ```
 Save expression data and meta data.

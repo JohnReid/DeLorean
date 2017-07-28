@@ -25,4 +25,3 @@ Defaults to getOption("DL.num.cores", max(parallel::detectCores()-1, 1))}
 \description{
 Test ordering Metropolis-Hastings sampler.
 }
-

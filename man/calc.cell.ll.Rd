@@ -12,4 +12,3 @@ calc.cell.ll(dl)
 \description{
 Calculate the log likelihoods for each cell
 }
-

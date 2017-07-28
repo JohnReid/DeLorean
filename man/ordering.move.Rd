@@ -16,4 +16,3 @@ ordering.move(ordering, from, to)
 \description{
 Move one item in an ordering and shift the other items.
 }
-

@@ -18,4 +18,3 @@ cov.calc.dl.dists(dl, tau = tau.for.sample(dl), include.test = TRUE)
 Calculate distances over estimated pseudotimes and
 test inputs.
 }
-

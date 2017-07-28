@@ -18,4 +18,3 @@ branching.gene.post(dl, g, psi, omega)
 \description{
 Calculate the posterior for one gene in the branching model.
 }
-

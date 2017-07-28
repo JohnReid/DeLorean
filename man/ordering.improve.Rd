@@ -16,4 +16,3 @@ ordering.improve(fn, ordering)
 Improve the ordering in the sense that some function is
 maximised.
 }
-

@@ -12,4 +12,3 @@ test.fit(vars)
 \description{
 Test fit for log normal and gamma
 }
-

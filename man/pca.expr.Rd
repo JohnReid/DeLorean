@@ -14,4 +14,3 @@ pca.expr(dl)
 Perform a PCA on the expression data. Calculate which direction in PC1-PC2 space
 correlates best with capture time.
 }
-

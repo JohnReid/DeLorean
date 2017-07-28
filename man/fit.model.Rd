@@ -22,4 +22,3 @@ fit.model(dl, method = "sample", ...)
 \description{
 Fit the model using specified method (sampling or variational Bayes).
 }
-

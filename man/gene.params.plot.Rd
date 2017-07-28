@@ -14,4 +14,3 @@ gene.params.plot(dl, alpha = 0.4)
 \description{
 Plot the posterior of the gene parameters.
 }
-

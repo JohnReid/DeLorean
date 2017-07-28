@@ -1,3 +1,9 @@
+## Version 1.2.6
+- Deprecate filter.genes and filter.cells, (renamed to use underscores).
+
+## Version 1.2.5
+- Update rstan requirement to 2.14.1 to avoid bug: http://andrewgelman.com/2017/01/01/stan-2-14-released-r-python-fixes-bug-sampler/
+
 ## Version 1.2.4
 - Increase border of inducing points in sparse approximations
 - Fix further Stan bug (feature?) with square root of integers

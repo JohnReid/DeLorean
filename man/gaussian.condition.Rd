@@ -29,4 +29,3 @@ Condition a Guassian on another.
 See Eqn. A.6
 on page 200 of Rasmumssen and Williams' book.
 }
-

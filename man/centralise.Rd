@@ -16,4 +16,3 @@ centralise(x, period = 1)
 Centralises a periodic position into [period/2, period)
 by shifting by n*period, where n is an integer
 }
-

@@ -14,4 +14,3 @@ ordering.random.block.move(ordering, max.width = 4)
 \description{
 Randomly move a block in an ordering to another location
 }
-

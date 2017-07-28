@@ -19,4 +19,3 @@ branching.prepare.posterior(dl, sample.iter = dl$best.sample,
 \description{
 Prepare to calculate posteriors across the latent space in the branching model.
 }
-

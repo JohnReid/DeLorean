@@ -12,4 +12,3 @@ post.omega.plot(dl)
 \description{
 Plot posterior of omega, the noise parameter for all genes.
 }
-

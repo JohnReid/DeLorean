@@ -108,7 +108,7 @@ dl <- de.lorean(
     windram.gene.meta,
     windram.cell.meta)
 botrytis.cells <- dl$cell.meta %>% filter(condition == "Botrytis")
-dl <- filter.cells(dl, cells=botrytis.cells$cell)
+dl <- filter_cells(dl, cells=botrytis.cells$cell)
 ```
 
 
@@ -138,7 +138,7 @@ Select some cells at random if we have too many.
 ```{r sampleCells, eval=fit.model}
 # 24 is all the cells
 max.cells <- min(getOption("Windram.max.cells", 24))
-dl <- filter.cells(dl, number=max.cells)
+dl <- filter_cells(dl, number=max.cells)
 ```
 
 
@@ -147,7 +147,7 @@ dl <- filter.cells(dl, number=max.cells)
 Choose a few (at most 100) genes to fit the model.
 ```{r filterGenes, eval=fit.model}
 max.genes <- min(getOption("Windram.max.genes", 100))
-dl <- filter.genes(dl, number=max.genes)
+dl <- filter_genes(dl, number=max.genes)
 ```
 Choose some held out genes to validate the model with.
 ```{r heldOutGenes}

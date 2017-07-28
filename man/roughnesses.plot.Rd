@@ -12,4 +12,3 @@ roughnesses.plot(dl)
 \description{
 Plot results of roughness test
 }
-

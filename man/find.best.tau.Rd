@@ -21,4 +21,3 @@ find.best.tau(dl, num.tau.candidates = 6000, num.tau.to.keep = num.cores,
 Find best tau to initialise chains with by sampling tau from the prior
 and using empirical Bayes parameter estimates for the other parameters.
 }
-

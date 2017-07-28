@@ -12,4 +12,3 @@ post.psi.plot(dl)
 \description{
 Plot posterior of psi, the temporal variation parameter for all genes.
 }
-

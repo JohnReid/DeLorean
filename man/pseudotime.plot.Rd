@@ -14,4 +14,3 @@ pseudotime.plot(dl, sample.iter = dl$best.sample)
 \description{
 Plot pseudotime (tau) against observed capture time.
 }
-

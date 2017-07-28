@@ -12,4 +12,3 @@ post.gene.omega.plot(dl)
 \description{
 Boxplot posterior of omega, the noise parameter for each gene.
 }
-

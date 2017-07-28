@@ -4,12 +4,13 @@
 \alias{aov.dl}
 \title{Perform an analysis of variance to select genes for the DeLorean model.}
 \usage{
-aov.dl(dl)
+aov.dl(dl, expr.l = melt.expr(dl))
 }
 \arguments{
 \item{dl}{DeLorean object.}
+
+\item{expr.l}{Melted (with melt.expr()) expression values to use}
 }
 \description{
 Perform an analysis of variance to select genes for the DeLorean model.
 }
-

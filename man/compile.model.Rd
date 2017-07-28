@@ -12,4 +12,3 @@ compile.model(dl)
 \description{
 Compile the model and cache the DSO to avoid unnecessary recompilation.
 }
-

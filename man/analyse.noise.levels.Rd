@@ -18,4 +18,3 @@ Analyse noise levels and assess which genes have the greatest
 ratio of temporal variance to noise. This are labelled as the
 'gene.high.psi' genes.
 }
-

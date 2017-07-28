@@ -32,4 +32,3 @@ Perform all the steps necessary to fit the model.
 - fit the model using the specified method (sampling or variational Bayes)
 - process the posterior.
 }
-

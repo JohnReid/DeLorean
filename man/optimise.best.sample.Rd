@@ -17,4 +17,3 @@ optimise.best.sample(dl, sample.to.opt = dl$best.sample,
 \description{
 Optimise the best sample and update the best.sample index.
 }
-

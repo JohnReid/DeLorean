@@ -20,4 +20,3 @@ The log marginal likelihood for each individual data point.
 See "2.3 Varying the Hyperparameters"
 on page 19 of Rasmumssen and Williams' book.
 }
-

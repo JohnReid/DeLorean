@@ -21,4 +21,3 @@ ordering.metropolis.hastings(ordering, log.likelihood,
 \description{
 Metropolis-Hastings on orderings.
 }
-

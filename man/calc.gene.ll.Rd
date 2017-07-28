@@ -12,4 +12,3 @@ calc.gene.ll(dl)
 \description{
 Calculate the log likelihoods for each gene
 }
-

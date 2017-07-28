@@ -14,4 +14,3 @@ permuted.roughness(dl, expr.held.out = dl$expr.held.out)
 \description{
 Permute cells and test roughness of expression.
 }
-

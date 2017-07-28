@@ -14,4 +14,3 @@ held.out.posterior.filter(posterior, genes)
 \description{
 Filter the genes
 }
-

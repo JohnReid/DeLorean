@@ -12,7 +12,7 @@ partition.de.lorean <- function(
     get.piece <- function(p) {
         partition.cells <- cells[partition == p]
         cell.filter <- function(cells) cells %in% partition.cells
-        filter.cells(dl, cell.filter)
+        filter_cells(dl, cell.filter)
     }
     lapply(1:pieces, get.piece)
 }

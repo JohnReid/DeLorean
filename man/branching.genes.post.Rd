@@ -14,4 +14,3 @@ branching.genes.post(dl, genes)
 \description{
 Calculate the posterior for several genes in the branching model.
 }
-

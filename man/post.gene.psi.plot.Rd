@@ -12,4 +12,3 @@ post.gene.psi.plot(dl)
 \description{
 Boxplot posterior of psi, the temporal variation parameter for each gene.
 }
-

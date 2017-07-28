@@ -143,7 +143,7 @@ set.seed(1)
 max.genes <- min(getOption("Kouno.num.genes", nrow(dl$gene.meta)))
 genes.for.stan <- sample(dl$gene.meta$gene, max.genes)
 gene.filter <- function(genes) genes %in% genes.for.stan
-dl <- filter.genes(dl, gene.filter)
+dl <- filter_genes(dl, gene.filter)
 
 ```
 
@@ -156,7 +156,7 @@ sampled.cells <- (
     %>% do(sample_n(., num.at.each.stage))
 )
 cell.filter <- function(cells) cells %in% sampled.cells$cell
-dl <- filter.cells(dl, cell.filter)
+dl <- filter_cells(dl, cell.filter)
 ```
 
 

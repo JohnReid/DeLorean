@@ -14,4 +14,3 @@ ordering.test.score(ordering)
 Test ordering score: sum every time consecutive items are in
 order.
 }
-

@@ -98,7 +98,7 @@ set.seed(1)
 max.cells <- min(getOption("DL.max.cells", 57))
 sampled.cells <- sample(dl$cell.meta$cell, max.cells)
 cell.filter <- function(cells) cells %in% sampled.cells
-dl <- filter.cells(dl, cell.filter)
+dl <- filter_cells(dl, cell.filter)
 
 ```
 
@@ -110,7 +110,7 @@ genes.high.var <- (dl$gene.var
                    %>% arrange(-Psi)
                    %>% head(max.genes))$gene
 gene.filter <- function(genes) genes %in% genes.high.var
-dl <- filter.genes(dl, gene.filter)
+dl <- filter_genes(dl, gene.filter)
 
 ```
 

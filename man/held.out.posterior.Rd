@@ -18,4 +18,3 @@ held.out.posterior(dl, held.out, posterior.sample = dl$best.sample)
 Calculate posterior covariance and estimate parameters for
 held out genes given pseudotimes estimated by DeLorean model.
 }
-

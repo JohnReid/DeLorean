@@ -14,4 +14,3 @@ marg.like.plot(dl)
 Plot posterior for marginal log likelihoods of individual gene's
 expression profiles
 }
-

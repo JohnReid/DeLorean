@@ -4,8 +4,8 @@
 \alias{plot.add.mean.and.variance}
 \title{Add posterior representation to a plot.}
 \usage{
-\method{plot}{add.mean.and.variance}(gp, .data = NULL, color = "black",
-  line.alpha = 0.3, ribbon.alpha = 0.1)
+plot.add.mean.and.variance(gp, .data = NULL, color = "black",
+  line.alpha = 0.3, ribbon.alpha = 0.1, add.noise = FALSE)
 }
 \arguments{
 \item{gp}{Plot object}
@@ -18,8 +18,9 @@ phi, predictedvar)}
 \item{line.alpha}{Alpha to use for mean line}
 
 \item{ribbon.alpha}{Alpha to use for variance ribbon}
+
+\item{add.noise}{Add another ribbon with noise levels}
 }
 \description{
 Add posterior representation to a plot.
 }
-

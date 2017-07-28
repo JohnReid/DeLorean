@@ -14,4 +14,3 @@ calc.log.marg.lik(dl)
 Calculate the GP log marginal likelihoods for the data given the parameters
 from the best sample. Also calculate the log likelihoods of these parameters.
 }
-

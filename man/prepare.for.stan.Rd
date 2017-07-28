@@ -30,4 +30,3 @@ deviations}
 \description{
 Prepare for Stan
 }
-

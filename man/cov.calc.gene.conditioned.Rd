@@ -21,4 +21,3 @@ cov.calc.gene.conditioned(dl, gene.idx, cov.fn = NULL,
 Calculate covariance for gene over test inputs when conditioned on
 data at estimated pseudotimes.
 }
-

@@ -12,4 +12,3 @@
 \description{
 Dimensions of DeLorean object
 }
-

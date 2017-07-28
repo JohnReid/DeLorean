@@ -12,4 +12,3 @@ ordering.invert(ordering)
 \description{
 Invert the ordering
 }
-

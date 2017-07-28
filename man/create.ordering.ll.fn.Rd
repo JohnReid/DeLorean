@@ -18,4 +18,3 @@ Calculate the covariance structure of evenly spread tau and
 create a function that calculates the log likelihood of
 orderings.
 }
-
