@@ -831,6 +831,26 @@ cov.fn.for <- function(dl) {
 }
 
 
+# Choose an initialisation by sampling tau from the prior.
+#
+# @param dl de.lorean object
+#
+init.chain.sample.tau <- function(dl) {
+  with(dl$stan.data, {
+    init <- list(
+      alpha = dl$cell.map$alpha.hat,
+      beta = rep(0, G),
+      S = dl$cell.map$S.hat,
+      tau = rnorm(C, time, sd = sigma_tau),
+      psi = dl$gene.map$psi.hat[1:G],
+      omega = dl$gene.map$omega.hat[1:G]
+    )
+    init$tauoffsets <- init$tau - time
+    init
+  })
+}
+
+
 #' Perform all the steps necessary to fit the model.
 #' - prepare the data
 #' - compile the model
