@@ -1,0 +1,389 @@
+---
+title: DeLorean analysis of Windram et al. Arabidopsis time series
+author: John Reid
+bibliography: DeLorean.bib
+output:
+  html_document:
+    toc: true
+    fig_caption: true
+---
+
+<!--
+%\VignetteEngine{knitr::rmarkdown}
+%\VignetteIndexEntry{DeLorean analysis of Arabidopsis time series}
+-->
+
+```{r build, echo=FALSE, eval=FALSE}
+devtools::load_all('../..')
+# fit.model <- FALSE
+fit.model <- TRUE
+rmarkdown::render('Windram-DeLorean.Rmd')
+```
+
+
+```{r config, echo=FALSE, message=FALSE}
+library(knitr)
+library(knitcitations)
+library(rmarkdown)
+#
+# knitr options
+#
+opts_chunk$set(
+    fig.path = 'figures/Windram-',
+    stop_on_error = TRUE,
+    fig.width = 12.5,
+    fig.height = 8)
+#
+# Citations
+#
+cleanbib()
+cite_options(
+    # hyperlink = 'to.doc',
+    hyperlink = TRUE,
+    # style = 'html',
+    # citation_format = 'text',
+    citation_format = "pandoc",
+    cite.style = "numeric",
+    check.entries = TRUE)
+    # hyperlink = TRUE)
+bib <- read.bibtex("DeLorean.bib")
+if (file.exists("config.R")) {
+    source("config.R")
+}
+source(system.file("scripts/shared.R", package="DeLorean"))
+```
+
+```{r loadLibs, echo=FALSE, message=FALSE}
+# suppressMessages(loadfonts())
+library(DeLorean)
+#
+# Stylesheet
+#
+options(markdown.HTML.stylesheet = system.file(file.path('Rmd', 'foghorn.css'),
+                                               package="DeLorean"))
+font.family <- "Verdana"
+font.theme <- theme_update(text=element_text(family=font.family))
+theme_set(font.theme)
+```
+
+`r date()`
+
+`r citet(bib[["windram_arabidopsis_2012"]])` assayed leaves at 24 time points
+in 2 conditions.
+
+
+# Data
+
+Windram et al.'s data is available in the `DeLorean` R package.
+```{r loadLib}
+library(DeLorean)
+library(dplyr)
+library(ggplot2)
+data(WindramDeLorean)
+seed <- getOption("Windram.seed", 1)
+set.seed(seed)
+```
+
+
+## Obfuscate time points
+
+Reduce resolution of observed capture time points.
+```{r eval=fit.model}
+group.size <- 12
+windram.cell.meta$obstime.orig <- windram.cell.meta$obstime
+windram.cell.meta$capture.orig <- windram.cell.meta$capture
+windram.cell.meta$obstime <- (
+    floor((windram.cell.meta$obstime-1) / group.size) * group.size
+    + group.size / 2)
+windram.cell.meta$capture <- (
+    factor(as.character(windram.cell.meta$obstime),
+           ordered=TRUE,
+           levels=unique(as.character(windram.cell.meta$obstime))))
+```
+
+Just consider the *Botrytis* cells
+```{r eval=fit.model}
+dl <- de.lorean(
+    windram.expr,
+    windram.gene.meta,
+    windram.cell.meta)
+botrytis.cells <- dl$cell.meta %>% filter(condition == "Botrytis")
+dl <- filter_cells(dl, cells=botrytis.cells$cell)
+```
+
+
+# Estimate hyperparameters
+
+Examine data for empirical Bayes estimation of hyperparameters.
+```{r empiricalBayes, eval=fit.model}
+model.name <- getOption('Windram.model', 'exact')
+dl <- estimate.hyper(dl, sigma.tau=group.size/4, model.name=model.name, adjust.cell.sizes=FALSE)
+if (! dl$opts$model.estimates.cell.sizes) {
+    dl <- adjust.by.cell.sizes(dl)
+}
+fits.omega <- test.fit(dl$gene.var$omega.hat)
+print(fits.omega$gp)
+fits.psi <- test.fit(dl$gene.var$psi.hat)
+print(fits.psi$gp)
+```
+```{r child=report.file("data")}
+```
+```{r child=report.file("hyper-parameters")}
+```
+
+
+# Choose cells
+
+Select some cells at random if we have too many.
+```{r sampleCells, eval=fit.model}
+# 24 is all the cells
+max.cells <- min(getOption("Windram.max.cells", 24))
+dl <- filter_cells(dl, number=max.cells)
+```
+
+
+# Choose genes
+
+Choose a few (at most 100) genes to fit the model.
+```{r filterGenes, eval=fit.model}
+max.genes <- min(getOption("Windram.max.genes", 100))
+dl <- filter_genes(dl, number=max.genes)
+```
+Choose some held out genes to validate the model with.
+```{r heldOutGenes}
+held.out.genes <- with(dl, gene.var
+                           %>% left_join(gene.meta)
+                           %>% filter(! gene %in% rownames(dl$expr))
+                           %>% arrange(-psi.hat/omega.hat)
+                           %>% head(getOption('Windram.held.out', 100)))
+held.out.expr <- windram.expr[as.character(held.out.genes$gene),
+                              colnames(dl$expr)]
+```
+
+
+# Fit model
+
+```{r options}
+num.inits <- getOption("Windram.num.inits", default.num.cores())
+inf.method=getOption("Windram.method", "vb")
+```
+
+Define and compile the model, find the best initialisation, and fit the model.
+The model name is "`r model.name`", the inference method is "`r inf.method`"
+with `r num.inits` initialisations, the seed is `r seed` and the data have
+`r dim(dl)[1]` genes and `r dim(dl)[2]` cells.
+
+```{r fitModel, eval=fit.model}
+dl <- prepare.for.stan(dl, num.inducing.tau = 30)
+# Save for input to Monocle
+saveRDS(list(expr=dl$expr,
+             held.out.expr=held.out.expr,
+             cell.meta=dl$cell.map,
+             gene.meta=dl$gene.map),
+        file='Data/Windram-input.rds')
+dl <- compile.model(dl)
+dl <- find.good.ordering(dl, seriation.find.orderings)
+plot(dl, type='orderings')
+dl <- pseudotimes.from.orderings(dl, num.to.keep=num.inits)
+system.time(dl <- fit.model(dl, method = inf.method, num.inits = num.inits))
+plots <- list()
+if ("vb" == inf.method) {
+    plots$pair.plot <- pseudotimes.pair.plot(dl)
+}
+```
+
+
+```{r examConv, eval=("sample" == inf.method)}
+dl <- examine.convergence(dl)
+```
+```{r child=report.file("convergence"), eval=("sample" == inf.method)}
+```
+
+
+
+# Analyse posterior
+
+Examine posterior.
+```{r posterior}
+dl <- process.posterior(dl)
+dl <- analyse.noise.levels(dl)
+```
+```{r child=report.file("posterior")}
+```
+
+
+# Profiles
+
+Calculate expression profiles.
+```{r makePredictions}
+dl <- make.predictions(dl)
+```
+```{r child=report.file("profiles")}
+```
+
+
+# Examine pseudotime
+
+Did `DeLorean` learn the obfuscated pseudotime?
+```{r pseudotime}
+plots$pseudo <- with(dl, {
+    (ggplot(samples.l$tau %>% filter(iter == best.sample),
+                    aes(x=tau, y=obstime.orig, color=capture),
+                    environment=environment())
+        + geom_point()
+        # + scale_x_continuous(name="pseudotime")
+        # + scale_y_continuous(name="capture time")
+        # + scale_color_discrete(name="low-resolution\ngroup")
+        + scale_y_continuous(name="true capture time")
+        + scale_x_continuous(name="pseudotime")
+        + scale_color_discrete(name="model\ncapture\ntime")
+    )
+})
+print(plots$pseudo)
+do.call(ggsave,
+        c(list('Windram-pseudotime-vs-obfuscated.pdf', plots$pseudo + bioinf.config),
+          bioinf.sizes))
+if ('sample' == inf.method) {
+    # Save convergence as well
+    ggsave('Windram-Rhat.png', plot(dl, type="Rhat"),
+        width=slide.fig.width, height=slide.fig.width / html5$ratio,
+        dpi=300, units="in")
+}
+# Save profiles as well
+plots$profiles <- plot(dl, type="profiles", genes=dl$genes.high.psi)
+plots$profiles$layers[[3]]$aes_params$size <- 0.8
+do.call(ggsave,
+        c(list('Windram-profiles.pdf', plots$profiles + bioinf.config),
+          suppl.sizes))
+# Save tau posterior
+plots$tau.posterior <- (
+    ggplot(dl$samples.l$tau, aes(x=capture.orig, y=tau, color=capture))
+    + geom_boxplot(outlier.size=.3, lwd=.15)
+    # + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+    # + theme_gray(base_size=24)
+    + scale_x_discrete(name="true capture time")
+    + scale_y_continuous(name="pseudotime")
+    + scale_color_discrete(name="model\ncapture\ntime")
+    + coord_flip())
+do.call(ggsave,
+        c(list('Windram-tau-posterior.pdf', plots$tau.posterior + bioinf.config),
+          bioinf.sizes))
+
+# Save best tau
+plots$tau.best <- plot(dl, type="pseudotime")
+ggsave('Windram-tau-best.pdf', plots$tau.best + plos.theme,
+       width=text.width, height=text.width, units="in")
+ggsave('Windram-tau-best.png', plots$tau.best + plos.theme,
+       width=slide.fig.width, height=slide.fig.width / html5$ratio,
+       dpi=300, units="in")
+```
+Look at the expected correlation between the obfuscated capture time with the
+pseudotime in the full posterior.
+```{r}
+posterior.cor <- (
+    dl$samples.l$tau
+    %>% group_by(iter)
+    %>% dplyr::summarise(pseudotime.capture.cor=cor(tau, obstime.orig,
+                                             method="spearman"))
+)
+posterior.cor.mean <- mean(posterior.cor$pseudotime.capture.cor)
+posterior.cor.mean
+posterior.cor.best <- filter(posterior.cor,
+                             dl$best.sample == iter)$pseudotime.capture.cor
+posterior.cor.best
+monocle.cor <- 0.9269565
+plots$post.cor <- (ggplot(posterior.cor, aes(x=pseudotime.capture.cor))
+    + geom_histogram()
+    + geom_vline(xintercept=monocle.cor, linetype='dotted')
+    + geom_vline(xintercept=posterior.cor.best, linetype='dashed')
+    + scale_x_continuous(name="correlation"))
+print(plots$post.cor)
+do.call(ggsave,
+        c(list('Windram-posterior-cor.pdf', plot=plots$post.cor + bioinf.config),
+          bioinf.sizes))
+```
+The correlation between the obfuscated capture time with the pseudotime of
+the best sample.
+```{r}
+with(dl$samples.l$tau %>% filter(iter == dl$best.sample),
+     cor(tau, obstime.orig, method="spearman"))
+```
+
+## Roughness permutation test
+Permutation test for roughness.
+```{r roughnesses}
+dl <- roughness.test(dl, held.out.expr)
+print(dl$roughness.test)
+monocle.roughness <- 0.85
+plots$roughnesses <- plot(dl, type="roughnesses") +
+    geom_vline(xintercept=monocle.roughness, linetype='dotted')
+do.call(ggsave,
+        c(list('Windram-roughnesses.pdf', plots$roughnesses + bioinf.config),
+          suppl.sizes))
+print(plots$roughnesses)
+save.output <- getOption('Windram.save.output', TRUE)
+```
+```{r saveDL, echo=FALSE, eval=save.output}
+# Save DeLorean object without fit component
+saveRDS({dl2 <- dl; dl2$fit <- NULL; dl2}, "Data/Windram.rds")
+# Save plots
+saveRDS(plots, "Data/Windram-plots.rds")
+```
+```{r loadDL, echo=FALSE, eval=FALSE}
+# Not executed
+# Load DeLorean object without fit component
+devtools::load_all('../..')
+library(DeLorean)
+library(dplyr)
+library(ggplot2)
+dl <- readRDS("Data/Windram.rds")
+plots <- readRDS("Data/Windram-plots.rds")
+```
+
+# Examine data and estimated tau using PCA
+```{r PCA}
+pca <- prcomp(t(dl$expr), center=TRUE, scale.=FALSE)
+pca <- prcomp(t(dl$expr + dl$cell.sizes$S.hat), center=TRUE, scale.=FALSE)
+# print(pca)
+# summary(pca)
+png('Windram-PCA-var.png')
+plot(pca, type = "l")
+dev.off()
+pca.l <- reshape2::melt(pca$x, varnames=c("cell", "PC"), value.name="x")
+# sample_n(pca.l, 10)
+tau.best <- dl$samples.l$tau %>% filter(iter==dl$best.sample)
+pca.df <-pca.l %>% reshape2::dcast(cell ~ PC) %>% mutate(cell=factor(cell, levels=cell.levels(dl))) %>% left_join(tau.best)
+pca.plot <- ggplot(pca.df,
+       aes(x=PC1, y=PC2, label=cell, color=tau, shape=capture)) +
+    #geom_text() +
+    geom_point() +
+    scale_size_continuous(breaks=c(1,2)) +
+    scale_colour_gradient(low="red", high="blue")
+print(pca.plot)
+ggsave('Windram-PCA.png', pca.plot)
+#
+# Check which tau has best log prob
+extracted <- rstan::extract(dl$fit)
+lapply(extracted, dim)
+pars <- with(extracted, list(
+    tau=tau[dl$best.sample,],
+    psi=psi[dl$best.sample,],
+    omega=omega[dl$best.sample,]))
+pars$tauoffset = pars$tau - dl$cell.map$obstime
+if (dl$opts$model.estimates.cell.sizes) {
+    pars$S <- extracted$S[dl$best.sample,]
+}
+best.tau <- tau.for.sample(dl)
+desired.tau <- sort(best.tau)
+fit <- make.fit.valid(dl)
+pars$tau <- best.tau
+print(rstan::log_prob(fit, rstan::unconstrain_pars(fit, pars), adjust_transform=FALSE))
+pars$tau <- desired.tau
+print(rstan::log_prob(fit, rstan::unconstrain_pars(fit, pars), adjust_transform=FALSE))
+```
+
+R version and packages used:
+```{r Rversion}
+date()
+sessionInfo()
+```
