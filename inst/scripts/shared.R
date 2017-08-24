@@ -2,7 +2,10 @@
 # Code that is shared amongst the vignettes.
 #
 library(ggplot2)
+library(ggthemes)
 library(dplyr)
+library(reshape2)
+theme_set(theme_few())
 
 #
 # Install extrafont and import fonts from system.

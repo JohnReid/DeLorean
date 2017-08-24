@@ -348,6 +348,7 @@ profiles.plot <- function(
   })
 }
 
+
 #' Mutate the profile data into shape compatible with GP plot function
 #'
 #' @param .data The data
@@ -356,25 +357,6 @@ mutate.profile.data <- function(.data) .data %>%
   mutate(x=tau, mean=predictedmean+phi.hat, var=predictedvar, noise2=omega) %>%
   dplyr::select(-tau, -predictedmean, -phi.hat, -predictedvar)
 
-
-# Adjust the predicted mean with the predictions from the model.
-#
-adjust.predictions <- function(.data, adjust.model) {
-    # print(names(.data))
-    adjustments <- (
-        .data
-        %>% group_by(t)
-        %>% dplyr::summarise(tau=tau[1]))
-    # print(tail(adjustments))
-    adjustments$adjustment <- predict(adjust.model,
-                                        newdata=adjustments)
-    # .T <- nrow(adjustments)
-    # print(adjustments$adjustment[1:(.T-1)]-adjustments$adjustment[2:.T])
-    (
-        .data
-        %>% left_join(dplyr::select(adjustments, -tau))
-        %>% mutate(predictedmean=predictedmean+adjustment))
-}
 
 #' Add expression data to a plot
 #'

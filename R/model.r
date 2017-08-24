@@ -1311,6 +1311,17 @@ make.predictions <- function(dl) {
 }
 
 
+#' Map the test inputs from their indices t to their pseudotime tau
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+testinputs <- function(dl) with(dl$stan.data,
+  data.frame(t = seq(length(testinput)), tau = dl$stan.data$testinput))
+
+
+
 #' Fit held out genes
 #'
 #' @param dl de.lorean object
