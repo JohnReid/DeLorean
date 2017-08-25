@@ -226,61 +226,23 @@ held.out.cells <-
 Fit the held out samples into pseudotime.
 ```{r fitHeldOutSamples}
 names(dimnames(windram.expr)) <- c('gene', 'cell')
-held.out.samples <-
-  windram.expr[as.character(dl$gene.map$gene), held.out.cells$cell] %>%
-  melt(value.name = 'expr') %>%
-  mutate(
-    gene = factor(gene, levels = levels(dl$gene.map$gene)),
-    cell = factor(cell, levels = levels(dl$cell.map$cell))) %>%
-  left_join(dl$gene.map)
-sample_n(held.out.samples, 8)
-held.out.best.time <-
-  held.out.samples %>%
-  left_join(filter(dl$predictions, dl$best.sample == iter)) %>%
-  group_by(cell, t) %>%
-  summarise(
-    ll = sum(dnorm(
-      expr,
-      mean = predictedmean + phi.hat,
-      sd = sqrt(predictedvar),
-      log = TRUE))) %>%
-  summarise(t = t[which.max(ll)]) %>%
-  left_join(testinputs(dl)) %>%
-  left_join(windram.cell.meta)
-held.out.best.time
-held.out.estimates <-
-  held.out.samples %>%
-  left_join(held.out.best.time) %>%
-  left_join(dl$predictions)
-# sample_n(held.out.estimates, 8)
+dl <-
+  held.out.samples.fit(
+    dl,
+    windram.expr[as.character(dl$gene.map$gene), held.out.cells$cell])
 ```
 
 Plot original fit with new held out samples
 ```{r plotFitWithHeldOut}
-gp <-
-  profiles.plot(dl) +
-  geom_point(
-    data = filter(held.out.estimates, gene %in% dl$genes.high.psi),
-    shape = 4, size = 7,
-    aes(x = tau, y = expr, colour = capture))
+gp <- add.held.out.to.profiles(dl, profiles.plot(dl))
 gp
 ```
 
 Combine original fit with held out fit
 ```{r combineHeldOut}
-samples.combined <-
-  bind_rows(
-    dl$samples.l$tau %>%
-      filter(iter == dl$best.sample) %>%
-      select(cell, tau, capture, unobsfuscated = obstime.orig) %>%
-      mutate(fit = 'original'),
-    held.out.best.time %>%
-      select(cell, tau, capture, unobsfuscated = obstime.orig) %>%
-      mutate(fit = 'held out')) %>%
-  arrange(tau)
 ggplot(
-    samples.combined,
-    aes(x = unobsfuscated, y = tau, colour = capture, shape = fit)) +
+    dl$held.out$combined %>% left_join(dl$cell.meta),
+    aes(x = obstime.orig, y = tau, colour = capture, shape = fit)) +
   geom_point(size = 5)
 ```
 

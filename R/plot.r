@@ -349,6 +349,20 @@ profiles.plot <- function(
 }
 
 
+#' Add held out estimates to profiles plot
+#'
+#' @param dl de.lorean object
+#' @param gp Profiles plot object
+#'
+add.held.out.to.profiles <- function(dl, gp)
+  gp +
+  geom_point(
+    # Just plot those genes in the profile plot
+    data = filter(dl$held.out$estimates, g %in% gp$data$g),
+    shape = 4, size = 7,
+    aes(x = tau, y = x, colour = capture))
+
+
 #' Mutate the profile data into shape compatible with GP plot function
 #'
 #' @param .data The data

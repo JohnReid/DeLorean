@@ -1300,15 +1300,14 @@ sampled.gene.param <- function(dl,
 #'
 #' @export
 #'
-make.predictions <- function(dl) {
-    within(dl, {
-        predictions <- with(samples.l,
-                            predictedmean
-                            %>% left_join(predictedvar)
-                            # %>% left_join(S)
-                            %>% mutate(tau=test.input[t]))
-    })
-}
+make.predictions <- function(dl) within(dl, {
+  predictions <-
+    with(samples.l,
+      predictedmean
+      %>% left_join(predictedvar)
+      # %>% left_join(S)
+      %>% mutate(tau=test.input[t]))
+})
 
 
 #' Map the test inputs from their indices t to their pseudotime tau
@@ -1320,6 +1319,53 @@ make.predictions <- function(dl) {
 testinputs <- function(dl) with(dl$stan.data,
   data.frame(t = seq(length(testinput)), tau = dl$stan.data$testinput))
 
+
+#' Fit held out samples/cells into pseudotime. make.predictions(dl) should
+#' already have been called.
+#'
+#' @param dl de.lorean object
+#' @param held.out.sample.expr A matrix of expression (genes x samples).
+#'
+#' @export
+#'
+held.out.samples.fit <- function(dl, heldout.sample.expr) within(dl, {
+  held.out <- within(list(), {
+    samples <-
+      heldout.sample.expr %>%
+      melt(value.name = 'x', varnames = c('gene', 'cell')) %>%
+      mutate(
+        gene = factor(gene, levels = levels(gene.map$gene)),
+        cell = factor(cell, levels = levels(cell.map$cell))) %>%
+      left_join(gene.map)
+    best.time <-
+      samples %>%
+      left_join(filter(predictions, best.sample == iter)) %>%
+      group_by(cell, t) %>%
+      summarise(
+        ll = sum(dnorm(
+          x,
+          mean = predictedmean + phi.hat,
+          sd = sqrt(predictedvar),
+          log = TRUE))) %>%
+      summarise(t = t[which.max(ll)]) %>%
+      left_join(testinputs(dl))
+    estimates <-
+      samples %>%
+      left_join(best.time) %>%
+      left_join(cell.meta) %>%
+      left_join(predictions)
+    combined <-
+      bind_rows(
+        samples.l$tau %>%
+          filter(iter == best.sample) %>%
+          select(cell, tau) %>%
+          mutate(fit = 'original'),
+        best.time %>%
+          select(cell, tau) %>%
+          mutate(fit = 'held out')) %>%
+      arrange(tau)
+  })
+})
 
 
 #' Fit held out genes
