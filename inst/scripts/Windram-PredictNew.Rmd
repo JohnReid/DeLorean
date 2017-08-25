@@ -176,12 +176,15 @@ with `r num.inits` initialisations, the seed is `r seed` and the data have
 dl <- prepare.for.stan(dl, num.inducing.tau = 30)
 dl <- compile.model(dl)
 dl <- find.good.ordering(dl, seriation.find.orderings)
-plot(dl, type='orderings')
-dl <- pseudotimes.from.orderings(dl, num.to.keep=num.inits)
-system.time(dl <- fit.model(dl, method = inf.method, num.inits = num.inits))
 plots <- list()
+plots$orderings <- plot(dl, type='orderings')
+plots$orderings
+dl <- pseudotimes.from.orderings(dl, num.to.keep = num.inits)
 if ("vb" == inf.method) {
-    plots$pair.plot <- pseudotimes.pair.plot(dl)
+  system.time(dl <- fit.model(dl, method = inf.method, num.inits = num.inits))
+  plots$pair.plot <- pseudotimes.pair.plot(dl)
+} else {
+  system.time(dl <- fit.model(dl, method = inf.method, chains = num.inits))
 }
 ```
 
