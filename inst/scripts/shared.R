@@ -5,6 +5,7 @@ library(ggplot2)
 library(ggthemes)
 library(dplyr)
 library(reshape2)
+library(magrittr)
 theme_set(theme_few())
 
 #
@@ -85,3 +86,12 @@ if (! exists('fit.model')) fit.model <- TRUE
 # Create data directory if not there
 #
 if( ! file.exists('Data')) dir.create('Data')
+
+#
+# Retrieve N largest objects in global environment.
+largest.objects <- function(N = 10, env = globalenv()) {
+    z <- sapply(
+                    ls(env),
+                        function(x) object.size(get(x, env)))
+  as.matrix(rev(sort(z))[1:N]) %>% set_colnames('bytes')
+}

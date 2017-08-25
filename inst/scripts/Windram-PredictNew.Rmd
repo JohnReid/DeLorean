@@ -123,13 +123,6 @@ botrytis.cells <- dl$cell.meta %>% filter(condition == "Botrytis", capture_idx <
 dl <- filter_cells(dl, cells=botrytis.cells$cell)
 ```
 
-Work out which samples are held out.
-```{r calcHeldOut}
-held.out.cells <-
-  windram.cell.meta %>%
-  filter('Botrytis' == condition, ! cell %in% dl$cell.map$cell)
-```
-
 
 # Estimate hyperparameters
 Examine data for empirical Bayes estimation of hyperparameters.
@@ -171,7 +164,7 @@ held.out.expr <- windram.expr[as.character(held.out.genes$gene),
 # Fit model
 ```{r options}
 num.inits <- getOption("Windram.num.inits", default.num.cores())
-inf.method <- getOption("Windram.method", "vb")
+inf.method <- getOption("Windram.method", "sample")
 ```
 
 Define and compile the model, find the best initialisation, and fit the model.
@@ -220,6 +213,13 @@ dl <- make.predictions(dl)
 
 
 # Fit held out samples
+Work out which samples are held out.
+```{r calcHeldOut}
+held.out.cells <-
+  windram.cell.meta %>%
+  filter('Botrytis' == condition, ! cell %in% dl$cell.map$cell)
+```
+
 Fit the held out samples into pseudotime.
 ```{r fitHeldOutSamples}
 names(dimnames(windram.expr)) <- c('gene', 'cell')
@@ -230,18 +230,17 @@ held.out.samples <-
     gene = factor(gene, levels = levels(dl$gene.map$gene)),
     cell = factor(cell, levels = levels(dl$cell.map$cell))) %>%
   left_join(dl$gene.map)
-# sample_n(held.out.samples, 8)
+sample_n(held.out.samples, 8)
 held.out.best.time <-
   held.out.samples %>%
-  left_join(dl$predictions) %>%
-  mutate(
-    ll = dnorm(
+  left_join(filter(dl$predictions, dl$best.sample == iter)) %>%
+  group_by(cell, t) %>%
+  summarise(
+    ll = sum(dnorm(
       expr,
       mean = predictedmean + phi.hat,
       sd = sqrt(predictedvar),
-      log = TRUE)) %>%
-  group_by(cell, t) %>%
-  summarise(ll = sum(ll)) %>%
+      log = TRUE))) %>%
   summarise(t = t[which.max(ll)]) %>%
   left_join(testinputs(dl)) %>%
   left_join(windram.cell.meta)
@@ -251,21 +250,35 @@ held.out.estimates <-
   left_join(held.out.best.time) %>%
   left_join(dl$predictions)
 # sample_n(held.out.estimates, 8)
-#
-# Plot original fit with new held out samples
+```
+
+Plot original fit with new held out samples
+```{r plotFitWithHeldOut}
 gp <-
   profiles.plot(dl) +
   geom_point(
-    data = held.out.estimates, shape = 4, size = 7,
+    data = filter(held.out.estimates, gene %in% dl$genes.high.psi),
+    shape = 4, size = 7,
     aes(x = tau, y = expr, colour = capture))
 gp
-#
-# Combine original fit with held out fit
+```
+
+Combine original fit with held out fit
+```{r combineHeldOut}
 samples.combined <-
   bind_rows(
-    dl$samples.l$tau %>% filter(iter == dl$best.sample) %>% select(cell, tau, capture, unobsfuscated = obstime.orig) %>% mutate(fit = 'original'),
-    held.out.best.time %>% select(cell, tau, capture, unobsfuscated = obstime.orig) %>% mutate(fit = 'held out')) %>% arrange(tau)
-ggplot(samples.combined, aes(x = unobsfuscated, y = tau, colour = capture, shape = fit)) + geom_point(size = 5)
+    dl$samples.l$tau %>%
+      filter(iter == dl$best.sample) %>%
+      select(cell, tau, capture, unobsfuscated = obstime.orig) %>%
+      mutate(fit = 'original'),
+    held.out.best.time %>%
+      select(cell, tau, capture, unobsfuscated = obstime.orig) %>%
+      mutate(fit = 'held out')) %>%
+  arrange(tau)
+ggplot(
+    samples.combined,
+    aes(x = unobsfuscated, y = tau, colour = capture, shape = fit)) +
+  geom_point(size = 5)
 ```
 
 
