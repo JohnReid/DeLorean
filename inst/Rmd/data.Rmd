@@ -12,7 +12,6 @@ attach(dl)
 
 
 ## Expression
-
 This data set contains expression data for
 `r nrow(dl$expr)` genes and `r ncol(dl$expr)` cells.
 The expression values are distributed as
@@ -24,42 +23,37 @@ qplot(as.vector(expr))
 
 
 ## Cells
-
 Meta data exists for `r nrow(dl$cell.meta)` cells. These were captured at
 `r length(levels(cell.meta$capture))` distinct time points.
-
 ```{r cellCaptureTimes, echo = FALSE}
 ggplot(cell.meta, aes(capture)) + geom_bar()
-
 ```
 
 We have the following meta data for the cells:
-```{r cellMetaData, echo = FALSE}
-summary(cell.meta)
+```{r cellMetaSample, echo = FALSE, results = 'asis'}
+knitr::kable(sample_n(cell.meta, 6))
 ```
 
 ### Cell sizes
-
 Estimates of cell sizes by capture time are:
-```{r cellSizeEstimates}
-ggplot(cell.sizes %>% left_join(cell.meta), aes(x = capture, y = S.hat)) +
-    geom_boxplot()
+```{r cellSizeEstimates, echo = FALSE}
+ggplot(
+    cell.sizes %>% left_join(cell.meta, by = c('cell', 'capture')),
+    aes(x = capture, y = S.hat)) +
+  geom_boxplot()
 ```
 
 
 ## Genes
-
-Boxplots of expression over capture time of some randomly sampled genes. The
-red lines show the mean expression at each capture time.
-```{r plotGeneData}
+Violin plots of expression over capture time of some randomly sampled genes.
+The red lines show the mean expression at each capture time.
+```{r plotGeneData, echo = FALSE}
 plot(dl, type = "expr.data")
 ```
 
-
 We have the following meta data for the genes:
-```{r geneMeta, echo = FALSE}
-summary(gene.meta)
-
+```{r geneMetaSample, echo = FALSE, results = 'asis'}
+knitr::kable(sample_n(gene.meta, 6))
 ```
 
 

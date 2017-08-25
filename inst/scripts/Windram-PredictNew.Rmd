@@ -1,5 +1,5 @@
 ---
-title: Analysis of Windram et al. Arabidopsis time series with out of sample predictions
+title: Windram et al. out of sample analysis
 author: John Reid
 bibliography: DeLorean.bib
 output:
@@ -119,7 +119,9 @@ dl <- de.lorean(
     windram.expr,
     windram.gene.meta,
     windram.cell.meta)
-botrytis.cells <- dl$cell.meta %>% filter(condition == "Botrytis", capture_idx < 5)
+botrytis.cells <-
+  dl$cell.meta %>%
+  filter(condition == "Botrytis", capture_idx < 6)
 dl <- filter_cells(dl, cells=botrytis.cells$cell)
 ```
 
@@ -164,7 +166,7 @@ held.out.expr <- windram.expr[as.character(held.out.genes$gene),
 # Fit model
 ```{r options}
 num.inits <- getOption("Windram.num.inits", default.num.cores())
-inf.method <- getOption("Windram.method", "sample")
+inf.method <- getOption("Windram.method", "vb")
 ```
 
 Define and compile the model, find the best initialisation, and fit the model.

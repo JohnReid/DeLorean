@@ -76,7 +76,7 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
   # First melt expression data into long format
   expr.adj <-
     melt.expr(dl) %>%
-    left_join(dl$cell.sizes) %>%
+    left_join(dl$cell.sizes, by = 'cell') %>%
     # Adjust the expression by the cell size estimates if asked to
     mutate(x.hat=x-adjust.cell.sizes*S.hat)
   stopifnot(! is.na(expr.adj))
@@ -92,7 +92,7 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
     # Examine the expression at each gene/capture time combination
     gene.time.expr <-
       expr.adj %>%
-      left_join(cell.meta) %>%
+      left_join(cell.meta, by = c('cell', 'capture')) %>%
       group_by(gene, capture) %>%
       dplyr::summarise(
         num.capture=n(),
@@ -429,9 +429,9 @@ within(dl, {
     data.frame(g=1:(.G+hold.out),
                gene=factor(rownames(expr), levels=levels(gene.meta$gene)))
     %>% mutate(is.held.out=g>.G)
-    %>% left_join(gene.expr)
-    %>% left_join(gene.var)
-    %>% left_join(gene.meta))
+    %>% left_join(gene.expr, by = 'gene')
+    %>% left_join(gene.var, by = 'gene')
+    %>% left_join(gene.meta, by = 'gene'))
   stopifnot(! is.na(gene.map[
     c("g", "gene", "phi.hat", "psi.hat", "omega.hat")
   ]))
@@ -441,8 +441,8 @@ within(dl, {
     data.frame(
       c=1:.C,
       cell=factor(colnames(expr), levels=levels(cell.meta$cell))) %>%
-    left_join(cell.meta) %>%
-    left_join(cell.sizes)
+    left_join(cell.meta, by = 'cell') %>%
+    left_join(cell.sizes, by = c('cell', 'capture'))
   stopifnot(! is.na(cell.map %>% dplyr::select(cell, capture, obstime)))
   #
   # Add the z.hat estimates to the cell map if PCA data frame exists
@@ -1127,7 +1127,7 @@ sample.melter <- function(dl, include.iter = TRUE) {
 join.tau.samples <- function(dl, tau.samples) {
     with(dl,
          tau.samples
-             %>% left_join(cell.map)
+             %>% left_join(cell.map, by = 'c')
              %>% mutate(tau.offset=tau-obstime))
 }
 
@@ -1150,7 +1150,7 @@ process.posterior <- function(dl) {
       mean.held.out.marg.ll <-
         mean((
           samples.l$logmarglike %>%
-          left_join(gene.map) %>%
+          left_join(gene.map, by = 'g') %>%
           filter(is.held.out))$logmarglike)
       message('Mean held out marginal log likelihood per cell: ',
               mean.held.out.marg.ll / stan.data$C)
@@ -1250,29 +1250,29 @@ optimise.best.sample <- function(
 #'
 #' @export
 #'
-analyse.noise.levels <- function(dl, num.high.psi=25) {
+analyse.noise.levels <- function(dl, num.high.psi = 9) {
   within(dl, {
-    noise.levels <- (
-      with(samples.l, left_join(psi, omega))
-      %>% left_join(gene.map))
+    noise.levels <-
+      with(samples.l, left_join(psi, omega, by = c('iter', 'g'))) %>%
+      left_join(gene.map, by = 'g')
     # Summarise by gene
     gene.noise.levels <- (
       noise.levels
       %>% group_by(g)
       %>% dplyr::summarise(omega=mean(omega), psi=mean(psi))
-      %>% left_join(gene.map)
+      %>% left_join(gene.map, by = 'g')
       %>% arrange(-psi/omega))
     genes.high.psi <- head(gene.noise.levels$gene, num.high.psi)
     # Calculate some statistics of the posterior of the gene parameters
     var.post.stats <-
-      with(samples.l, left_join(psi, omega)) %>%
+      with(samples.l, left_join(psi, omega, by = c('iter', 'g'))) %>%
       group_by(g) %>%
       summarise(
         psi.mean   = mean(psi),
         psi.sd     = sd(psi),
         omega.mean = mean(omega),
         omega.sd   = sd(omega)) %>%
-      left_join(gene.map)
+      left_join(gene.map, by = 'g')
   })
 }
 
@@ -1304,8 +1304,7 @@ make.predictions <- function(dl) within(dl, {
   predictions <-
     with(samples.l,
       predictedmean
-      %>% left_join(predictedvar)
-      # %>% left_join(S)
+      %>% left_join(predictedvar, by = c("iter", "g", "t"))
       %>% mutate(tau=test.input[t]))
 })
 

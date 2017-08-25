@@ -17,12 +17,12 @@ $$
 
 ## Variance decomposition into temporal variation and noise
 
-We examine the variance both between- and within-time points. We expect some of
-the variation within a time point to be associated with noise in the temporal
-dimension, that is estimating the pseudotime correctly should reduce the
-within-time variance. The rest of the variation within a time point will be due
-to noise.  Conversely we expect most of the variation between time points to be
-due to temporal variation although some will be due to noise.
+We examine the variation of expression both between- and within-time points. We
+expect some of the variation of expression within a time point to be associated
+with variation in the temporal dimension. The rest of the variation within
+a time point will be modelled as noise.  Conversely we expect most of the
+variation between time points to be due to temporal variation although some
+will be due to noise.
 
 Let
 $$
@@ -46,20 +46,23 @@ $$
 
 We estimate the gene-specific noise levels by assuming that all the within-time
 variation in the data is due to noise. This should be a slight overestimate as
-some variation will be due to noise in the pseudotemporal dimension.
+some variation of expression will be due to variation in the pseudotemporal
+dimension.
 $$
   \hat{\omega}_g = \textrm{Mean}_t\{\mathbb{V}_{g,t}\}
 $$
 Giving us this fit for our empirical Bayes prior on the $\log \hat{\omega}_g$
+(the blue curve is the prior on $\log \omega_g$ and the density and rug plots
+show the distribution of the $\log \hat{\omega}_g$ estimated by empirical Bayes).
 ```{r omegaPrior}
 ggplot(
     gene.var,
-    aes(x=log(omega.hat))) +
+    aes(x = log(omega.hat))) +
   geom_density() +
   geom_rug() +
   stat_function(
-    fun=function(x) dnorm(x, mean=hyper$mu_omega, sd=hyper$sigma_omega),
-    colour="blue", alpha=.7, linetype="dashed")
+    fun=function(x) dnorm(x, mean = hyper$mu_omega, sd = hyper$sigma_omega),
+    colour = "blue", alpha=.7, linetype = "dashed")
 ```
 
 
@@ -110,12 +113,12 @@ ggplot(gene.var, aes(x=log10(psi.hat), y=log10(omega.hat))) +
 ## Cell sizes relation to gene variation
 
 How big are the cell size estimates relative to the average variation in the gene expression?
-The line represents the square root of the mean variance of the gene expressions.
+The vertical line represents the square root of the mean variance of the gene expressions.
 ```{r cellSizeRelExpr}
 gene.vars <- apply(expr, 1, var)
 mean.gene.variation <- sqrt(mean(gene.vars))
 ggplot(cell.sizes, aes(x=S.hat)) +
-    geom_histogram() +
+    geom_histogram(bins = 30) +
     geom_vline(xintercept=mean.gene.variation)
 ```
 

@@ -19,6 +19,7 @@ ggplot(
     samples.l$tau %>% arrange(capture),
     aes(x = reorder(cell, tau, FUN = median), y = tau, color = capture)) +
   geom_boxplot() +
+  labs(x = 'cell') +
   coord_flip()
 ```
 
@@ -50,6 +51,7 @@ ggplot(
       fill = gene %in% genes.high.psi),
     environment = environment()) +
   geom_boxplot() +
+  labs(x = 'gene') +
   coord_flip()
 ```
 
@@ -73,6 +75,7 @@ ggplot(
     aes(x = reorder(gene, omega, FUN = median), y = log10(omega), fill = gene %in% genes.high.psi),
     environment = environment()) +
   geom_boxplot() +
+  labs(x = 'gene') +
   coord_flip()
 ```
 

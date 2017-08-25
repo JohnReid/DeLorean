@@ -173,7 +173,7 @@ pseudotime.plot <- function(dl, sample.iter=dl$best.sample) {
 tau.offsets.plot <- function(dl, rug.alpha=.3) with(dl, {
   prior.scale <- nrow(samples.l$tau) / length(levels(samples.l$tau$capture))
   ggplot(samples.l$tau, aes(x=tau.offset, color=capture, fill=capture)) +
-    geom_histogram(position='dodge') +
+    geom_histogram(position='dodge', bins = 30) +
     geom_rug(alpha=rug.alpha) +
     stat_function(fun=function(x) prior.scale * dnorm(x, sd=hyper$sigma_tau),
                   linetype='dashed')
@@ -298,15 +298,15 @@ profiles.plot <- function(
       ggplot(
         predictions %>%
           filter(sample.iter == iter) %>%
-          left_join(gene.map) %>%
+          left_join(gene.map, by = 'g') %>%
           filter(gene %in% genes),
         environment=environment())
     profile.data <-
       predictions %>%
       filter(sample.iter == iter) %>%
-      left_join(dl$samples.l$omega) %>%
-      left_join(dl$gene.map) %>%
-      left_join(dl$gene.expr) %>%
+      left_join(dl$samples.l$omega, by = c("iter", "g")) %>%
+      left_join(dl$gene.map, by = 'g') %>%
+      left_join(dl$gene.expr, by = c("gene", "phi.hat")) %>%
       filter(gene %in% genes)
     # stopifnot(! any(is.na(profile.data %>% select(-cbRank, -cbPeaktime))))
     gp <-
@@ -328,18 +328,20 @@ profiles.plot <- function(
             melt(
               unname(expr),
               varnames=c("g", "c"),
-              value.name="expr")) %>%
+              value.name="expr"),
+            by = 'g') %>%
           left_join(
             samples.l$tau %>%
               filter(sample.iter == iter) %>%
-              mutate(tau=modulo.period(tau)))
+              mutate(tau=modulo.period(tau)),
+            by = 'c')
         #
         # Adjust for cell sizes if they are there and we have not
         # been asked to ignore them
         if ('S' %in% names(samples.l) && ! ignore.cell.sizes) {
             expr.data <-
               expr.data %>%
-              left_join(samples.l$S) %>%
+              left_join(samples.l$S, by = c('c', 'iter')) %>%
               mutate(expr=expr - S)
         }
         gp <- plot.add.expr(gp, .data=expr.data)
@@ -416,7 +418,7 @@ expr.data.plot <- function(dl, genes=NULL, num.genes=12) {
          stopifnot(all(genes %in% rownames(expr)))
          expr.l <- expr.l %>%
              mutate(cell=factor(cell, levels=levels(cell.meta$cell))) %>%
-             left_join(cell.meta) %>%
+             left_join(cell.meta, by = 'cell') %>%
              dplyr::filter(gene %in% genes)
          ggplot(expr.l, aes(x=capture, y=x)) +
              # geom_boxplot() +

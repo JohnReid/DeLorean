@@ -6,7 +6,7 @@
 anders.huber.cell.sizes <- function(expr.l) expr.l %>%
   group_by(gene) %>%
   dplyr::summarise(mu=mean(x)) %>%
-  left_join(expr.l) %>%
+  left_join(expr.l, by = 'gene') %>%
   group_by(cell) %>%
   dplyr::summarise(S.hat=median(x-mu))
 
@@ -33,8 +33,8 @@ estimate.cell.sizes <- function(dl, cell.prop=.5, expr.threshold=0, by.capture=T
   if (by.capture) {
     cell.sizes <-
       expressed.genes %>%
-      left_join(expr.l) %>%
-      left_join(cell.meta) %>%
+      left_join(expr.l, by = 'gene') %>%
+      left_join(cell.meta, by = 'cell') %>%
       group_by(capture) %>%
       do(anders.huber.cell.sizes(.))
   } else {
