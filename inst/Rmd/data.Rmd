@@ -29,7 +29,7 @@ Meta data exists for `r nrow(dl$cell.meta)` cells. These were captured at
 ggplot(cell.meta, aes(capture)) + geom_bar()
 ```
 
-We have the following meta data for the cells:
+A sample of meta data for the cells:
 ```{r cellMetaSample, echo = FALSE, results = 'asis'}
 knitr::kable(sample_n(cell.meta, 6))
 ```
@@ -42,6 +42,11 @@ ggplot(
     aes(x = capture, y = S.hat)) +
   geom_boxplot()
 ```
+We test if the variation differs across the capture times with a one-way
+ANOVA:
+```{r cellSizeANOVA}
+knitr::kable(broom::tidy(aov(S.hat ~ capture, ungroup(dl$cell.sizes))))
+```
 
 
 ## Genes
@@ -51,7 +56,7 @@ The red lines show the mean expression at each capture time.
 plot(dl, type = "expr.data")
 ```
 
-We have the following meta data for the genes:
+A sample of data for the genes:
 ```{r geneMetaSample, echo = FALSE, results = 'asis'}
 knitr::kable(sample_n(gene.meta, 6))
 ```

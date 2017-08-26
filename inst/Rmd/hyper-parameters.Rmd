@@ -18,11 +18,11 @@ $$
 ## Variance decomposition into temporal variation and noise
 
 We examine the variation of expression both between- and within-time points. We
-expect some of the variation of expression within a time point to be associated
-with variation in the temporal dimension. The rest of the variation within
-a time point will be modelled as noise.  Conversely we expect most of the
-variation between time points to be due to temporal variation although some
-will be due to noise.
+expect some of the variation of expression within a time point to be caused by
+variation in cells' pseudotimes and genes' mean profiles. The rest of the
+variation within a time point is assumed to be noise.  Conversely we expect
+most of the variation between time points to be due variation in genes' mean
+profiles although some will be due to noise.
 
 Let
 $$
@@ -43,7 +43,6 @@ $$
 $$
 
 ### Noise estimates
-
 We estimate the gene-specific noise levels by assuming that all the within-time
 variation in the data is due to noise. This should be a slight overestimate as
 some variation of expression will be due to variation in the pseudotemporal
@@ -53,8 +52,9 @@ $$
 $$
 Giving us this fit for our empirical Bayes prior on the $\log \hat{\omega}_g$
 (the blue curve is the prior on $\log \omega_g$ and the density and rug plots
-show the distribution of the $\log \hat{\omega}_g$ estimated by empirical Bayes).
-```{r omegaPrior}
+show the distribution of the $\log \hat{\omega}_g$ estimated using empirical
+Bayes above).
+```{r plotOmegaPrior}
 ggplot(
     gene.var,
     aes(x = log(omega.hat))) +
@@ -67,11 +67,9 @@ ggplot(
 
 
 ### Temporal variation estimates
-
-We estimate the temporal variation by calculating the expected variance of samples
-at the capture times from the expression profile of a gene $g$. These depend on
-our fixed length scale and unknown temporal variance $\psi_g$. The
-covariance of these samples will be $\psi_g \hat{\Sigma}$ where
+We estimate the temporal variation by calculating the expected variance of
+samples at the given capture times from the expression profile of a gene $g$. These depend on our fixed length scale and unknown temporal variance $\psi_g$.
+The covariance of these samples will be $\psi_g \hat{\Sigma}$ where
 $$
   \hat{\Sigma}_{t_1,t_2} = \Sigma_\tau(\kappa_{t_1}, \kappa_{t_2})
 $$
