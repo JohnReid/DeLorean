@@ -61,8 +61,8 @@ ggplot(
   geom_density() +
   geom_rug() +
   stat_function(
-    fun=function(x) dnorm(x, mean = hyper$mu_omega, sd = hyper$sigma_omega),
-    colour = "blue", alpha=.7, linetype = "dashed")
+    fun = function(x) dnorm(x, mean = hyper$mu_omega, sd = hyper$sigma_omega),
+    colour = "blue", alpha = .7, linetype = "dashed")
 ```
 
 
@@ -87,44 +87,44 @@ $\log \hat{\psi}_g$
 ```{r psiPrior}
 ggplot(
     gene.var,
-    aes(x=log(psi.hat))) +
+    aes(x = log(psi.hat))) +
   geom_density() +
   geom_rug() +
   stat_function(
-    fun=function(x) dnorm(x, mean=hyper$mu_psi, sd=hyper$sigma_psi),
-    colour="blue", alpha=.7, linetype="dashed")
+    fun = function(x) dnorm(x, mean = hyper$mu_psi, sd = hyper$sigma_psi),
+    colour = "blue", alpha = .7, linetype = "dashed")
 ```
 
 
 ### Correlation between temporal variation and noise
 
 The correlation between the temporal variation and noise estimates is
-`r with(gene.var, round(cor(psi.hat, omega.hat), digits=2))`.
+`r with(gene.var, round(cor(psi.hat, omega.hat), digits = 2))`.
 Plotting the estimated noise levels against temporal variation gives:
 ```{r geneWithinVsBetweenVar}
-ggplot(gene.var, aes(x=log10(psi.hat), y=log10(omega.hat))) +
+ggplot(gene.var, aes(x = log10(psi.hat), y = log10(omega.hat))) +
   geom_point() +
-  geom_abline(intercept=0, slope=1, linetype="dashed", alpha=.7)
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed", alpha = .7)
 ```
 
 
 ## Cell sizes relation to gene variation
 
-How big are the cell size estimates relative to the average variation in the gene expression?
-The vertical line represents the square root of the mean variance of the gene expressions.
+How big are the cell size estimates relative to the average variation in the gene expression? The vertical line represents the square root of the mean
+variance of the gene expressions.
 ```{r cellSizeRelExpr}
 gene.vars <- apply(expr, 1, var)
 mean.gene.variation <- sqrt(mean(gene.vars))
-ggplot(cell.sizes, aes(x=S.hat)) +
+ggplot(cell.sizes, aes(x = S.hat)) +
     geom_histogram(bins = 30) +
-    geom_vline(xintercept=mean.gene.variation)
+    geom_vline(xintercept = mean.gene.variation)
 ```
 
 
 
 
 
-```{r hyperDetach, include=FALSE}
+```{r hyperDetach, include = FALSE}
 # Detach the previously attached DeLorean data frame
 detach(dl)
 ```

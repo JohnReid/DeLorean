@@ -3,10 +3,8 @@
 attach(dl)
 ```
 
-## Posterior
 
-### Pseudotime
-
+## Pseudotime
 The estimated pseudotime from the best sample against the observed
 capture time.
 ```{r tauBest}
@@ -15,12 +13,7 @@ plot(dl, type = "pseudotime")
 
 The full tau posterior for each cell.
 ```{r tauPosterior}
-ggplot(
-    samples.l$tau %>% arrange(capture),
-    aes(x = reorder(cell, tau, FUN = median), y = tau, color = capture)) +
-  geom_boxplot() +
-  labs(x = 'cell') +
-  coord_flip()
+plot(dl, type = "tau.posterior")
 ```
 
 The posterior of the pseudotime offsets relative to the capture times.
@@ -29,8 +22,8 @@ We also show the prior on the offset.
 plot(dl, type = "tau.offsets")
 ```
 
-### Between time variation
 
+## Between time variation
 The posterior for the between time variation $\log \psi_g$:
 ```{r posteriorPsi}
 ggplot(samples.l$psi, aes(x = log(psi))) +
@@ -56,8 +49,7 @@ ggplot(
 ```
 
 
-### Within time variation
-
+## Within time variation
 The posterior for the within time variation $\log \omega_g$:
 ```{r posteriorOmega}
 ggplot(samples.l$omega, aes(x = log(omega))) +
@@ -80,8 +72,7 @@ ggplot(
 ```
 
 
-### Variation comparisons
-
+## Variation comparisons
 The within time variation compared to the temporal variation (on log-log scale):
 ```{r noiseScatter}
 ggplot(
@@ -100,8 +91,7 @@ have.cell.sizes <- 'S' %in% names(samples.l)
 ```
 
 
-### Other posteriors
-
+## Other posteriors
 The posterior for the model log probability:
 ```{r posteriorLP}
 ggplot(samples.l$lp__, aes(x = lp__)) +

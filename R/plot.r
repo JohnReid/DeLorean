@@ -24,6 +24,8 @@ if (is.installed('ggthemes')) {
 #'       See \code{\link{profiles.plot}}.
 #'     \item 'tau.offsets': Offsets of pseudotimes to assess the prior
 #'       See \code{\link{tau.offsets.plot}}.
+#'     \item 'tau.posterior': Pseudotime posteriors
+#'       See \code{\link{tau.posterior.plot}}.
 #'     \item 'marg.like': Plot the posterior of the marginal likelihoods
 #'       for individual genes.
 #'       See \code{\link{marg.like.plot}}.
@@ -47,6 +49,7 @@ plot.de.lorean <- function(x, type = "profiles", ...) {
         marg.like = marg.like.plot(x, ...),
         orderings = orderings.plot(x, ...),
         tau.offsets = tau.offsets.plot(x, ...),
+        tau.posterior = tau.posterior.plot(x, ...),
         gene.params = gene.params.plot(x, ...),
         init.vs.pseudotimes = init.orderings.vs.pseudotimes.plot(x, ...)
     )
@@ -177,6 +180,23 @@ tau.offsets.plot <- function(dl, rug.alpha=.3) with(dl, {
     geom_rug(alpha=rug.alpha) +
     stat_function(fun=function(x) prior.scale * dnorm(x, sd=hyper$sigma_tau),
                   linetype='dashed')
+})
+
+
+#' Plot the tau posterior, that is how much the pseudotimes (tau) differ
+#' from their prior means over the full posterior.
+#'
+#' @param dl de.lorean object
+#'
+#' @export
+#'
+tau.posterior.plot <- function(dl) with(dl, {
+  ggplot(
+      samples.l$tau %>% arrange(capture),
+      aes(x = reorder(cell, tau, FUN = median), y = tau, color = capture)) +
+    geom_boxplot() +
+    labs(x = 'cell') +
+    coord_flip()
 })
 
 
