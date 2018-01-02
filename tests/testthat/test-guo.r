@@ -9,7 +9,7 @@ set.seed(1)
 num.genes <- nrow(dl$gene.meta)  # All genes
 sampled.genes <- sample_n(dl$gene.meta, num.genes)$gene
 gene.filter <- function(genes) genes %in% sampled.genes
-dl <- filter.genes(dl, gene.filter)
+dl <- filter_genes(dl, gene.filter)
 num.at.each.stage <- 9
 te.sampled.cells <- (
     dl$cell.meta
@@ -31,7 +31,7 @@ epi.sampled.cells <- (
 )
 run.model <- function(dl, cells.sampled) {
     cell.filter <- function(cells) cells %in% cells.sampled
-    dl <- filter.cells(dl, cell.filter)
+    dl <- filter_cells(dl, cell.filter)
     dl <- prepare.for.stan(dl)
     dl <- compile.model(dl)
     dl <- find.best.tau(dl)
