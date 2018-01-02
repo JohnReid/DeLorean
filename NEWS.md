@@ -1,3 +1,6 @@
+## Version 1.3.0
+- Remove filter.genes and filter.cells, (renamed to use underscores) in order to pass CRAN checks.
+
 ## Version 1.2.6
 - Deprecate filter.genes and filter.cells, (renamed to use underscores).
 
