@@ -139,6 +139,11 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
 #'   }
 #' @param adjust.cell.sizes Adjust by the cell sizes for better estimates of the hyperparameters
 #'
+#' @examples
+#' data(WindramDeLorean)
+#' dl <- de.lorean(windram.expr, windram.gene.meta, windram.cell.meta)
+#' dl <- estimate.hyper(dl)
+#'
 #' @export
 #'
 estimate.hyper <- function(
@@ -203,6 +208,11 @@ estimate.hyper <- function(
 #' @param .filter Function that gakes a list of genes as input and returns
 #'     a vector of TRUE/FALSE
 #'
+#' @examples
+#' data(WindramDeLorean)
+#' dl <- de.lorean(windram.expr, windram.gene.meta, windram.cell.meta)
+#' dl <- filter_genes(dl, number = 37)
+#'
 #' @export
 #'
 filter_genes <- function(dl,
@@ -224,6 +234,11 @@ filter_genes <- function(dl,
 #' @param cells The cells to keep.
 #' @param .filter Function that gakes a list of cells as input and returns
 #'     a vector of TRUE/FALSE
+#'
+#' @examples
+#' data(WindramDeLorean)
+#' dl <- de.lorean(windram.expr, windram.gene.meta, windram.cell.meta)
+#' dl <- filter_cells(dl, number = 7)
 #'
 #' @export
 #'
