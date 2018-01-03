@@ -2,7 +2,7 @@
 % Please edit documentation in R/gp.r
 \name{gaussian.condition}
 \alias{gaussian.condition}
-\title{Condition a Guassian on another.
+\title{Condition a Gaussian on another.
 See Eqn. A.6
 on page 200 of Rasmumssen and Williams' book.}
 \usage{
@@ -25,7 +25,7 @@ gaussian.condition(y, .A, .B, .C, mu.x = rep(0, nrow(.A)), mu.y = rep(0,
 \item{U}{Cholesky decomposition of .B}
 }
 \description{
-Condition a Guassian on another.
+Condition a Gaussian on another.
 See Eqn. A.6
 on page 200 of Rasmumssen and Williams' book.
 }

@@ -253,7 +253,7 @@ gp.predictions.df <- function(predictions) {
                                  idx=1:length(mu)))
 }
 
-#' Condition a Guassian on another.
+#' Condition a Gaussian on another.
 #' See Eqn. A.6
 #' on page 200 of Rasmumssen and Williams' book.
 #'
