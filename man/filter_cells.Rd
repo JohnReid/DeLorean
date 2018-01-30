@@ -20,3 +20,9 @@ a vector of TRUE/FALSE}
 \description{
 Filter cells
 }
+\examples{
+data(WindramDeLorean)
+dl <- de.lorean(windram.expr, windram.gene.meta, windram.cell.meta)
+dl <- filter_cells(dl, number = 7)
+
+}
