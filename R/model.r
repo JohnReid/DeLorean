@@ -434,9 +434,9 @@ compile.model <- function(dl) {
                                   package='DeLorean',
                                   mustWork=TRUE)
   data.dir <- system.file('extdata', package='DeLorean')
-  compiled.model.file <- paste(data.dir,
-                               sprintf("%s.rds", dl$opts$model.name),
-                               sep='/')
+  compiled.model.file <-
+    file.path(tempdir(),
+              sprintf("DeLorean-%s.rds", dl$opts$model.name))
   within(dl, {
     if (file.exists(compiled.model.file)
         &&
