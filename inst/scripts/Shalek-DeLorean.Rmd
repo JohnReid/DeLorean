@@ -284,10 +284,7 @@ dl <- make.predictions(dl)
 
 ```{r clusterAnalysis}
 clustered <- dl$gene.meta %>% filter(! is.na(cluster))
-fitted.time.course.cells <- (
-    time.course.cells
-    %>% filter(cell %in% dl$cell.map[['cell']])
-)$cell
+fitted.time.course.cells <- filter(time.course.cells, cell %in% dl$cell.map[['cell']])$cell
 clustered.expr <- shalek.A.expr[as.character(clustered$gene),
                                 as.character(fitted.time.course.cells)]
 # rownames(clustered.expr)
@@ -326,10 +323,6 @@ plots$core.antiviral <- (
 )
 print(plots$core.antiviral)
 ggsave('Shalek-core-antiviral.pdf', plots$core.antiviral + plos.theme,
-
-
-
-
        width=2*fig.width, height=2*fig.height)
 # Plot the core antiviral, the maturity, the peaked inflammation and
 # the sustained inflammation module scores against pseudotime.
@@ -368,11 +361,7 @@ plots$profiles$layers[[3]]$aes_params$alpha <- 0.5
 ggsave('Shalek-profiles.png', plots$profiles + plos.theme,
        width=6, height=3, units="in", dpi=600)
 # Examine what pseudotimes the model estimated for the precocious genes
-(
-    dl$samples.l$tau
-    %>% filter(dl$best.sample == iter,
-               cell %in% precocious$cell)
-)
+dplyr::filter(dl$samples.l$tau, dl$best.sample == iter, precocious)
 ```
 
 
@@ -482,6 +471,22 @@ pca.plot <- ggplot(pca.df,
     scale_colour_gradient(low="red", high="blue")
 print(pca.plot)
 ggsave('Shalek-PCA.png', pca.plot)
+```
+
+
+# Pseudotime mean vs. standard deviation
+```{r pseudoMeanSD}
+pseudo_mean_sd <-
+  dl$samples.l$tau %>%
+  group_by(c) %>%
+  summarise(mean=mean(tau), sd=sd(tau)) %>%
+  left_join(dl$cell.map)
+mean_sd_plot <-
+  ggplot(pseudo_mean_sd, aes(x=mean, y=sd, colour=capture)) +
+  geom_point(alpha=.4) +
+  bioinf.config
+ggsave('Plots/Shalek-mean-sd.pdf', mean_sd_plot,
+       width=6, height=4)
 ```
 
 
