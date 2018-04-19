@@ -1,3 +1,7 @@
+## Version 1.4.0
+- Make changes to how compiled models are cached to satisfy silly CRAN policy. Now compilation happens more often:
+  once per model per R session.
+
 ## Version 1.3.0
 - Remove filter.genes and filter.cells, (renamed to use underscores) in order to pass CRAN checks.
 
