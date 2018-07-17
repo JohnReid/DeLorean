@@ -4,4 +4,6 @@
 * win-builder (devel and release)
 
 ## R CMD check results
-There were no ERRORs, WARNINGs or NOTEs.
+There were no ERRORs or WARNINGs.
+There was a NOTE about possible mis-spelled words.
+The package was archived on 2018-05-09. I did submit another version but nothing seems to have happened with this submission.
