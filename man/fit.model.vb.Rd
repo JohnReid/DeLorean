@@ -4,8 +4,8 @@
 \alias{fit.model.vb}
 \title{Fit the model using Stan variational Bayes}
 \usage{
-fit.model.vb(dl, num.cores = default.num.cores(), num.inits = num.cores,
-  init.idx = 1, ...)
+fit.model.vb(dl, num.cores = default.num.cores(),
+  num.inits = num.cores, init.idx = 1, ...)
 }
 \arguments{
 \item{dl}{de.lorean object}

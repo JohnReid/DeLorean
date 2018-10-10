@@ -6,8 +6,8 @@
 See Eqn. A.6
 on page 200 of Rasmumssen and Williams' book.}
 \usage{
-gaussian.condition(y, .A, .B, .C, mu.x = rep(0, nrow(.A)), mu.y = rep(0,
-  nrow(.B)), U = chol(.B))
+gaussian.condition(y, .A, .B, .C, mu.x = rep(0, nrow(.A)),
+  mu.y = rep(0, nrow(.B)), U = chol(.B))
 }
 \arguments{
 \item{y}{y}

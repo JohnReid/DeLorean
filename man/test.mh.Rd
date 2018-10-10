@@ -5,8 +5,9 @@
 \title{Test ordering Metropolis-Hastings sampler.}
 \usage{
 test.mh(dl, psi = mean(dl$gene.map$psi.hat),
-  omega = mean(dl$gene.map$omega.hat), num.cores = getOption("DL.num.cores",
-  max(parallel::detectCores() - 1, 1)), iterations = 1000, thin = 15)
+  omega = mean(dl$gene.map$omega.hat),
+  num.cores = getOption("DL.num.cores", max(parallel::detectCores() - 1,
+  1)), iterations = 1000, thin = 15)
 }
 \arguments{
 \item{dl}{de.lorean object}

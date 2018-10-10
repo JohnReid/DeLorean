@@ -4,10 +4,11 @@
 \alias{seriation.find.orderings}
 \title{Use seriation package to find good orderings}
 \usage{
-seriation.find.orderings(dl, .methods = c("TSP", "R2E", "HC", "GW", "OLO"),
-  scaled = c("scaled", "unscaled"), dim.red = c("none", "pca", "kfa", "ica",
-  "mds"), dims = geom.series(base = 2, max = min(8, nrow(dl$expr) - 1)),
-  num.cores = default.num.cores(), num.tau.to.keep = default.num.cores())
+seriation.find.orderings(dl, .methods = c("TSP", "R2E", "HC", "GW",
+  "OLO"), scaled = c("scaled", "unscaled"), dim.red = c("none", "pca",
+  "kfa", "ica", "mds"), dims = geom.series(base = 2, max = min(8,
+  nrow(dl$expr) - 1)), num.cores = default.num.cores(),
+  num.tau.to.keep = default.num.cores())
 }
 \arguments{
 \item{dl}{de.lorean object}

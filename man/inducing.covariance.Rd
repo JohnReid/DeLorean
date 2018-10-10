@@ -4,8 +4,8 @@
 \alias{inducing.covariance}
 \title{Calculate the covariance structure of the inducing points}
 \usage{
-inducing.covariance(cov.fn, length.scale, period = NULL, tau, num.inducing,
-  u = seq(min(tau), max(tau), length.out = num.inducing))
+inducing.covariance(cov.fn, length.scale, period = NULL, tau,
+  num.inducing, u = seq(min(tau), max(tau), length.out = num.inducing))
 }
 \arguments{
 \item{cov.fn}{Covariance function}

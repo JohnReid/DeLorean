@@ -5,8 +5,8 @@
 \title{Plot best sample predicted expression.}
 \usage{
 profiles.plot(dl, genes = dl$genes.high.psi, profile.color = "black",
-  add.data = T, sample.iter = dl$best.sample, ignore.cell.sizes = FALSE,
-  ...)
+  add.data = T, sample.iter = dl$best.sample,
+  ignore.cell.sizes = FALSE, ...)
 }
 \arguments{
 \item{dl}{de.lorean object}
