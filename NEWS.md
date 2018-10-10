@@ -1,3 +1,6 @@
+## Version 1.4.2
+- Use updated version of roxygen2
+
 ## Version 1.4.0
 - Make changes to how compiled models are cached to satisfy silly CRAN policy. Now compilation happens more often:
   once per model per R session.
