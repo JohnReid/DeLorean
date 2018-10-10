@@ -25,7 +25,8 @@ Imports:
     kernlab,
     fastICA,
     seriation,
-    memoise
+    memoise,
+    lattice
 Suggests:
     knitr (>= 1.8),
     knitcitations,
