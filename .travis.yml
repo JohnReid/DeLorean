@@ -8,3 +8,5 @@ r:
     - oldrel
     - release
     - devel
+
+script: ./configure
