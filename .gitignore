@@ -10,7 +10,6 @@ sandbox
 # RStudio files
 .Rproj.user/
 inst/doc
-
 .Rd2pdf*
 DeLorean.Rcheck
 ..Rcheck

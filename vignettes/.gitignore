@@ -37,3 +37,5 @@ DeLorean-case-studies.tex
 cache
 hyper-parameters.md
 posterior.md
+.build.timestamp
+DeLorean.R

@@ -9,13 +9,15 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-```{r setup, echo=F}
+```{r setup, echo = FALSE}
 knitr::opts_chunk$set(
-    fig.width=12,
-    fig.height=12/1.618,
-    out.width='685px',
-    dpi=144,
-    message=FALSE)
+  fig.width = 12,
+  fig.height = 12 / 1.618,
+  out.width = '685px',
+  dpi = 144,
+  collapse = TRUE,
+  comment = "#>",
+  message = FALSE)
 ```
 
 Our understanding of dynamical biological systems such as developmental
