@@ -19,10 +19,10 @@ Defaults to the range of the observed capture times.}
 \itemize{
   \item 'exact': The model without a low rank approximation
     that does not estimate the cell sizes.
-  \item 'exact-sizes': The model without a low rank approximation
+  \item 'exactsizes': The model without a low rank approximation
     that does estimate the cell sizes.
   \item 'lowrank': Low rank approximation to the 'exact' model.
-  \item 'lowrank-sizes': Low rank approximation to the 'exact-sizes' model.
+  \item 'lowranksizes': Low rank approximation to the 'exactsizes' model.
 }}
 
 \item{adjust.cell.sizes}{Adjust by the cell sizes for better estimates of the hyperparameters}

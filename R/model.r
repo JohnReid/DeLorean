@@ -132,10 +132,10 @@ analyse.variance <- function(dl, adjust.cell.sizes) {
 #'   \itemize{
 #'     \item 'exact': The model without a low rank approximation
 #'       that does not estimate the cell sizes.
-#'     \item 'exact-sizes': The model without a low rank approximation
+#'     \item 'exactsizes': The model without a low rank approximation
 #'       that does estimate the cell sizes.
 #'     \item 'lowrank': Low rank approximation to the 'exact' model.
-#'     \item 'lowrank-sizes': Low rank approximation to the 'exact-sizes' model.
+#'     \item 'lowranksizes': Low rank approximation to the 'exactsizes' model.
 #'   }
 #' @param adjust.cell.sizes Adjust by the cell sizes for better estimates of the hyperparameters
 #'
@@ -161,12 +161,13 @@ estimate.hyper <- function(
   dl <- within(dl, {
     #
     # Remember options that depend on the model
-    opts$model.name <- model.name
+    # Remove hyphens to keep backwards compatibility with old names
+    opts$model.name <- sub('-', '', model.name)
     opts$model.estimates.cell.sizes <- switch(
         opts$model.name,
-        "exact-sizes" = TRUE,
+        "exactsizes" = TRUE,
         "exact" = FALSE,
-        "lowrank-sizes" = TRUE,
+        "lowranksizes" = TRUE,
         "lowrank" = FALSE,
         stop('Unknown model name'))
     #
@@ -421,47 +422,19 @@ within(dl, {
   )
 })
 
-#' Compile the model and cache the DSO to avoid unnecessary recompilation.
+
+#' Get the Stan model for a DeLorean object.
 #'
 #' @param dl de.lorean object
 #'
 #' @export
 #'
-compile.model <- function(dl) {
-  stan.model.file <- system.file(file.path('Stan',
-                                            sprintf('%s.stan',
-                                                    dl$opts$model.name)),
-                                  package='DeLorean',
-                                  mustWork=TRUE)
-  data.dir <- system.file('extdata', package='DeLorean')
-  compiled.model.file <-
-    file.path(tempdir(),
-              sprintf("DeLorean-%s.rds", dl$opts$model.name))
-  within(dl, {
-    if (file.exists(compiled.model.file)
-        &&
-        file.info(compiled.model.file)$mtime
-            > file.info(stan.model.file)$mtime)
-    {
-      message("Loading pre-compiled model from ", compiled.model.file)
-      compiled <- readRDS(compiled.model.file)
-    } else {
-      message("Compiling model")
-      compiled <- rstan::stan(file=stan.model.file, chains=0,
-                              data=stan.data)
-      message("Saving compiled model to ", compiled.model.file)
-      saveRDS(compiled, compiled.model.file)
-    }
-    # Try one iteration to check everything is OK
-    # message("Trying iteration")
-    fit <- rstan::stan(
-      fit=compiled,
-      data=stan.data,
-      init=make.chain.init.fn(dl),
-      warmup=1,
-      iter=1,
-      chains=1)
-  })
+get_model <- function(dl) {
+  model <- stanmodels[[dl$opts$model.name]]
+  if (is.null(model)) {
+    stop('Unknown model: ', model_name)
+  }
+  model
 }
 
 
@@ -888,7 +861,6 @@ fit.dl <- function(
     ...)
 {
   dl <- prepare.for.stan(dl)
-  dl <- compile.model(dl)
   dl <- find.good.ordering(dl, seriation.find.orderings)
   dl <- pseudotimes.from.orderings(dl)
   dl <- fit.model(dl, method=method, ...)
@@ -949,7 +921,7 @@ fit.model.sample <- function(
     mc.cores=num.cores,
     function(i)
       rstan::stan(
-        fit=dl$fit,
+        fit=get_model(dl),
         data=dl$stan.data,
         thin=thin,
         init=init.chain.good.tau,
@@ -959,7 +931,6 @@ fit.model.sample <- function(
         refresh=-1,
         ...))
   dl$fit <- rstan::sflist2stanfit(sflist)
-  dl$compiled <- NULL  # Delete large unneeded object
   return(dl)
 }
 
@@ -1032,7 +1003,7 @@ fit.model.vb <- function(
       # mc.cores=1,
       function(i) within(list(), {
         fit <- rstan::vb(
-          rstan::get_stanmodel(dl$fit),
+          get_model(dl),
           data=dl$stan.data,
           seed=i,
           init=init.chain.good.tau(i),
@@ -1067,7 +1038,7 @@ fit.model.vb <- function(
   } else {
     # Run single variational Bayes
     dl$fit <- rstan::vb(
-      rstan::get_stanmodel(dl$fit),
+      get_model(dl),
       data=dl$stan.data,
       seed=init.idx,
       init=init.chain.good.tau(init.idx),
@@ -1190,7 +1161,7 @@ process.posterior <- function(dl) {
     #
     # Expose Stan functions from model
     stan.fns <- new.env()
-    rstan::expose_stan_functions(fit, env = stan.fns)
+    rstan::expose_stan_functions(get_model(dl), env = stan.fns)
   })
 }
 
@@ -1208,7 +1179,7 @@ optimise.sample <- function(
     ...)
 {
     with(dl, {
-        optimised <- rstan::optimizing(dl$fit@stanmodel,
+        optimised <- rstan::optimizing(dl$stanmodel,
                                 data=dl$stan.data,
                                 init=parameters,
                                 as_vector=FALSE,

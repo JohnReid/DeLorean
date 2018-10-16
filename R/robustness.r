@@ -32,7 +32,6 @@ test.robustness.de.lorean <- function(
     # Define function to fit each piece
     run.model <- function(piece) {
         piece <- prepare.for.stan(piece)
-        piece <- compile.model(piece)
         piece <- find.best.tau(piece)
         piece <- fit.model(piece)
         process.posterior(piece)
