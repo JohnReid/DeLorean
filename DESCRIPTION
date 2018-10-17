@@ -27,6 +27,7 @@ Imports:
     kernlab,
     fastICA,
     seriation,
+    lattice,
     memoise
 LinkingTo:
     BH (>= 1.66.0-1),
