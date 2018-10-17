@@ -1158,10 +1158,6 @@ process.posterior <- function(dl) {
     #
     # Get parameters from best iteration
     best.m <- lapply(samples.l, function(s) filter(s, iter == best.sample))
-    #
-    # Expose Stan functions from model
-    stan.fns <- new.env()
-    rstan::expose_stan_functions(get_model(dl), env = stan.fns)
   })
 }
 
