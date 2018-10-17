@@ -836,12 +836,13 @@ within(dl, {
 })
 
 
-#' Perform all the steps necessary to fit the model.
-#' - prepare the data
-#' - compile the model
-#' - find suitable initialisations
-#' - fit the model using the specified method (sampling or variational Bayes)
-#' - process the posterior.
+#' Perform all the steps necessary to fit the model:
+#' \enumerate{
+#'   \item prepare the data
+#'   \item find suitable initialisations
+#'   \item fit the model using the specified method (sampling or variational Bayes)
+#'   \item process the posterior
+#' }
 #'
 #' @param dl de.lorean object
 #' @param method Fitting method:
