@@ -10,7 +10,7 @@ filter_genes(dl, .filter = function(x) x \%in\% genes, number = NULL,
 \arguments{
 \item{dl}{de.lorean object}
 
-\item{.filter}{Function that gakes a list of genes as input and returns
+\item{.filter}{Function that takes a list of genes as input and returns
 a vector of TRUE/FALSE}
 
 \item{number}{Number to sample if filter function or genes not supplied.}

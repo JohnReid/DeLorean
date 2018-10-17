@@ -10,7 +10,7 @@ filter_cells(dl, .filter = function(x) x \%in\% cells, number = NULL,
 \arguments{
 \item{dl}{de.lorean object}
 
-\item{.filter}{Function that gakes a list of cells as input and returns
+\item{.filter}{Function that takes a list of cells as input and returns
 a vector of TRUE/FALSE}
 
 \item{number}{Number to sample if filter function or cells not supplied.}

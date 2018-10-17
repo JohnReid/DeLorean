@@ -3,7 +3,7 @@
 \name{gp.log.marg.like}
 \alias{gp.log.marg.like}
 \title{The log marginal likelihood. See "2.3 Varying the Hyperparameters"
-on page 19 of Rasmumssen and Williams' book.}
+on page 19 of Rasmussen and Williams' book.}
 \usage{
 gp.log.marg.like(y, K = NULL, U = chol(K))
 }
@@ -16,5 +16,5 @@ gp.log.marg.like(y, K = NULL, U = chol(K))
 }
 \description{
 The log marginal likelihood. See "2.3 Varying the Hyperparameters"
-on page 19 of Rasmumssen and Williams' book.
+on page 19 of Rasmussen and Williams' book.
 }

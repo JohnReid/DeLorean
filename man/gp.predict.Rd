@@ -4,7 +4,7 @@
 \alias{gp.predict}
 \title{Predictive mean, variance and log marginal likelihood of a GP.
 See "2.3 Varying the Hyperparameters"
-on page 19 of Rasmumssen and Williams' book.}
+on page 19 of Rasmussen and Williams' book.}
 \usage{
 gp.predict(y, K = NULL, Kstar, Kstarstar, U = chol(K))
 }
@@ -22,5 +22,5 @@ gp.predict(y, K = NULL, Kstar, Kstarstar, U = chol(K))
 \description{
 Predictive mean, variance and log marginal likelihood of a GP.
 See "2.3 Varying the Hyperparameters"
-on page 19 of Rasmumssen and Williams' book.
+on page 19 of Rasmussen and Williams' book.
 }
