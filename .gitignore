@@ -1,5 +1,6 @@
 nohup.out
 sandbox
+tmp.R
 
 # History files
 .Rhistory
