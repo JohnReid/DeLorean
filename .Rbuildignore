@@ -1,4 +1,5 @@
 ^\.Rd2pdf.*
+^..Rcheck
 ^etc
 ^downloads
 ^DeLorean_.*\.tar.gz
