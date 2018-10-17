@@ -15,7 +15,17 @@ Compilation used the following non-portable flag(s):
 ```
 
 
-There were two NOTEs:
+There were four NOTEs:
+
+```
+Maintainer: ‘John Reid <johnbaronreid@gmail.com>’
+
+New maintainer:
+  John Reid <johnbaronreid@gmail.com>
+Old maintainer(s):
+  John Reid <john.reid@mrc-bsu.cam.ac.uk>
+```
+I will send CRAN an email confirming this change.
 
 ```
 checking installed package size ... NOTE
