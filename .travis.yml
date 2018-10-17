@@ -7,7 +7,6 @@ r:
     - devel
 
 latex: false
-pandoc: false
 
 
 env:
