@@ -206,7 +206,7 @@ estimate.hyper <- function(
 #' @param dl de.lorean object
 #' @param number Number to sample if filter function or genes not supplied.
 #' @param genes The genes to keep.
-#' @param .filter Function that gakes a list of genes as input and returns
+#' @param .filter Function that takes a list of genes as input and returns
 #'     a vector of TRUE/FALSE
 #'
 #' @examples
@@ -233,7 +233,7 @@ filter_genes <- function(dl,
 #' @param dl de.lorean object
 #' @param number Number to sample if filter function or cells not supplied.
 #' @param cells The cells to keep.
-#' @param .filter Function that gakes a list of cells as input and returns
+#' @param .filter Function that takes a list of cells as input and returns
 #'     a vector of TRUE/FALSE
 #'
 #' @examples

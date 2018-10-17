@@ -178,7 +178,7 @@ plot.add.mean.and.variance <- function(gp,
 }
 
 #' The log marginal likelihood. See "2.3 Varying the Hyperparameters"
-#' on page 19 of Rasmumssen and Williams' book.
+#' on page 19 of Rasmussen and Williams' book.
 #'
 #' @param y The targets.
 #' @param K The covariance matrix (kernel), not needed if U is provided.
@@ -195,7 +195,7 @@ gp.log.marg.like <- function(y, K=NULL, U=chol(K)) {
 
 #' Predictive mean, variance and log marginal likelihood of a GP.
 #' See "2.3 Varying the Hyperparameters"
-#' on page 19 of Rasmumssen and Williams' book.
+#' on page 19 of Rasmussen and Williams' book.
 #'
 #' @param y The targets.
 #' @param K The covariance matrix (kernel) for input points, not needed if U is provided.
@@ -229,7 +229,7 @@ gp.predictions.df <- function(predictions) {
 
 #' Condition a Gaussian on another.
 #' See Eqn. A.6
-#' on page 200 of Rasmumssen and Williams' book.
+#' on page 200 of Rasmussen and Williams' book.
 #'
 #' @param y y
 #' @param mu.x Mean of x
