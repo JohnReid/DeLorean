@@ -56,6 +56,7 @@ utils::globalVariables(names = c(
   'is.held.out',
   'iter',
   'median.tau',
+  'model_name',
   'mu',
   'name',
   'num.capture',

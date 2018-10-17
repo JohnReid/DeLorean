@@ -5,5 +5,12 @@
 
 ## R CMD check results
 There were no ERRORs or WARNINGs.
-There was a NOTE about possible mis-spelled words.
-The package was archived on 2018-05-09. I did submit another version but nothing seems to have happened with this submission.
+There were two NOTEs:
+
+checking installed package size ... NOTE
+  installed size is 79.0Mb
+  sub-directories of 1Mb or more:
+    libs  76.3Mb
+
+checking for GNU extensions in Makefiles ... NOTE
+GNU make is a SystemRequirements.

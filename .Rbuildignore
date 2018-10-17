@@ -19,3 +19,4 @@
 ^inst/extdata/.*\.rds
 ^cran-comments.md
 ^\.travis\.yml$
+^tmp.R$
