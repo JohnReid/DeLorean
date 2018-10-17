@@ -1,7 +1,7 @@
 Package: DeLorean
 Title: Estimates Pseudotimes for Single Cell Expression Data
-Author: John Reid <john.reid@mrc-bsu.cam.ac.uk>
-Maintainer: John Reid <john.reid@mrc-bsu.cam.ac.uk>
+Author: John Reid <johnbaronreid@gmail.com>
+Maintainer: John Reid <johnbaronreid@gmail.com>
 Version: 1.5.0
 Description: Implements the DeLorean model (Reid & Wernisch (2016)
     <doi:10.1093/bioinformatics/btw372>) to estimate pseudotimes for
