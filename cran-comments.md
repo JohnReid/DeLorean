@@ -15,7 +15,7 @@ Compilation used the following non-portable flag(s):
 ```
 
 
-There were four NOTEs:
+There were three NOTEs:
 
 ```
 Maintainer: ‘John Reid <johnbaronreid@gmail.com>’
