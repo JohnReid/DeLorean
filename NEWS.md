@@ -1,5 +1,10 @@
+## Version 1.5.0
+- Use pre-compiled models as in rstantools.
+- Rename models to remove hyphens. Backwards compatibility is conserved however.
+- Do not expose Stan functions as this is impossible when using rstantools framework.
+
 ## Version 1.4.2
-- Use updated version of roxygen2
+- Use updated version of roxygen2.
 
 ## Version 1.4.0
 - Make changes to how compiled models are cached to satisfy silly CRAN policy. Now compilation happens more often:
