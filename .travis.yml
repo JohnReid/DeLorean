@@ -1,12 +1,13 @@
 language: r
+cache: packages
 sudo: false
 r:
     - oldrel
     - release
     - devel
-cache: packages
 
-latex: true
+latex: false
+pandoc: false
 
 
 env:
