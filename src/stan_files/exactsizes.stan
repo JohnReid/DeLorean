@@ -106,7 +106,7 @@ data {
     // Data
     //
     // Time data
-    int periodic; /// Are the expression patterns periodic?
+    int periodic;  // Are the expression patterns periodic?
     real period;  // Cyclic period
     row_vector<lower=0>[C] time;  // Time index for cell c
     // Expression data
