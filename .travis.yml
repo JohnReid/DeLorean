@@ -1,13 +1,11 @@
 language: r
-cache: packages
 sudo: false
 r:
     - oldrel
     - release
     - devel
-
-latex: false
-
+cache: packages
+latex: true
 
 env:
   matrix:
