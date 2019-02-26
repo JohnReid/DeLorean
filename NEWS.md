@@ -1,3 +1,6 @@
+## Version 1.5.1
+- Fix Makevars as per strict Brian Ripley request
+
 ## Version 1.5.0
 - Use pre-compiled models as in rstantools.
 - Rename models to remove hyphens. Backwards compatibility is conserved however.

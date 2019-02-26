@@ -2,7 +2,7 @@ Package: DeLorean
 Title: Estimates Pseudotimes for Single Cell Expression Data
 Author: John Reid <johnbaronreid@gmail.com>
 Maintainer: John Reid <johnbaronreid@gmail.com>
-Version: 1.5.0
+Version: 1.5.1
 Description: Implements the DeLorean model (Reid & Wernisch (2016)
     <doi:10.1093/bioinformatics/btw372>) to estimate pseudotimes for
     single cell expression data. The DeLorean model uses a Gaussian process
@@ -48,6 +48,6 @@ Encoding: UTF-8
 LazyData: true
 NeedsCompilation: yes
 SystemRequirements: GNU make
-RoxygenNote: 6.1.0
+RoxygenNote: 6.1.1
 License: MIT + file LICENSE
 VignetteBuilder: knitr
