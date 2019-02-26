@@ -1,5 +1,5 @@
 ## Test environments
-* local ubuntu 16.04, R 3.5.0
+* local ubuntu 18.04, R 3.5.2
 * travis-CI ubuntu 14.04 (old-rel, release and devel)
 * win-builder (devel and release)
 
@@ -15,23 +15,13 @@ Compilation used the following non-portable flag(s):
 ```
 
 
-There were three NOTEs:
-
-```
-Maintainer: ‘John Reid <johnbaronreid@gmail.com>’
-
-New maintainer:
-  John Reid <johnbaronreid@gmail.com>
-Old maintainer(s):
-  John Reid <john.reid@mrc-bsu.cam.ac.uk>
-```
-I will send CRAN an email confirming this change.
+There were two NOTEs:
 
 ```
 checking installed package size ... NOTE
-  installed size is 79.0Mb
+  installed size is 80.6Mb
   sub-directories of 1Mb or more:
-    libs  76.3Mb
+    libs  77.9Mb
 ```
 
 ```
